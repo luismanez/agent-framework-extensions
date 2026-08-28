@@ -1,6 +1,6 @@
 # Feature 001: SharePoint Retrieval Client
 
-**Parent specification:** [`../SPEC.md`](../SPEC.md)  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
 **Status:** Draft  
 **Depends on:** Repository foundation  
 **Enables:** Features 002, 003, 004, and 005

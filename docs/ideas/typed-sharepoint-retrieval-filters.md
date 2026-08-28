@@ -1,7 +1,7 @@
 # Typed SharePoint Retrieval Filters
 
 **Status:** Promoted  
-**Feature specification:** [`../../specs/features/005-typed-sharepoint-retrieval-filters.md`](../../specs/features/005-typed-sharepoint-retrieval-filters.md)
+**Feature specification:** [`005-typed-sharepoint-retrieval-filters.md`](../../specs/features/005-typed-sharepoint-retrieval-filters/005-typed-sharepoint-retrieval-filters.md)
 
 ## Problem Statement
 

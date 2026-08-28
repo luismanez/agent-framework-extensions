@@ -1,6 +1,6 @@
 # Feature 003: Microsoft.Identity.Web Integration
 
-**Parent specification:** [`../SPEC.md`](../SPEC.md)  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
 **Status:** Draft  
 **Depends on:** Feature 001  
 **Enables:** Feature 004

@@ -29,11 +29,11 @@ This document is the global product and release specification. It defines the ar
 
 Implementation is divided into five feature specifications under `specs/features/`:
 
-1. [`001-sharepoint-retrieval-client.md`](features/001-sharepoint-retrieval-client.md) — validated SharePoint Retrieval API access;
-2. [`002-agent-framework-integration.md`](features/002-agent-framework-integration.md) — mapping and integration with `TextSearchProvider`;
-3. [`003-microsoft-identity-web-integration.md`](features/003-microsoft-identity-web-integration.md) — delegated token acquisition through `Microsoft.Identity.Web`;
-4. [`004-aspnetcore-reference-sample.md`](features/004-aspnetcore-reference-sample.md) — the end-to-end ASP.NET Core reference application;
-5. [`005-typed-sharepoint-retrieval-filters.md`](features/005-typed-sharepoint-retrieval-filters.md) — typed construction of trusted SharePoint path and site-ID filters.
+1. [`001-sharepoint-retrieval-client.md`](../features/001-sharepoint-retrieval-client/001-sharepoint-retrieval-client.md) — validated SharePoint Retrieval API access;
+2. [`002-agent-framework-integration.md`](../features/002-agent-framework-integration/002-agent-framework-integration.md) — mapping and integration with `TextSearchProvider`;
+3. [`003-microsoft-identity-web-integration.md`](../features/003-microsoft-identity-web-integration/003-microsoft-identity-web-integration.md) — delegated token acquisition through `Microsoft.Identity.Web`;
+4. [`004-aspnetcore-reference-sample.md`](../features/004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md) — the end-to-end ASP.NET Core reference application;
+5. [`005-typed-sharepoint-retrieval-filters.md`](../features/005-typed-sharepoint-retrieval-filters/005-typed-sharepoint-retrieval-filters.md) — typed construction of trusted SharePoint path and site-ID filters.
 
 Each feature MUST pass its own specify, plan, tasks, and implementation gates before it is considered complete. Feature specifications refine this document but MUST NOT override it. If a conflict is found, update or clarify the global specification first, then align the affected feature specification.
 
@@ -1526,11 +1526,11 @@ The feature specifications are the implementation gates for phases 2 through 7:
 
 | Feature specification | Global phases primarily covered | Depends on |
 | --- | --- | --- |
-| `001-sharepoint-retrieval-client.md` | 2, 3, and relevant parts of 6 | Repository foundation |
-| `002-agent-framework-integration.md` | 4 and relevant parts of 6 | Feature 001 |
-| `003-microsoft-identity-web-integration.md` | 5 and relevant parts of 6 | Feature 001 |
-| `004-aspnetcore-reference-sample.md` | 7 | Features 001, 002, and 003 |
-| `005-typed-sharepoint-retrieval-filters.md` | 3 and relevant parts of 6 | Feature 001 options contract |
+| `001-sharepoint-retrieval-client/001-sharepoint-retrieval-client.md` | 2, 3, and relevant parts of 6 | Repository foundation |
+| `002-agent-framework-integration/002-agent-framework-integration.md` | 4 and relevant parts of 6 | Feature 001 |
+| `003-microsoft-identity-web-integration/003-microsoft-identity-web-integration.md` | 5 and relevant parts of 6 | Feature 001 |
+| `004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md` | 7 | Features 001, 002, and 003 |
+| `005-typed-sharepoint-retrieval-filters/005-typed-sharepoint-retrieval-filters.md` | 3 and relevant parts of 6 | Feature 001 options contract |
 
 Phases 8 through 10 are release-level completion work and MUST be validated after all five feature specifications are complete.
 
