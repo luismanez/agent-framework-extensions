@@ -56,6 +56,7 @@ The initial package MUST:
 7. Be small, understandable, testable, and production-oriented.
 8. Keep package-level dependencies and public APIs minimal.
 9. Prepare the repository for future `Acterion.Agents.AI.*` NuGet packages without creating speculative `Core`, `Common`, or `Abstractions` projects.
+10. Expose useful Microsoft 365 Copilot Retrieval API controls directly in a normal .NET / Agent Framework application, including trusted KQL scoping, result limits, and requested metadata.
 
 ---
 
@@ -85,6 +86,8 @@ The initial release MUST NOT attempt to implement:
 - Copilot Connector-specific features;
 - thumbnail handling;
 - Microsoft 365 Copilot licensing or billing management.
+- Foundry IQ knowledge sources, knowledge bases, query planning, routing, reranking, answer synthesis, or managed multi-source retrieval.
+- Azure AI Search services, SharePoint indexing pipelines, or indexed SharePoint knowledge sources.
 
 The library should integrate existing Microsoft capabilities rather than reimplement them.
 
@@ -206,6 +209,70 @@ Suggested README introduction:
 > The first package, `Acterion.Agents.AI.Microsoft365.Retrieval`, connects Agent Framework agents to the Microsoft 365 Copilot Retrieval API, enabling permission-aware grounding over Microsoft 365 content such as SharePoint.
 
 The project should explicitly state that it is a community project and is **not an official Microsoft package**.
+
+### 6.1 Architectural niche and Microsoft platform context
+
+`Acterion.Agents.AI.Microsoft365.Retrieval` is a lightweight, model-provider-independent integration between Microsoft Agent Framework and the Microsoft 365 Copilot Retrieval API. It is for .NET developers who already have an Agent Framework application and want Microsoft 365 grounding directly through a native `TextSearchProvider` integration.
+
+> Native Microsoft 365 Retrieval for Microsoft Agent Framework, without Foundry IQ or Azure AI Search infrastructure.
+
+The package does **not** require a Microsoft Foundry Project, a Foundry SharePoint Project Connection, Foundry Agent Service, Foundry IQ, a Knowledge Base, or an Azure AI Search service. Its model-provider independence is an architectural property of the `TextSearchProvider` integration, not a claim that Microsoft Foundry materially restricts model choice.
+
+This package is not positioned as universally better than Microsoft Foundry offerings. Microsoft provides higher-level SharePoint grounding options through Foundry Agent Service and Foundry IQ. Those products address different needs and may be the appropriate choice when managed knowledge infrastructure, knowledge bases, multi-source retrieval, query planning, routing, or reranking are required.
+
+The relevant architectures are:
+
+```text
+Acterion package
+Microsoft Agent Framework
+    -> TextSearchProvider
+    -> Acterion.Agents.AI.Microsoft365.Retrieval
+    -> Microsoft Graph /copilot/retrieval
+    -> SharePoint
+
+Foundry Agent Service SharePoint Tool
+Agent
+    -> Foundry SharePoint Tool
+    -> Foundry Project Connection
+    -> Microsoft 365 Copilot Retrieval API
+    -> SharePoint
+
+Foundry IQ Remote SharePoint
+Agent / application
+    -> Foundry IQ Knowledge Base
+    -> Remote SharePoint Knowledge Source
+    -> Microsoft 365 Copilot Retrieval API
+    -> SharePoint
+```
+
+Foundry IQ has two distinct SharePoint approaches that MUST NOT be conflated:
+
+- **Remote SharePoint** queries SharePoint through the Microsoft 365 Copilot Retrieval API at retrieval time. It does not ingest SharePoint content into an Azure AI Search index, retains Microsoft 365 permission trimming, and can use Retrieval API filtering and metadata configuration. It still requires Foundry IQ/Azure AI Search infrastructure, a knowledge source, and normally a knowledge base.
+- **Indexed SharePoint** ingests SharePoint content through an Azure AI Search indexing pipeline. It is a traditional indexed RAG architecture with configuration for SharePoint indexing scope and content processing, and requires managing that search/indexing pipeline.
+
+Multi-site SharePoint retrieval is therefore **not** unique to this package across Microsoft's platform: Foundry IQ Remote SharePoint can use Retrieval API filtering for multi-site scenarios. The direct integration remains useful because it exposes Retrieval API controls inside the existing .NET / Agent Framework application without adding a Knowledge Base or Azure AI Search resource.
+
+### 6.2 Comparison guidance
+
+This comparison describes the currently documented surfaces, not undocumented product limits. Foundry SharePoint and Foundry IQ features are evolving, and preview behavior MUST be rechecked against current Microsoft Learn documentation before release documentation makes more specific claims.
+
+| Capability | Acterion package | Foundry Agent Service SharePoint Tool | Foundry IQ Remote SharePoint |
+| --- | --- | --- | --- |
+| Copilot Retrieval API | Direct | Indirect | Indirect |
+| Delegated / permission-trimmed retrieval | Yes | Yes | Yes |
+| Multiple SharePoint sites | Yes, through KQL scopes | Limited in the documented site/folder connection model | Yes, through Retrieval API filtering |
+| KQL / `filterExpression` | Yes | Not fully exposed in the documented tool configuration | Yes |
+| Resource metadata control | Yes | Limited documented abstraction | Yes |
+| Requires Foundry Project | No | Yes | Foundry / Azure AI Search infrastructure |
+| Requires SharePoint Project Connection | No | Yes | Different Knowledge Source model |
+| Requires Azure AI Search service | No | No | Yes |
+| Requires Knowledge Source / Knowledge Base | No | No | Yes |
+| `BeforeAIInvoke` `TextSearchProvider` | Yes | Tool-oriented, not this native provider abstraction | Not the same abstraction |
+| On-demand search | Yes | Yes | Yes, through the knowledge base/query model |
+| Managed multi-source knowledge platform | No | No | Yes |
+| Lightweight direct Agent Framework integration | Yes | No | No |
+
+The Foundry Agent Service SharePoint Tool can be configured and provisioned through SDKs, REST, ARM/Bicep, and other IaC workflows. Do not describe this package as "code-first" in contrast to a portal-only Foundry alternative. The meaningful distinction is: **no Foundry Agent Service infrastructure required**.
 
 ---
 
@@ -497,7 +564,7 @@ Do not invent a large custom builder DSL for v0.1.
 
 The integration MUST be usable with both Agent Framework modes:
 
-#### Automatic
+#### Automatic — `BeforeAIInvoke`
 
 ```csharp
 SearchTime =
@@ -516,7 +583,7 @@ Retrieved context
 Model
 ```
 
-#### On demand
+#### On demand — `OnDemandFunctionCalling`
 
 ```csharp
 SearchTime =
@@ -1481,6 +1548,16 @@ Reason:
 
 The package is small, but HTTP integration, Agent Framework adaptation, delegated identity, typed SharePoint filtering, and the reference host have different contracts and risks. Separate feature gates keep each implementation session focused without turning individual classes or cross-cutting release work into artificial features.
 
+### ADR-008 — Direct Retrieval API integration, not a Foundry replacement
+
+Decision:
+
+Integrate the Microsoft 365 Copilot Retrieval API directly through `TextSearchProvider` without requiring Foundry Agent Service, a Foundry SharePoint Project Connection, Foundry IQ, a Knowledge Base, or Azure AI Search.
+
+Reason:
+
+The package serves an intentionally narrow scenario: a .NET application already using Microsoft Agent Framework that needs permission-trimmed Microsoft 365 grounding and direct Retrieval API controls. Foundry Agent Service SharePoint Tool and Foundry IQ are valid Microsoft alternatives for their respective managed-tool and managed-knowledge-platform scenarios. The package does not reproduce Foundry IQ capabilities such as knowledge sources, knowledge bases, multi-source retrieval, query planning, routing, reranking, or managed indexing.
+
 ---
 
 ## 32. MVP Acceptance Criteria
@@ -1749,11 +1826,19 @@ Microsoft 365 Copilot Retrieval API:
 - Overview: https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/overview
 - API reference: https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/copilotroot-retrieval
 
+Microsoft Foundry SharePoint and Foundry IQ:
+
+- Foundry Agent Service SharePoint Tool: https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/sharepoint
+- What is Foundry IQ?: https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/what-is-foundry-iq
+- Foundry IQ FAQ: https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/foundry-iq-faq
+- Remote SharePoint knowledge source / SharePoint indexer guidance: https://learn.microsoft.com/en-us/azure/search/search-how-to-index-sharepoint-online
+- Indexed SharePoint knowledge source (Preview): https://learn.microsoft.com/en-us/azure/search/agentic-knowledge-source-how-to-sharepoint-indexed
+
 Microsoft Identity Web:
 
 - Documentation: https://learn.microsoft.com/en-us/entra/msidweb/
 
-Before coding against an API shape, verify the current stable Microsoft documentation because Agent Framework and the Retrieval API are actively evolving.
+Before coding against an API shape, or documenting concrete parameter names, limits, supported scopes, or Foundry limitations, verify the current official Microsoft documentation. Agent Framework, Foundry Agent Service, Foundry IQ, and the Retrieval API are actively evolving; clearly mark Preview behavior and do not treat undocumented behavior as a stable contract.
 
 ---
 
