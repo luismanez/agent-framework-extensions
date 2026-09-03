@@ -1,8 +1,8 @@
 # Feature 004: ASP.NET Core Reference Sample
 
-**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
-**Status:** Draft  
-**Depends on:** Features 001, 002, and 003  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
+**Status:** Draft
+**Depends on:** Features 001, 002, and 003
 **Enables:** v0.1 release documentation and end-to-end validation
 
 ## Objective
@@ -93,7 +93,7 @@ The sample MUST configure Feature 001 options from the `Microsoft365Retrieval` c
 
 `FilterExpression` MAY contain a trusted application-configured SharePoint path. The sample MUST NOT build KQL from the endpoint message and MUST document that filtering is not authorization.
 
-The default executable path MUST attach `Microsoft365RetrievalSearch.SearchAsync` to `TextSearchProvider` using `BeforeAIInvoke`. The README MUST show the minimal option change for `OnDemandFunctionCalling` and explain that the model controls search queries in that mode.
+The default executable path MUST attach retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval` using `BeforeAIInvoke`, without resolving `Microsoft365RetrievalSearch` or constructing `TextSearchProvider` manually. The README MUST show the full-options overload and the minimal change for `OnDemandFunctionCalling`, and explain that the model controls search queries in that mode.
 
 Retrieved content MUST remain context data supplied through Agent Framework, not system instructions.
 

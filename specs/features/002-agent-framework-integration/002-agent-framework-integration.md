@@ -1,8 +1,8 @@
 # Feature 002: Agent Framework Integration
 
-**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
-**Status:** Draft  
-**Depends on:** Feature 001  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
+**Status:** Draft
+**Depends on:** Feature 001
 **Enables:** Feature 004
 
 ## Objective
@@ -11,7 +11,7 @@ Adapt Microsoft 365 retrieval hits to Microsoft Agent Framework's existing `Text
 
 ## User Outcome
 
-A developer can resolve `Microsoft365RetrievalSearch`, pass `SearchAsync` to `TextSearchProvider`, and select either `BeforeAIInvoke` or `OnDemandFunctionCalling` using standard Agent Framework options.
+A developer can attach Microsoft 365 retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval`, select either `BeforeAIInvoke` or `OnDemandFunctionCalling`, and retain access to standard `TextSearchProviderOptions` without resolving the search adapter or constructing `TextSearchProvider` manually.
 
 ## Global Requirements Inherited
 
@@ -38,7 +38,7 @@ Feature 001 defines the retrieval-client and raw-hit contracts consumed here. If
 - Empty-result behavior.
 - DI registration of the adapter.
 - Documentation and tests proving compatibility with both Agent Framework search modes.
-- An optional thin provider/factory only if the Plan gate proves it materially reduces correct setup boilerplate.
+- A thin `AIAgentBuilder.UseMicrosoft365Retrieval` extension that composes the adapter through Agent Framework's context-provider pipeline.
 
 ### Out of Scope
 
@@ -99,14 +99,23 @@ Retrieved `Text` is untrusted model context. The adapter MUST preserve it as dat
 
 ## Public API Constraint
 
-The required public surface for this feature is `Microsoft365RetrievalSearch` and its search delegate-compatible method. A `Microsoft365RetrievalProvider` convenience type MAY be added only when all of the following are true:
+The required public surface for this feature is `Microsoft365RetrievalSearch`, its search delegate-compatible method, and `Microsoft365RetrievalAgentBuilderExtensions` with these overloads:
 
-- it remains a thin constructor/factory around `TextSearchProvider`;
-- it exposes rather than hides `TextSearchProviderOptions`;
-- it does not create or own an agent;
-- it removes recurring setup mistakes demonstrated by tests or the sample.
+```csharp
+public static AIAgentBuilder UseMicrosoft365Retrieval(
+    this AIAgentBuilder builder,
+    TextSearchProviderOptions.TextSearchBehavior behavior);
 
-Otherwise, do not add it in v0.1.
+public static AIAgentBuilder UseMicrosoft365Retrieval(
+    this AIAgentBuilder builder,
+    TextSearchProviderOptions options);
+```
+
+The short overload MUST require an explicit behavior. The options overload MUST expose the standard Agent Framework options directly rather than copy them into a package-specific options type.
+
+The extension MUST resolve `Microsoft365RetrievalSearch` from the service provider passed to `AIAgentBuilder.Build`, construct one `TextSearchProvider` per built agent, and attach it using `UseAIContextProviders`. It MUST preserve other pipeline stages and context providers and MUST NOT create the underlying agent.
+
+Do not add `Microsoft365RetrievalProvider`, a parameterless convenience overload, or a custom agent builder.
 
 ## Code Conventions
 
@@ -127,7 +136,10 @@ Unit tests MUST cover:
 - raw hit identity or equivalent preservation in `RawRepresentation`;
 - absence of sensitivity metadata from LLM-visible text;
 - cancellation propagation to the retrieval client;
-- both supported `SearchTime` values using an in-memory fake search delegate and fake model boundary.
+- both supported `SearchTime` values using an in-memory fake search delegate and fake model boundary;
+- both `UseMicrosoft365Retrieval` overloads, including deferred DI resolution during `Build` and propagation of the supplied options;
+- composition with another Agent Framework pipeline stage or context provider without replacement;
+- a clear build-time failure when required retrieval services are missing.
 
 The behavior tests MUST prove these observable outcomes without network access:
 
@@ -156,7 +168,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 ### Ask First
 
-- Add a convenience provider/factory.
+- Add another convenience overload or package-specific agent configuration type.
 - Customize default Agent Framework prompts or formatting.
 - Drop hits based on relevance or missing fields.
 
@@ -173,6 +185,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 - [ ] Multiple extracts and empty/missing values have deterministic tested behavior.
 - [ ] Empty retrieval results return an empty sequence.
 - [ ] `SearchAsync` is directly usable by `TextSearchProvider` in both supported modes.
+- [ ] `UseMicrosoft365Retrieval` builds an agent with one `TextSearchProvider` without manual service resolution and preserves other pipeline composition.
 - [ ] Raw representation is retained while sensitivity metadata stays out of LLM-visible text.
 - [ ] Focused tests and the full Release build pass without network access.
 
@@ -180,4 +193,5 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 - Compile a probe against centrally pinned `Microsoft.Agents.AI` that exercises `TextSearchResult`, `RawRepresentation`, both `SearchTime` values, and the public provider lifecycle used by the behavior tests.
 - Decide the empty-extract behavior from that probe and add an explicit contract test before implementation proceeds.
-- Omit `Microsoft365RetrievalProvider` by default. Add it only if the sample reveals a repeated, testable setup failure that a thin factory prevents.
+- Compile both `UseMicrosoft365Retrieval` overloads against the centrally pinned `AIAgentBuilder` API and prove that service resolution occurs when `Build` is called.
+- Omit `Microsoft365RetrievalProvider`; the builder extension is the sole convenience API for v0.1.
