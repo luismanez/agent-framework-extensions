@@ -6,7 +6,7 @@
     <Deterministic>true</Deterministic>
 
     <Version>0.1.0</Version>
-    <Authors>Acterion</Authors>
+    <Authors>Luis Mañez</Authors>
     <Company>Acterion</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>

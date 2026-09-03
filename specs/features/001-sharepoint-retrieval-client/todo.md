@@ -1,8 +1,8 @@
 # Task Checklist: Feature 001 - SharePoint Retrieval Client
 
-**Specification:** [`001-sharepoint-retrieval-client.md`](001-sharepoint-retrieval-client.md)  
-**Plan:** [`plan.md`](plan.md)  
-**Status:** Awaiting plan approval
+**Specification:** [`001-sharepoint-retrieval-client.md`](001-sharepoint-retrieval-client.md)
+**Plan:** [`plan.md`](plan.md)
+**Status:** Public Contract checkpoint awaiting human approval
 
 Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must satisfy every acceptance and verification item below.
 
@@ -14,19 +14,19 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Options default to 8 results, no filter, and `title` plus `author` metadata.
-- [ ] Token-provider and retrieval-client signatures match the feature specification.
-- [ ] Public contracts accept cancellation, do not couple to Agent Framework or ASP.NET Core, expose no accidental setters/overloads, and include XML documentation.
+- [x] Options default to 8 results, no filter, and `title` plus `author` metadata.
+- [x] Token-provider and retrieval-client signatures match the feature specification.
+- [x] Public contracts accept cancellation, do not couple to Agent Framework or ASP.NET Core, expose no accidental setters/overloads, and include XML documentation.
 
 **Verification:**
 
-- [ ] RED observed for `*PublicContractTests` before implementation.
-- [ ] Focused tests pass:
+- [x] RED observed for `*PublicContractTests` before implementation.
+- [x] Focused tests pass:
   `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*PublicContractTests"`
-- [ ] Release build passes:
+- [x] Release build passes:
   `dotnet build Acterion.Agents.AI.slnx --configuration Release`
 
-**Dependencies:** None  
+**Dependencies:** None
 **Estimated scope:** S, 4 files
 
 **Files likely touched:**
@@ -42,17 +42,17 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Hit and extract types are sealed and read-only to consumers.
-- [ ] Metadata is exposed as an ordinal read-only dictionary of cloned scalar `JsonElement` values.
-- [ ] The package exception exposes nullable status and request ID, preserves an inner exception, and can be constructed without response content.
+- [x] Hit and extract types are sealed and read-only to consumers.
+- [x] Metadata is exposed as an ordinal read-only dictionary of cloned scalar `JsonElement` values.
+- [x] The package exception exposes nullable status and request ID, preserves an inner exception, and can be constructed without response content.
 
 **Verification:**
 
-- [ ] RED observed for `*ResultContractTests` before implementation.
-- [ ] Focused `*ResultContractTests` and `*PublicContractTests` pass.
-- [ ] Release build passes.
+- [x] RED observed for `*ResultContractTests` before implementation.
+- [x] Focused `*ResultContractTests` and `*PublicContractTests` pass.
+- [x] Release build passes.
 
-**Dependencies:** Task 1  
+**Dependencies:** Task 1
 **Estimated scope:** M, 5 files
 
 **Files likely touched:**
@@ -65,9 +65,9 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Checkpoint: Public Contract
 
-- [ ] Tasks 1 and 2 focused tests pass together.
-- [ ] Release build succeeds.
-- [ ] Consumer/API-surface test compiles all specified public contracts.
+- [x] Tasks 1 and 2 focused tests pass together.
+- [x] Release build succeeds.
+- [x] Consumer/API-surface test compiles all specified public contracts.
 - [ ] Human approves the public `JsonElement` metadata contract.
 
 ## Phase 2: Retrieval Behavior
@@ -88,7 +88,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [ ] Focused request tests pass.
 - [ ] Release build passes.
 
-**Dependencies:** Tasks 1 and 2  
+**Dependencies:** Tasks 1 and 2
 **Estimated scope:** M, 5 files
 
 **Files likely touched:**
@@ -115,7 +115,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [ ] Focused response and request tests pass.
 - [ ] Release build passes.
 
-**Dependencies:** Task 3  
+**Dependencies:** Task 3
 **Estimated scope:** M, 4 files
 
 **Files likely touched:**
@@ -148,7 +148,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [ ] Focused `*Microsoft365RetrievalClientFailureTests` and `*Microsoft365RetrievalClientCancellationTests` pass.
 - [ ] Release build passes.
 
-**Dependencies:** Task 4  
+**Dependencies:** Task 4
 **Estimated scope:** M, 5 files
 
 **Files likely touched:**
@@ -176,7 +176,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [ ] Logging, failure, and cancellation focused tests pass.
 - [ ] Release build passes.
 
-**Dependencies:** Task 5  
+**Dependencies:** Task 5
 **Estimated scope:** M, 4 files
 
 **Files likely touched:**
@@ -213,7 +213,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
   `dotnet list src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj package --include-transitive`
 - [ ] Release build passes.
 
-**Dependencies:** Task 6  
+**Dependencies:** Task 6
 **Estimated scope:** M, 5 files
 
 **Files likely touched:**
@@ -243,7 +243,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [ ] API-surface gate passes:
   `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*PublicContractTests"`
 
-**Dependencies:** Task 7  
+**Dependencies:** Task 7
 **Estimated scope:** S, 3 files
 
 **Files likely touched:**
