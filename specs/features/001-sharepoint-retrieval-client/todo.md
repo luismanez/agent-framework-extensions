@@ -2,7 +2,7 @@
 
 **Specification:** [`001-sharepoint-retrieval-client.md`](001-sharepoint-retrieval-client.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Public Contract checkpoint awaiting human approval
+**Status:** Task 4 complete; Task 5 is next
 
 Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must satisfy every acceptance and verification item below.
 
@@ -68,7 +68,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 - [x] Tasks 1 and 2 focused tests pass together.
 - [x] Release build succeeds.
 - [x] Consumer/API-surface test compiles all specified public contracts.
-- [ ] Human approves the public `JsonElement` metadata contract.
+- [x] Human approves the public `JsonElement` metadata contract.
 
 ## Phase 2: Retrieval Behavior
 
@@ -78,15 +78,15 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Invalid queries fail before token acquisition and HTTP I/O.
-- [ ] Valid calls use the exact v1.0 endpoint, POST, Bearer auth, UTF-8 JSON, `sharePoint`, and configured options.
-- [ ] Empty hits return an empty read-only result and no retry occurs.
+- [x] Invalid queries fail before token acquisition and HTTP I/O.
+- [x] Valid calls use the exact v1.0 endpoint, POST, Bearer auth, UTF-8 JSON, `sharePoint`, and configured options.
+- [x] Empty hits return an empty read-only result and no retry occurs.
 
 **Verification:**
 
-- [ ] RED observed for `*Microsoft365RetrievalClientRequestTests`.
-- [ ] Focused request tests pass.
-- [ ] Release build passes.
+- [x] RED observed for `*Microsoft365RetrievalClientRequestTests` because `Microsoft365RetrievalClient` did not exist.
+- [x] Focused request tests pass: 7 passed, 0 failed, 0 skipped.
+- [x] Release build and the full tenant-independent test suite pass.
 
 **Dependencies:** Tasks 1 and 2
 **Estimated scope:** M, 5 files
@@ -105,15 +105,15 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Hit/extract order, URLs, relevance, resource type, and scalar metadata types are preserved.
-- [ ] Missing optional collections become empty and unknown fields are ignored.
-- [ ] Missing required fields, malformed JSON, or nonscalar metadata produce a package exception preserving the inner serialization error.
+- [x] Hit/extract order, URLs, relevance, resource type, and scalar metadata types are preserved.
+- [x] Missing optional collections become empty and unknown fields are ignored.
+- [x] Missing required fields, malformed JSON, or nonscalar metadata produce a package exception preserving the inner serialization error.
 
 **Verification:**
 
-- [ ] RED observed for `*Microsoft365RetrievalClientResponseTests`.
-- [ ] Focused response and request tests pass.
-- [ ] Release build passes.
+- [x] RED observed for `*Microsoft365RetrievalClientResponseTests` because non-empty `retrievalHits` were rejected.
+- [x] Focused response tests pass: 8 passed, 0 failed, 0 skipped; request tests remain 7 passed, 0 failed, 0 skipped.
+- [x] Release build passes.
 
 **Dependencies:** Task 3
 **Estimated scope:** M, 4 files
@@ -127,10 +127,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Checkpoint: Successful Retrieval
 
-- [ ] Request and response focused tests pass together.
+- [x] Request and response focused tests pass.
 - [ ] No test opens a network connection or requires credentials.
-- [ ] Release build succeeds.
-- [ ] Happy path remains independent of Feature 002 mapping.
+- [x] Release build succeeds.
+- [x] Happy path remains independent of Feature 002 mapping.
 
 ## Task 5: Implement Failure Translation and Cancellation
 
@@ -261,7 +261,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Plan Approval
 
-- [ ] Approve `IReadOnlyDictionary<string, JsonElement>` for public metadata; reject object/array metadata as malformed.
+- [x] Approve `IReadOnlyDictionary<string, JsonElement>` for public metadata; reject object/array metadata as malformed.
 - [ ] Approve wrapping malformed successful responses and `HttpRequestException` transport failures; transport status is null unless supplied, while token-provider and cancellation failures propagate unchanged.
 - [ ] Approve deferring automatic retries from Feature 001 v0.1.
 - [ ] Approve this plan and authorize Task 1 implementation.
