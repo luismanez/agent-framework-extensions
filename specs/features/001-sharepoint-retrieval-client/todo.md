@@ -2,7 +2,7 @@
 
 **Specification:** [`001-sharepoint-retrieval-client.md`](001-sharepoint-retrieval-client.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Task 4 complete; Task 5 is next
+**Status:** Feature 001 implementation complete; human review is pending
 
 Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must satisfy every acceptance and verification item below.
 
@@ -128,7 +128,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 ## Checkpoint: Successful Retrieval
 
 - [x] Request and response focused tests pass.
-- [ ] No test opens a network connection or requires credentials.
+- [x] No test opens a network connection or requires credentials.
 - [x] Release build succeeds.
 - [x] Happy path remains independent of Feature 002 mapping.
 
@@ -138,15 +138,15 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] `400`, `401`, `403`, `429`, and `5xx` use one exception with status and preferred request ID; `HttpRequestException` is wrapped with null status unless it supplies one and its inner exception is preserved.
-- [ ] Error messages contain no token, query, filter, auth header, or response body.
-- [ ] Cancellation and token-provider failures propagate unchanged and no request retries.
+- [x] `400`, `401`, `403`, `429`, and `5xx` use one exception with status and preferred request ID; `HttpRequestException` is wrapped with null status unless it supplies one and its inner exception is preserved.
+- [x] Error messages contain no token, query, filter, auth header, or response body.
+- [x] Cancellation and token-provider failures propagate unchanged and no request retries.
 
 **Verification:**
 
-- [ ] RED observed for failure and cancellation tests.
-- [ ] Focused `*Microsoft365RetrievalClientFailureTests` and `*Microsoft365RetrievalClientCancellationTests` pass.
-- [ ] Release build passes.
+- [x] RED observed for failure and cancellation tests.
+- [x] Focused failure tests pass: 9 passed, 0 failed, 0 skipped; cancellation tests pass: 4 passed, 0 failed, 0 skipped.
+- [x] Release build passes; full suite: 44 passed, 0 failed, 0 skipped.
 
 **Dependencies:** Task 4
 **Estimated scope:** M, 5 files
@@ -165,16 +165,16 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Logging uses `RetrievalStarted` 1000/Information, `RetrievalCompleted` 1001/Information, `RetrievalFailed` 1002/Warning, and `RetrievalThrottled` 1003/Warning.
-- [ ] A 429 emits throttled but not failed; cancellation emits neither failure nor completion.
-- [ ] Captured logs contain only approved dimensions.
-- [ ] Logging does not alter error, cancellation, or request behavior.
+- [x] Logging uses `RetrievalStarted` 1000/Information, `RetrievalCompleted` 1001/Information, `RetrievalFailed` 1002/Warning, and `RetrievalThrottled` 1003/Warning.
+- [x] A 429 emits throttled but not failed; cancellation emits neither failure nor completion.
+- [x] Captured logs contain only approved dimensions.
+- [x] Logging does not alter error, cancellation, or request behavior.
 
 **Verification:**
 
-- [ ] RED observed for `*Microsoft365RetrievalClientLoggingTests`.
-- [ ] Logging, failure, and cancellation focused tests pass.
-- [ ] Release build passes.
+- [ ] RED observed for `*Microsoft365RetrievalClientLoggingTests` (not separately compiled per requested deferred-compilation workflow).
+- [x] Logging, failure, and cancellation focused tests pass.
+- [x] Release build passes.
 
 **Dependencies:** Task 5
 **Estimated scope:** M, 4 files
@@ -188,10 +188,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Checkpoint: Client Behavior
 
-- [ ] Tasks 3 through 6 focused tests pass together.
-- [ ] Security assertions cover exception messages and logs.
-- [ ] No retry, cache, Graph SDK, Identity Web implementation, or Agent Framework mapping exists.
-- [ ] Release build succeeds.
+- [x] Tasks 3 through 6 focused tests pass together.
+- [x] Security assertions cover exception messages and logs.
+- [x] No retry, cache, Graph SDK, Identity Web implementation, or Agent Framework mapping exists.
+- [x] Release build succeeds.
 
 ## Phase 3: Host Integration and Closure
 
@@ -201,17 +201,17 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] Registration configures Graph base address, options, and `IMicrosoft365RetrievalClient` without replacing host services.
-- [ ] Invalid options and missing token provider fail deterministically when the service graph is resolved.
-- [ ] Required `Microsoft.Extensions.*` packages are direct, centrally pinned stable dependencies and no retry/Graph package is added.
+- [x] Registration configures Graph base address, options, and `IMicrosoft365RetrievalClient` without replacing host services.
+- [x] Invalid options and missing token provider fail deterministically when the service graph is resolved.
+- [x] Required `Microsoft.Extensions.*` packages are direct, centrally pinned stable dependencies and no retry/Graph package is added.
 
 **Verification:**
 
-- [ ] RED observed for `*DependencyInjectionTests` and `*Microsoft365RetrievalOptionsTests`.
-- [ ] Focused DI and options tests pass.
-- [ ] Dependency graph inspected with:
+- [ ] RED observed for `*DependencyInjectionTests` and `*Microsoft365RetrievalOptionsTests` (not separately compiled per requested deferred-compilation workflow).
+- [x] Focused DI and options tests pass.
+- [x] Dependency graph inspected with:
   `dotnet list src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj package --include-transitive`
-- [ ] Release build passes.
+- [x] Release build passes.
 
 **Dependencies:** Task 6
 **Estimated scope:** M, 5 files
@@ -230,17 +230,17 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [ ] `PublicContractTests` compile consumer-style use of every required public member and verify prohibited surface by reflection.
-- [ ] Every acceptance criterion and Plan Gate item is recorded with command/test, result, and commit/worktree reference.
-- [ ] Evidence states that retries are deferred and confirms Release XML documentation output.
+- [x] `PublicContractTests` compile consumer-style use of every required public member and verify prohibited surface by reflection.
+- [x] Every acceptance criterion and Plan Gate item is recorded with command/test, result, and commit/worktree reference.
+- [x] Evidence states that retries are deferred and confirms Release XML documentation output.
 
 **Verification:**
 
-- [ ] Full tests pass:
+- [x] Full tests pass:
   `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release`
-- [ ] Full build passes:
+- [x] Full build passes:
   `dotnet build Acterion.Agents.AI.slnx --configuration Release`
-- [ ] API-surface gate passes:
+- [x] API-surface gate passes:
   `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*PublicContractTests"`
 
 **Dependencies:** Task 7
@@ -253,10 +253,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Checkpoint: Feature Complete
 
-- [ ] All Feature 001 tests pass on Microsoft Testing Platform.
-- [ ] Release build succeeds and emits XML documentation.
-- [ ] Every Feature 001 acceptance criterion has recorded evidence.
-- [ ] Normal verification requires no tenant credentials, network access, or Microsoft 365 license.
+- [x] All Feature 001 tests pass on Microsoft Testing Platform.
+- [x] Release build succeeds and emits XML documentation.
+- [x] Every Feature 001 acceptance criterion has recorded evidence.
+- [x] Normal verification requires no tenant credentials, network access, or Microsoft 365 license.
 - [ ] Human review approves Feature 001 before dependent features consume its public contract.
 
 ## Plan Approval

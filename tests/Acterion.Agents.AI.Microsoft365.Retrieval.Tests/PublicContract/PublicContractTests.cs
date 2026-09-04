@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
@@ -23,6 +24,18 @@ public sealed class PublicContractTests
         Assert.Equal(["title", "author"], options.ResourceMetadata);
         Assert.Equal("token", token);
         Assert.Empty(hits);
+    }
+
+    [Fact]
+    public void DependencyInjectionRegistration_IsConsumableByPackageConsumers()
+    {
+        IServiceCollection services = new ServiceCollection();
+        services.AddSingleton<IMicrosoft365RetrievalTokenProvider>(new StubTokenProvider());
+
+        IServiceCollection registeredServices = services.AddMicrosoft365Retrieval(options =>
+            options.MaximumNumberOfResults = 10);
+
+        Assert.Same(services, registeredServices);
     }
 
     [Fact]

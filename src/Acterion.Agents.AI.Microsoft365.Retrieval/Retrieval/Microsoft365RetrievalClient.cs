@@ -1,5 +1,9 @@
+using System.Net;
 using System.Net.Http.Headers;
+using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Acterion.Agents.AI.Microsoft365.Retrieval;
 
@@ -14,6 +18,7 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient httpClient;
+    private readonly ILogger<Microsoft365RetrievalClient>? logger;
     private readonly Microsoft365RetrievalOptions options;
     private readonly IMicrosoft365RetrievalTokenProvider tokenProvider;
 
@@ -23,14 +28,33 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
     /// <param name="httpClient">The HTTP client used to call Microsoft Graph.</param>
     /// <param name="tokenProvider">The host-provided delegated token source.</param>
     /// <param name="options">The retrieval request options.</param>
+    /// <param name="logger">The optional logger used for safe operational diagnostics.</param>
     public Microsoft365RetrievalClient(
         HttpClient httpClient,
         IMicrosoft365RetrievalTokenProvider tokenProvider,
-        Microsoft365RetrievalOptions options)
+        Microsoft365RetrievalOptions options,
+        ILogger<Microsoft365RetrievalClient>? logger = null)
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         this.tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this.logger = logger;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Microsoft365RetrievalClient"/> class from validated options.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client used to call Microsoft Graph.</param>
+    /// <param name="tokenProvider">The host-provided delegated token source.</param>
+    /// <param name="options">The validated retrieval request options.</param>
+    /// <param name="logger">The logger used for safe operational diagnostics.</param>
+    public Microsoft365RetrievalClient(
+        HttpClient httpClient,
+        IMicrosoft365RetrievalTokenProvider tokenProvider,
+        IOptions<Microsoft365RetrievalOptions> options,
+        ILogger<Microsoft365RetrievalClient> logger)
+        : this(httpClient, tokenProvider, options?.Value ?? throw new ArgumentNullException(nameof(options)), logger)
+    {
     }
 
     /// <inheritdoc />
@@ -39,10 +63,28 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
         CancellationToken cancellationToken = default)
     {
         ValidateQuery(query);
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        RetrievalLogEvents.LogStarted(
+            this.logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<Microsoft365RetrievalClient>.Instance,
+            this.options.MaximumNumberOfResults,
+            this.options.FilterExpression is not null);
 
-        string accessToken = await this.tokenProvider
-            .GetAccessTokenAsync(cancellationToken)
-            .ConfigureAwait(false);
+        string accessToken;
+        try
+        {
+            accessToken = await this.tokenProvider
+                .GetAccessTokenAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            RetrievalLogEvents.LogFailed(this.GetLogger(), stopwatch.ElapsedMilliseconds, null);
+            throw;
+        }
         RetrievalApiRequest payload = new()
         {
             QueryString = query,
@@ -62,36 +104,70 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
             CharSet = "utf-8",
         };
 
-        using HttpResponseMessage response = await this.httpClient
-            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-            .ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-
-        await using Stream responseStream = await response.Content
-            .ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
+        HttpResponseMessage response;
         try
         {
-            RetrievalApiResponse? payloadResponse = await JsonSerializer
-                .DeserializeAsync<RetrievalApiResponse>(
-                    responseStream,
-                    SerializerOptions,
-                    cancellationToken)
+            response = await this.httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception)
+        {
+            RetrievalLogEvents.LogFailed(this.GetLogger(), stopwatch.ElapsedMilliseconds, (int?)exception.StatusCode);
+            throw new Microsoft365RetrievalException(
+                "The retrieval request could not reach Microsoft Graph.",
+                exception.StatusCode,
+                innerException: exception);
+        }
 
-            if (payloadResponse?.RetrievalHits is null)
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
             {
-                throw new JsonException("The response did not contain retrievalHits.");
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    RetrievalLogEvents.LogThrottled(this.GetLogger(), stopwatch.ElapsedMilliseconds);
+                }
+                else
+                {
+                    RetrievalLogEvents.LogFailed(this.GetLogger(), stopwatch.ElapsedMilliseconds, (int)response.StatusCode);
+                }
+
+                throw new Microsoft365RetrievalException(
+                    GetFailureMessage(response.StatusCode),
+                    response.StatusCode,
+                    GetRequestId(response));
             }
 
-            return payloadResponse.RetrievalHits.Select(MapHit).ToArray();
-        }
-        catch (JsonException exception)
-        {
-            throw new Microsoft365RetrievalException(
-                "Microsoft Graph returned an invalid retrieval response.",
-                response.StatusCode,
-                innerException: exception);
+            await using Stream responseStream = await response.Content
+                .ReadAsStreamAsync(cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                RetrievalApiResponse? payloadResponse = await JsonSerializer
+                    .DeserializeAsync<RetrievalApiResponse>(
+                        responseStream,
+                        SerializerOptions,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (payloadResponse?.RetrievalHits is null)
+                {
+                    throw new JsonException("The response did not contain retrievalHits.");
+                }
+
+                IReadOnlyList<Microsoft365RetrievalHit> hits = payloadResponse.RetrievalHits.Select(MapHit).ToArray();
+                RetrievalLogEvents.LogCompleted(this.GetLogger(), stopwatch.ElapsedMilliseconds, hits.Count);
+                return hits;
+            }
+            catch (JsonException exception)
+            {
+                RetrievalLogEvents.LogFailed(this.GetLogger(), stopwatch.ElapsedMilliseconds, (int)response.StatusCode);
+                throw new Microsoft365RetrievalException(
+                    "Microsoft Graph returned an invalid retrieval response.",
+                    response.StatusCode,
+                    innerException: exception);
+            }
         }
     }
 
@@ -138,4 +214,26 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
             throw new JsonException("A retrieval hit contained invalid metadata.", exception);
         }
     }
+
+    private static string GetFailureMessage(HttpStatusCode statusCode) => statusCode switch
+    {
+        HttpStatusCode.BadRequest => "The retrieval request was rejected.",
+        HttpStatusCode.Unauthorized => "The delegated access token was rejected.",
+        HttpStatusCode.Forbidden => "The delegated user is not authorized to retrieve this content.",
+        HttpStatusCode.TooManyRequests => "Microsoft Graph throttled the retrieval request.",
+        >= HttpStatusCode.InternalServerError => "Microsoft Graph is temporarily unavailable.",
+        _ => "Microsoft Graph returned an unsuccessful retrieval response.",
+    };
+
+    private static string? GetRequestId(HttpResponseMessage response)
+    {
+        return response.Headers.TryGetValues("request-id", out IEnumerable<string>? requestIds)
+            ? requestIds.FirstOrDefault()
+            : response.Headers.TryGetValues("client-request-id", out IEnumerable<string>? clientRequestIds)
+                ? clientRequestIds.FirstOrDefault()
+                : null;
+    }
+
+    private ILogger GetLogger() => this.logger
+        ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<Microsoft365RetrievalClient>.Instance;
 }

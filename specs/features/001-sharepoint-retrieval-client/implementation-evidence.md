@@ -23,3 +23,26 @@
 - SDK note: commands were executed with `/Users/luisman/.dotnet/dotnet` because that host provides the `10.0.300` SDK required by `global.json`; `/usr/local/bin/dotnet` exposes only `10.0.202`.
 
 The human approval item remains open. No implementation beyond the Public Contract checkpoint has started.
+
+## Client Behavior and Closure
+
+**Worktree reference:** `uncommitted`
+**Recorded:** 2026-09-04
+
+| Requirement | Test or command | Observed result | Commit/worktree reference |
+| --- | --- | --- | --- |
+| Valid request and local validation | `Microsoft365RetrievalClientRequestTests` | Included in full suite: 56 passed, 0 failed, 0 skipped | `uncommitted` |
+| Typed successful response mapping | `Microsoft365RetrievalClientResponseTests` | Included in full suite: 56 passed, 0 failed, 0 skipped | `uncommitted` |
+| Safe failure translation and no retry | `Microsoft365RetrievalClientFailureTests` | Included in full suite: 56 passed, 0 failed, 0 skipped | `uncommitted` |
+| Token, send, and response-read cancellation | `Microsoft365RetrievalClientCancellationTests` | Included in full suite: 56 passed, 0 failed, 0 skipped | `uncommitted` |
+| Safe logging events and allowlisted dimensions | `Microsoft365RetrievalClientLoggingTests` | 4 passed, 0 failed, 0 skipped | `uncommitted` |
+| DI registration and options validation | `DependencyInjectionTests` and `Microsoft365RetrievalOptionsTests` | Included in full suite: 56 passed, 0 failed, 0 skipped | `uncommitted` |
+| API-surface consumer contract | `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class 'Acterion.Agents.AI.Microsoft365.Retrieval.Tests.PublicContractTests'` | 4 passed, 0 failed, 0 skipped | `uncommitted` |
+| Full tenant-independent gate | `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release --verbosity quiet` | 56 passed, 0 failed, 0 skipped; no warnings or errors | `uncommitted` |
+| Release build and XML docs | `dotnet build Acterion.Agents.AI.slnx --configuration Release` | Succeeded with 0 warnings and 0 errors; `src/Acterion.Agents.AI.Microsoft365.Retrieval/bin/Release/net10.0/Acterion.Agents.AI.Microsoft365.Retrieval.xml` exists | `uncommitted` |
+| Direct package graph | `dotnet list src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj package --include-transitive` | Direct dependencies are `Microsoft.Agents.AI 1.19.0` and `Microsoft.Extensions.DependencyInjection.Abstractions`, `Http`, `Logging.Abstractions`, and `Options` 10.0.11 | `uncommitted` |
+| Retry decision | Client and handler tests | Automatic retries are deferred; one request is sent per operation and no resilience dependency was added | `uncommitted` |
+
+### Workflow Note
+
+Task 5 failure and cancellation tests were observed failing before implementation. Per the requested compilation-minimizing workflow, the new Task 6 and Task 7 tests were validated after their implementations rather than in a separately compiled RED pass. All normal verification uses in-memory handlers and stub token providers; no tenant credentials, network access, or Microsoft 365 license are required.
