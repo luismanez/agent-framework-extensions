@@ -31,10 +31,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalOptions.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/IMicrosoft365RetrievalTokenProvider.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/IMicrosoft365RetrievalClient.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalOptions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Authentication/IMicrosoft365RetrievalTokenProvider.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/IMicrosoft365RetrievalClient.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 
 ## Task 2: Define Immutable Results and Exception Contract
 
@@ -57,11 +57,11 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalHit.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalExtract.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalException.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/ResultContractTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalExtract.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Models/ResultContractTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 
 ## Checkpoint: Public Contract
 
@@ -93,9 +93,9 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalWireModels.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientRequestTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientRequestTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingHttpMessageHandler.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/StubTokenProvider.cs`
 
@@ -120,10 +120,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalWireModels.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalHit.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientResponseTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientResponseTests.cs`
 
 ## Checkpoint: Successful Retrieval
 
@@ -153,10 +153,10 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalException.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientFailureTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientCancellationTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientFailureTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientCancellationTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingHttpMessageHandler.cs`
 
 ## Task 6: Add Safe Structured Logging
@@ -181,9 +181,9 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalLogEvents.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientLoggingTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientLoggingTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/CollectingLogger.cs`
 
 ## Checkpoint: Client Behavior
@@ -220,9 +220,9 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 - `Directory.Packages.props`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/DependencyInjectionTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalOptionsTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/DependencyInjectionTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalOptionsTests.cs`
 
 ## Task 8: Record Evidence and Close Feature 001
 
@@ -248,7 +248,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Files likely touched:**
 
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 - `specs/features/001-sharepoint-retrieval-client/implementation-evidence.md`
 
 ## Checkpoint: Feature Complete

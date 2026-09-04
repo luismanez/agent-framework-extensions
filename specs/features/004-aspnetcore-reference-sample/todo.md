@@ -25,7 +25,7 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 - [ ] Sample Release build passes: `dotnet build samples/Microsoft365Retrieval.AspNetCore/Microsoft365Retrieval.AspNetCore.csproj --configuration Release`
 - [ ] Package graph is inspected: `dotnet list samples/Microsoft365Retrieval.AspNetCore/Microsoft365Retrieval.AspNetCore.csproj package --include-transitive`
 
-**Dependencies:** Approved and implemented Features 001, 002, and 003
+**Dependencies:** Approved and implemented Features 001 and 002
 **Estimated scope:** M, 5 files
 
 **Files likely touched:**
@@ -77,7 +77,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Microsoft Identity Web configures bearer authentication, downstream token acquisition, in-memory caching, and Feature 003's explicit provider; no model credential is registered as a Graph token provider.
+- [ ] Microsoft Identity Web configures bearer authentication, downstream token acquisition, and in-memory caching.
+- [ ] A provider under `samples/Microsoft365Retrieval.AspNetCore` adapts `ITokenAcquisition` to `IMicrosoft365RetrievalTokenProvider`; no model credential is registered as a Graph token provider.
+- [ ] Microsoft Identity Web and the sample provider are absent from the base package dependency graph and source tree.
 - [ ] `AzureOpenAIClient` uses `DefaultAzureCredential`, `GetChatClient(deploymentName)`, and `AsAIAgent(...)`, then `AIAgentBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke).Build(serviceProvider)`.
 - [ ] Retrieval binds maximum results, metadata fields, and optional trusted `FilterExpression` from configuration; endpoint messages never become KQL or system instructions.
 
@@ -88,12 +90,13 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 - [ ] Endpoint tests and sample Release build pass.
 - [ ] Dependency inspection shows Agent Framework packages aligned at 1.19.0.
 
-**Dependencies:** Task 2 and approved Feature 003 implementation
-**Estimated scope:** M, 4 files
+**Dependencies:** Task 2 and approved Features 001 and 002
+**Estimated scope:** M, 5 files
 
 **Files likely touched:**
 
 - `samples/Microsoft365Retrieval.AspNetCore/Program.cs`
+- `samples/Microsoft365Retrieval.AspNetCore/Authentication/MicrosoftIdentityWebRetrievalTokenProvider.cs`
 - `samples/Microsoft365Retrieval.AspNetCore/appsettings.json`
 - `samples/Microsoft365Retrieval.AspNetCore/Microsoft365Retrieval.AspNetCore.csproj`
 - `tests/Microsoft365Retrieval.AspNetCore.Tests/SampleServiceGraphTests.cs`

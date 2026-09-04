@@ -42,8 +42,8 @@ Feature 001 defines the retrieval-client and raw-hit contracts consumed here. If
 
 ### Out of Scope
 
-- HTTP, token acquisition, and Graph error translation owned by Feature 001.
-- Authentication implementation owned by Feature 003.
+- HTTP, token-provider invocation, and Graph error translation owned by Feature 001.
+- Host-specific authentication and token acquisition implementations.
 - Agent creation, model-provider configuration, or an HTTP endpoint owned by Feature 004.
 - A custom search tool, RAG pipeline, memory system, context injection format, citation engine, or agent abstraction.
 - Ranking, deduplication, relevance filtering, summarization, or rewriting of retrieved content.

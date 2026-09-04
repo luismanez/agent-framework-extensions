@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "feature-002-agent-framework-public-contract",
+			"type": "shell",
+			"command": "/Users/luisman/.dotnet/dotnet",
+			"args": [
+				"test",
+				"--project",
+				"tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj",
+				"--configuration",
+				"Release",
+				"--no-incremental",
+				"--filter-class",
+				"\\*Microsoft365RetrievalSearchTests"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "test"
+		}
+	]
+}

@@ -2,7 +2,7 @@
 
 **Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
 **Status:** Draft
-**Depends on:** Features 001, 002, and 003
+**Depends on:** Features 001 and 002
 **Enables:** v0.1 release documentation and end-to-end validation
 
 ## Objective
@@ -27,7 +27,7 @@ This feature MUST comply with the parent specification, especially:
 - §26 and §27, documentation and security considerations;
 - §30, expected developer experience.
 
-Features 001 through 003 define the package contracts used by the sample. If this document conflicts with the parent specification, the parent specification wins.
+Features 001 and 002 define the package contracts used by the sample. Feature 003 is a separate console host and is not a dependency. If this document conflicts with the parent specification, the parent specification wins.
 
 ## Scope
 
@@ -36,6 +36,7 @@ Features 001 through 003 define the package contracts used by the sample. If thi
 - An ASP.NET Core `net10.0` web API under `samples/Microsoft365Retrieval.AspNetCore`.
 - Microsoft Entra ID bearer authentication through Microsoft Identity Web.
 - downstream delegated token acquisition/OBO and an in-memory token cache for sample simplicity;
+- a sample-local Microsoft Identity Web implementation of `IMicrosoft365RetrievalTokenProvider`;
 - package registration and optional trusted SharePoint KQL scoping from configuration;
 - creation of a model-provider-backed Agent Framework agent with `TextSearchProvider`;
 - authenticated `POST /api/assistant` accepting a message and returning the agent result;
@@ -52,6 +53,7 @@ Features 001 through 003 define the package contracts used by the sample. If thi
 - Implementing claims-challenge responses, interactive consent, business authorization, or tool authorization.
 - Live-tenant tests required by CI.
 - Making the package depend on the sample's model provider.
+- Adding Microsoft Identity Web, ASP.NET Core, or the sample token provider to the base Retrieval package.
 
 ## Functional Requirements
 
@@ -81,9 +83,11 @@ The v0.1 response contract MUST contain an `answer` string. Citations are reques
 
 ### Authentication and OBO
 
-The host MUST configure Microsoft Identity Web as a protected web API, enable downstream token acquisition, and explicitly use the Feature 003 integration.
+The host MUST configure Microsoft Identity Web as a protected web API, enable downstream token acquisition, and register a sample-local implementation of `IMicrosoft365RetrievalTokenProvider` backed by `ITokenAcquisition`.
 
 The endpoint's authenticated delegated user MUST be the identity used for Retrieval API calls. The sample MUST NOT use a daemon credential, managed identity, API key, or application token for Microsoft Graph.
+
+Microsoft Identity Web and `ITokenAcquisition` MUST remain sample implementation details. They MUST NOT appear in the base package's public API or dependency graph.
 
 An in-memory token cache MAY be used in the sample. Its README MUST state that multi-instance production hosts require an appropriate distributed cache.
 
@@ -186,7 +190,7 @@ The existing repository scaffold temporarily declares the sample as a library be
 
 - [ ] The sample builds as an executable ASP.NET Core `net10.0` application.
 - [ ] `POST /api/assistant` is authenticated, validates input, and propagates cancellation.
-- [ ] The caller's delegated identity flows through Feature 003 to Feature 001.
+- [ ] The caller's delegated identity flows through the sample-local token provider to Feature 001.
 - [ ] The agent uses Feature 002 with automatic retrieval and the README documents on-demand mode.
 - [ ] Configuration and documentation contain no secrets and cover all required security boundaries.
 - [ ] Normal CI compiles the sample without live tenant or model credentials.

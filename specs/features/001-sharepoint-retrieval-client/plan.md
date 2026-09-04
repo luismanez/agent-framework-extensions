@@ -11,8 +11,8 @@ This plan is local to Feature 001. The executable checklist is [`todo.md`](todo.
 - Repository build succeeds in Release on .NET SDK `10.0.302` using feature band `10.0.300`.
 - The source and test projects contain no `.cs` implementation yet.
 - Tests use xUnit v3 `4.0.0` on Microsoft Testing Platform.
-- `Microsoft.Agents.AI 1.19.0` and `Microsoft.Identity.Web 4.14.2` remain the latest stable versions at planning time.
-- Feature 001 does not directly use Agent Framework or Microsoft Identity Web APIs, but it remains in the existing package that will host Features 002 and 003.
+- `Microsoft.Agents.AI 1.19.0` remains the centrally managed Agent Framework baseline at planning time.
+- Feature 001 does not use an identity SDK. Host applications own delegated token acquisition and implement the package token-provider boundary.
 - The referenced shared Definition of Done file is not present in the installed planning skill. This plan therefore defines its task-level Definition of Done explicitly below.
 
 ## Scope Boundaries
@@ -29,7 +29,7 @@ This plan is local to Feature 001. The executable checklist is [`todo.md`](todo.
 
 ### Out of Scope
 
-- Microsoft Identity Web token acquisition implementation.
+- Identity SDK integrations or token acquisition implementations.
 - `TextSearchProvider` mapping or agent construction.
 - ASP.NET Core endpoint authentication or authorization.
 - OneDrive, Copilot connectors, thumbnails, batching, caching, or result post-filtering.
@@ -139,9 +139,9 @@ IServiceCollection AddMicrosoft365Retrieval(
     Action<Microsoft365RetrievalOptions> configure);
 ```
 
-The method registers options validation, the typed `HttpClient`, and `IMicrosoft365RetrievalClient`. It does not register a token provider, authentication, retries, or Feature 002 services.
+The method registers options validation, the typed `HttpClient`, and `IMicrosoft365RetrievalClient`. It does not register a token provider, choose credentials, configure authentication, add retries, or register Feature 002 services.
 
-Add centrally managed direct references only for `Microsoft.Extensions.*` packages whose APIs Feature 001 compiles against. Start with `Microsoft.Extensions.Http` and the minimum options/logging abstractions proven necessary by compilation; pin stable `10.0.11` packages consistently with the resolved .NET 10 graph. Do not update the already-current Agent Framework or Identity Web versions in this feature.
+Add centrally managed direct references only for packages whose APIs Feature 001 compiles against. Start with `Microsoft.Extensions.Http` and the minimum options/logging abstractions proven necessary by compilation; pin stable versions consistently with the resolved .NET 10 graph. Do not add Azure Identity, Microsoft Identity Web, MSAL, or ASP.NET Core references to the base package.
 
 ## Dependency Graph
 
@@ -194,10 +194,10 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalOptions.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/IMicrosoft365RetrievalTokenProvider.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/IMicrosoft365RetrievalClient.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalOptions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Authentication/IMicrosoft365RetrievalTokenProvider.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/IMicrosoft365RetrievalClient.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 
 **Estimated scope:** S, 4 files
 
@@ -220,11 +220,11 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalHit.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalExtract.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalException.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/ResultContractTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalExtract.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Models/ResultContractTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 
 **Estimated scope:** M, 5 files
 
@@ -254,9 +254,9 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalWireModels.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientRequestTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientRequestTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingHttpMessageHandler.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/StubTokenProvider.cs`
 
@@ -282,10 +282,10 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalWireModels.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalHit.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientResponseTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientResponseTests.cs`
 
 **Estimated scope:** M, 4 files
 
@@ -315,10 +315,10 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalException.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientFailureTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientCancellationTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientFailureTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientCancellationTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingHttpMessageHandler.cs`
 
 **Estimated scope:** M, 5 files
@@ -343,9 +343,9 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalClient.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalClient.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/RetrievalLogEvents.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalClientLoggingTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalClientLoggingTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/CollectingLogger.cs`
 
 **Estimated scope:** M, 4 files
@@ -379,9 +379,9 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 - `Directory.Packages.props`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/DependencyInjectionTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalOptionsTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/DependencyInjectionTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalOptionsTests.cs`
 
 **Estimated scope:** M, 5 files
 
@@ -405,7 +405,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Files likely touched:**
 
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContractTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
 - `specs/features/001-sharepoint-retrieval-client/implementation-evidence.md`
 
 **Estimated scope:** S, 2 files

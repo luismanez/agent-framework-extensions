@@ -29,8 +29,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/SharePointRetrievalFilter.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/SharePointRetrievalFilterPublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Filtering/SharePointRetrievalFilter.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/SharePointRetrievalFilterPublicContractTests.cs`
 
 ## Task 2: Implement Path and Site-ID Terms
 
@@ -53,8 +53,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/SharePointRetrievalFilter.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/SharePointRetrievalFilterTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Filtering/SharePointRetrievalFilter.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Filtering/SharePointRetrievalFilterTests.cs`
 
 ## Checkpoint: Primitive Filters
 
@@ -86,8 +86,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/SharePointRetrievalFilter.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/SharePointRetrievalFilterTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Filtering/SharePointRetrievalFilter.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Filtering/SharePointRetrievalFilterTests.cs`
 
 ## Task 4: Prove Feature 001 Integration and Guidance
 
@@ -112,9 +112,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 **Files likely touched:**
 
 - `README.md`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/SharePointRetrievalFilter.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/SharePointRetrievalFilterTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalRequestSerializationTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Filtering/SharePointRetrievalFilter.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Filtering/SharePointRetrievalFilterTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Filtering/Microsoft365RetrievalRequestSerializationTests.cs`
 
 ## Checkpoint: Integrated Filter
 

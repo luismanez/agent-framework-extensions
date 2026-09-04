@@ -31,8 +31,8 @@ Implementation is divided into five feature specifications under `specs/features
 
 1. [`001-sharepoint-retrieval-client.md`](../features/001-sharepoint-retrieval-client/001-sharepoint-retrieval-client.md) — validated SharePoint Retrieval API access;
 2. [`002-agent-framework-integration.md`](../features/002-agent-framework-integration/002-agent-framework-integration.md) — mapping and integration with `TextSearchProvider`;
-3. [`003-microsoft-identity-web-integration.md`](../features/003-microsoft-identity-web-integration/003-microsoft-identity-web-integration.md) — delegated token acquisition through `Microsoft.Identity.Web`;
-4. [`004-aspnetcore-reference-sample.md`](../features/004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md) — the end-to-end ASP.NET Core reference application;
+3. [`003-console-reference-sample.md`](../features/003-console-reference-sample/003-console-reference-sample.md) — delegated console authentication through sample-owned Azure Identity code;
+4. [`004-aspnetcore-reference-sample.md`](../features/004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md) — delegated ASP.NET Core On-Behalf-Of authentication through sample-owned Microsoft Identity Web code;
 5. [`005-typed-sharepoint-retrieval-filters.md`](../features/005-typed-sharepoint-retrieval-filters/005-typed-sharepoint-retrieval-filters.md) — typed construction of trusted SharePoint path and site-ID filters.
 
 Each feature MUST pass its own specify, plan, tasks, and implementation gates before it is considered complete. Feature specifications refine this document but MUST NOT override it. If a conflict is found, update or clarify the global specification first, then align the affected feature specification.
@@ -47,7 +47,7 @@ The initial package MUST:
 
 1. Make it easy for a .NET developer using Microsoft Agent Framework to ground an agent with content retrieved through the Microsoft 365 Copilot Retrieval API.
 2. Reuse the Agent Framework `TextSearchProvider` model instead of implementing a parallel RAG lifecycle.
-3. Support user-delegated Microsoft Entra ID authentication, including the common ASP.NET Core + `Microsoft.Identity.Web` On-Behalf-Of scenario.
+3. Consume delegated Microsoft Graph access tokens through a minimal host-provided abstraction without acquiring identity inside the package.
 4. Preserve Microsoft 365 permission trimming by calling the Retrieval API using the current user's delegated identity.
 5. Provide source URLs and useful source names so Agent Framework can generate citations.
 6. Support both Agent Framework retrieval behaviors:
@@ -80,6 +80,8 @@ The initial release MUST NOT attempt to implement:
 - token caching infrastructure;
 - business authorization rules;
 - custom memory infrastructure;
+- identity acquisition or credential selection inside the Retrieval package;
+- a base-package dependency on Azure Identity, Microsoft Identity Web, MSAL, or ASP.NET Core;
 - a replacement for `Microsoft.Identity.Web`;
 - a replacement for `TextSearchProvider`;
 - OneDrive-specific features;
@@ -173,14 +175,25 @@ agent-framework-extensions/
 ├── src/
 │   └── Acterion.Agents.AI.Microsoft365.Retrieval/
 │       ├── Acterion.Agents.AI.Microsoft365.Retrieval.csproj
-│       └── ...
+│       ├── AgentFramework/
+│       ├── Authentication/
+│       └── Retrieval/
+│           ├── Filtering/
+│           └── Models/
 │
 ├── tests/
 │   └── Acterion.Agents.AI.Microsoft365.Retrieval.Tests/
 │       ├── Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj
-│       └── ...
+│       ├── AgentFramework/
+│       ├── Authentication/
+│       ├── PublicContract/
+│       ├── Retrieval/
+│       └── TestDoubles/
 │
 ├── samples/
+│   ├── Microsoft365Retrieval.Console/
+│   │   ├── Microsoft365Retrieval.Console.csproj
+│   │   └── ...
 │   └── Microsoft365Retrieval.AspNetCore/
 │       ├── Microsoft365Retrieval.AspNetCore.csproj
 │       └── ...
@@ -197,6 +210,8 @@ agent-framework-extensions/
 ```
 
 The structure MUST make adding another package later as simple as adding another project under `src/`, its tests under `tests/`, and optional samples under `samples/`.
+
+Within a package, folders group code by capability and ownership boundary. Public namespaces remain package-oriented unless a separate consumer-facing namespace is intentionally introduced; physical folders do not require matching namespace segments.
 
 ---
 
@@ -656,13 +671,7 @@ IMicrosoft365RetrievalTokenProvider
 Microsoft365RetrievalAgentBuilderExtensions
 ```
 
-Optionally:
-
-```text
-MicrosoftIdentityWebRetrievalTokenProvider
-```
-
-if it materially simplifies the common ASP.NET Core scenario.
+Identity-SDK-specific token providers MUST NOT be part of the base package public API. Hosts or optional future integration packages may implement `IMicrosoft365RetrievalTokenProvider`.
 
 ### 11.1 `Microsoft365RetrievalOptions`
 
@@ -708,7 +717,7 @@ This should contain very little Agent Framework-specific logic beyond the mappin
 
 ---
 
-## 12. Authentication and Microsoft Entra ID
+## 12. Delegated Token Boundary
 
 ### 12.1 Required authentication model
 
@@ -716,7 +725,9 @@ The Microsoft 365 Retrieval API requires a **delegated work/school user identity
 
 Application permissions are not supported for this API.
 
-The package MUST therefore be designed around delegated user tokens.
+The package MUST therefore be designed around delegated user tokens supplied by the host.
+
+The package consumes tokens; it does not acquire identity.
 
 ### 12.2 Required Graph permissions for SharePoint
 
@@ -731,45 +742,11 @@ Both are required for SharePoint retrieval.
 
 The package README MUST explicitly document the privilege implications of these permissions.
 
-### 12.3 ASP.NET Core + Microsoft.Identity.Web
+### 12.3 Token provider abstraction
 
-The primary sample should demonstrate:
+The retrieval client MUST NOT be coupled to `HttpContext`, `TokenCredential`, `ITokenAcquisition`, `IConfidentialClientApplication`, or another identity-SDK type.
 
-```text
-Browser/client
-    │
-    │ token for host API
-    ▼
-ASP.NET Core API
-    │
-    │ Microsoft.Identity.Web
-    │ delegated token acquisition / OBO
-    ▼
-Microsoft Graph
-    │
-    ▼
-M365 Copilot Retrieval API
-```
-
-Suggested host setup:
-
-```csharp
-builder.Services
-    .AddMicrosoftIdentityWebApiAuthentication(
-        builder.Configuration)
-    .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddInMemoryTokenCaches();
-```
-
-The sample may use an in-memory token cache for simplicity.
-
-Documentation MUST state that multi-instance production applications should use an appropriate distributed token cache according to their hosting architecture.
-
-### 12.4 Token acquisition abstraction
-
-The retrieval client should not be tightly coupled to `HttpContext`.
-
-Use a minimal token provider abstraction:
+Use the package-owned minimal boundary:
 
 ```csharp
 public interface IMicrosoft365RetrievalTokenProvider
@@ -779,7 +756,12 @@ public interface IMicrosoft365RetrievalTokenProvider
 }
 ```
 
-The package may provide an implementation backed by `Microsoft.Identity.Web`.
+The host MUST register an implementation that returns a delegated Microsoft Graph token for the current user and operation. The host chooses the acquisition mechanism, which may include:
+
+- Azure Identity `DeviceCodeCredential` or `InteractiveBrowserCredential` in a native application;
+- Microsoft Identity Web in an ASP.NET Core On-Behalf-Of flow;
+- Azure Identity `OnBehalfOfCredential`;
+- MSAL or an organization-specific token broker.
 
 This keeps the retrieval client:
 
@@ -788,7 +770,15 @@ This keeps the retrieval client:
 - reusable outside a Minimal API;
 - easy to adapt to future hosting models.
 
-Do not create a separate authentication NuGet package for this abstraction.
+The interface remains in the base package. Do not create a speculative authentication NuGet package. A reusable SDK-specific adapter may be proposed as a separate optional package only after multiple real hosts demonstrate the same stable integration contract.
+
+### 12.4 Reference authentication flows
+
+Feature 003 demonstrates console device-code authentication through sample-owned Azure Identity code. Feature 004 demonstrates ASP.NET Core On-Behalf-Of through sample-owned Microsoft Identity Web code.
+
+Neither identity SDK is a transitive dependency of the base Retrieval package. `DefaultAzureCredential`, workload identity, and managed identity MUST NOT be presented as Retrieval API credentials because they normally represent application identity rather than the required delegated user identity.
+
+The ASP.NET Core sample may use an in-memory token cache for simplicity. Its documentation MUST state that multi-instance production applications should use an appropriate distributed token cache.
 
 ### 12.5 Authentication failures
 
@@ -931,8 +921,9 @@ The implementation should register:
 - configured options;
 - typed/named `HttpClient`;
 - retrieval client;
-- search adapter;
-- token provider when Microsoft.Identity.Web integration is enabled.
+- search adapter.
+
+The host MUST register `IMicrosoft365RetrievalTokenProvider`. Base-package registration MUST NOT select a credential, configure authentication, or silently provide an application identity.
 
 Avoid surprising global service registrations.
 
@@ -940,17 +931,24 @@ Do not alter the host application's authentication or authorization configuratio
 
 ---
 
-## 16. Sample Application
+## 16. Reference Samples
 
-Create:
+Create two small hosts that prove the same package boundary through different delegated authentication flows:
 
 ```text
+samples/Microsoft365Retrieval.Console
 samples/Microsoft365Retrieval.AspNetCore
 ```
 
-The sample should be intentionally small and production-inspired.
+Both samples should be intentionally small and production-inspired. Identity adapters remain inside their respective sample projects.
 
-### 16.1 Scenario
+### 16.1 Console scenario
+
+The console sample authenticates a work or school user with Azure Identity device-code flow, adapts its `TokenCredential` through a sample-local `IMicrosoft365RetrievalTokenProvider`, and runs an Agent Framework agent with automatic retrieval.
+
+It MUST NOT use `DefaultAzureCredential`, managed identity, or application credentials for Microsoft 365 Retrieval. Interactive browser authentication may be documented as an explicit alternative.
+
+### 16.2 ASP.NET Core scenario
 
 An authenticated employee calls:
 
@@ -975,10 +973,13 @@ The API:
 
 The v0.1 sample response contains an `answer` string. Citations produced through Agent Framework remain embedded in that answer; the sample does not expose a separate structured citation collection or reconstruct citations by rerunning retrieval.
 
-### 16.2 Sample requirements
+The ASP.NET Core host owns Microsoft Identity Web configuration, On-Behalf-Of token acquisition, token caching, and its sample-local implementation of `IMicrosoft365RetrievalTokenProvider`.
 
-The sample MUST demonstrate:
+### 16.3 Shared sample requirements
 
+The samples collectively MUST demonstrate:
+
+- console device-code authentication with Azure Identity;
 - ASP.NET Core;
 - Entra authentication;
 - `Microsoft.Identity.Web`;
@@ -990,7 +991,9 @@ The sample MUST demonstrate:
 - configuration through `appsettings.json` / user secrets / environment variables;
 - no secrets committed to Git.
 
-### 16.3 Model provider
+Automated builds and tests MUST NOT require a tenant, user login, or live service connection.
+
+### 16.4 Model provider
 
 The library itself MUST remain independent of the model provider.
 
@@ -1000,9 +1003,17 @@ Prefer Entra-based authentication such as `DefaultAzureCredential`/managed ident
 
 ---
 
-## 17. Configuration Example
+## 17. Configuration Examples
 
-Example only:
+Console host environment variables:
+
+```text
+AZURE_TENANT_ID
+AZURE_CLIENT_ID
+MICROSOFT365_RETRIEVAL_FILTER
+```
+
+ASP.NET Core example:
 
 ```json
 {
@@ -1030,7 +1041,7 @@ Example only:
 
 Do not recommend storing a production client secret in source-controlled configuration.
 
-Production guidance should prefer certificates, workload identity, managed identity where applicable, or the deployment-specific secure credential mechanism supported by `Microsoft.Identity.Web`.
+For an ASP.NET Core confidential client, production guidance should prefer certificates, federated credentials where supported, or another deployment-specific secure credential mechanism supported by Microsoft Identity Web. These host credentials establish the OBO client; they are not an application-permission fallback for Retrieval.
 
 ---
 
@@ -1042,12 +1053,13 @@ Expected direct dependencies may include:
 
 ```text
 Microsoft.Agents.AI
-Microsoft.Identity.Web
 Microsoft.Extensions.Http
 Microsoft.Extensions.Options.ConfigurationExtensions
 ```
 
 Only add a dependency if package code directly requires it.
+
+Sample projects may directly reference host-specific identity SDKs such as `Azure.Identity` or `Microsoft.Identity.Web`. Those references MUST NOT become transitive dependencies of `Acterion.Agents.AI.Microsoft365.Retrieval`.
 
 Do not reference the Microsoft Graph SDK merely to call one Retrieval API endpoint unless it provides a clear implementation or maintenance advantage.
 
@@ -1063,7 +1075,7 @@ Directory.Packages.props
 
 ## 19. Target Frameworks
 
-The initial package, tests, and sample target:
+The initial package, tests, and samples target:
 
 ```text
 net10.0
@@ -1077,8 +1089,9 @@ The initial dependency baseline, verified when the repository scaffold was creat
 
 ```text
 Microsoft.Agents.AI 1.19.0
-Microsoft.Identity.Web 4.14.2
 ```
+
+Sample-only dependency versions, including Azure Identity and Microsoft Identity Web, remain centrally managed when their sample projects reference them.
 
 Package versions MUST remain centrally managed in `Directory.Packages.props`. Before implementing a feature, verify that these are still the latest stable compatible versions. A version update is allowed when it preserves the architectural intent and the complete solution remains buildable and testable.
 
@@ -1093,6 +1106,7 @@ dotnet restore Acterion.Agents.AI.slnx
 dotnet build Acterion.Agents.AI.slnx --configuration Release --no-restore
 dotnet test --solution Acterion.Agents.AI.slnx --configuration Release --no-build
 dotnet pack src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj --configuration Release --no-build --output artifacts/packages
+dotnet run --project samples/Microsoft365Retrieval.Console/Microsoft365Retrieval.Console.csproj
 dotnet run --project samples/Microsoft365Retrieval.AspNetCore/Microsoft365Retrieval.AspNetCore.csproj
 ```
 
@@ -1277,7 +1291,7 @@ If added, mark them clearly and require explicit environment variables/secrets.
 
 ### 23.3 Sample validation
 
-The sample must compile as part of CI.
+Both samples must compile as part of CI without acquiring credentials or contacting external services.
 
 ---
 
@@ -1351,13 +1365,13 @@ The root README MUST contain:
 5. prerequisites;
 6. Entra app registration requirements;
 7. delegated Graph permissions;
-8. sample configuration;
+8. console and ASP.NET Core sample configuration;
 9. automatic retrieval example;
 10. on-demand retrieval example;
 11. SharePoint site scoping example;
 12. security considerations;
 13. Microsoft 365 licensing prerequisite note;
-14. link to the sample;
+14. links to both samples;
 15. contributing information.
 
 The package README may reuse relevant root documentation but should be directly useful when viewed on NuGet.org.
@@ -1420,36 +1434,34 @@ This is guidance, not a rigid requirement:
 ```text
 src/Acterion.Agents.AI.Microsoft365.Retrieval/
 │
-├── DependencyInjection/
-│   └── Microsoft365RetrievalServiceCollectionExtensions.cs
-│
+├── AgentFramework/
+│   ├── Microsoft365RetrievalAgentBuilderExtensions.cs
+│   └── Microsoft365RetrievalSearch.cs
 ├── Authentication/
-│   ├── IMicrosoft365RetrievalTokenProvider.cs
-│   └── MicrosoftIdentityWebRetrievalTokenProvider.cs
-│
-├── Http/
-│   ├── Microsoft365RetrievalClient.cs
-│   └── RetrievalApiModels.cs
-│
-├── Microsoft365RetrievalOptions.cs
-├── Microsoft365RetrievalSearch.cs
-└── Microsoft365RetrievalException.cs
+│   └── IMicrosoft365RetrievalTokenProvider.cs
+└── Retrieval/
+    ├── Filtering/
+    ├── Models/
+    ├── IMicrosoft365RetrievalClient.cs
+    ├── Microsoft365RetrievalClient.cs
+    ├── Microsoft365RetrievalException.cs
+    └── Microsoft365RetrievalOptions.cs
 ```
 
 If fewer folders make the package easier to navigate, prefer fewer folders.
+
+Identity SDK adapters belong under their sample host, not under this project.
 
 ---
 
 ## 30. Expected Developer Experience
 
-The final README should make the common path feel approximately this simple:
+The final README should make the package boundary feel approximately this simple:
 
 ```csharp
-builder.Services
-    .AddMicrosoftIdentityWebApiAuthentication(
-        builder.Configuration)
-    .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddInMemoryTokenCaches();
+builder.Services.AddScoped<
+    IMicrosoft365RetrievalTokenProvider,
+    HostDelegatedTokenProvider>();
 
 builder.Services.AddMicrosoft365Retrieval(options =>
 {
@@ -1458,6 +1470,8 @@ builder.Services.AddMicrosoft365Retrieval(options =>
         "path:\"https://contoso.sharepoint.com/sites/Engineering/\"";
 });
 ```
+
+`HostDelegatedTokenProvider` is implemented by the application. The console and ASP.NET Core samples show Azure Identity and Microsoft Identity Web implementations respectively.
 
 Then:
 
@@ -1539,15 +1553,15 @@ Reason:
 
 The M365 Retrieval API requires delegated permissions for SharePoint and preserves user-level Microsoft 365 permission trimming.
 
-### ADR-005 — Host owns authentication UX
+### ADR-005 — Host owns token acquisition
 
 Decision:
 
-The package acquires/uses delegated tokens but does not implement login, consent UI, Conditional Access challenges, or endpoint authorization.
+The package consumes delegated tokens through `IMicrosoft365RetrievalTokenProvider`. The host selects credentials, acquires and caches tokens, and owns login, consent UI, Conditional Access challenges, and endpoint authorization.
 
 Reason:
 
-These belong to the host application's authentication boundary.
+Identity flows vary by host type, and identity SDK dependencies do not belong in the reusable Retrieval package.
 
 ### ADR-006 — No speculative Core package
 
@@ -1602,11 +1616,13 @@ The MVP is complete when all of the following are true:
 - [ ] Source name and source link are preserved.
 - [ ] Multiple extracts are handled.
 - [ ] The package supports a delegated token provider abstraction.
-- [ ] Microsoft.Identity.Web integration is demonstrated.
+- [ ] The base package has no dependency on Azure Identity, Microsoft Identity Web, MSAL, or ASP.NET Core.
 - [ ] No application-permission fallback exists.
 - [ ] No tokens or retrieved document text are logged by default.
-- [ ] An ASP.NET Core sample demonstrates OBO + Agent Framework.
-- [ ] The sample demonstrates automatic retrieval.
+- [ ] A console sample demonstrates delegated device-code authentication with Azure Identity and Agent Framework.
+- [ ] An ASP.NET Core sample demonstrates delegated OBO authentication with Microsoft Identity Web and Agent Framework.
+- [ ] Identity adapters are owned by their sample hosts.
+- [ ] Both samples demonstrate automatic retrieval.
 - [ ] The documentation explains on-demand retrieval.
 - [ ] README documents required delegated Graph permissions.
 - [ ] README documents `filterExpression` security caveat.
@@ -1627,8 +1643,8 @@ The feature specifications are the implementation gates for phases 2 through 7:
 | --- | --- | --- |
 | `001-sharepoint-retrieval-client/001-sharepoint-retrieval-client.md` | 2, 3, and relevant parts of 6 | Repository foundation |
 | `002-agent-framework-integration/002-agent-framework-integration.md` | 4 and relevant parts of 6 | Feature 001 |
-| `003-microsoft-identity-web-integration/003-microsoft-identity-web-integration.md` | 5 and relevant parts of 6 | Feature 001 |
-| `004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md` | 7 | Features 001, 002, and 003 |
+| `003-console-reference-sample/003-console-reference-sample.md` | 5 and relevant parts of 6 | Features 001 and 002 |
+| `004-aspnetcore-reference-sample/004-aspnetcore-reference-sample.md` | 7 | Features 001 and 002 |
 | `005-typed-sharepoint-retrieval-filters/005-typed-sharepoint-retrieval-filters.md` | 3 and relevant parts of 6 | Feature 001 options contract |
 
 Phases 8 through 10 are release-level completion work and MUST be validated after all five feature specifications are complete.
@@ -1642,6 +1658,7 @@ Repository foundation, package metadata, Source Link, package README/icon inclus
 - [ ] Create `Acterion.Agents.AI.slnx`.
 - [ ] Create the initial package project under `src/`.
 - [ ] Create the unit test project under `tests/`.
+- [ ] Create the console sample under `samples/`.
 - [ ] Create the ASP.NET Core sample under `samples/`.
 - [ ] Add all projects to the solution.
 - [ ] Add `Directory.Build.props`.
@@ -1682,13 +1699,15 @@ Repository foundation, package metadata, Source Link, package README/icon inclus
 - [ ] Support empty result sets.
 - [ ] Add `UseMicrosoft365Retrieval` overloads for explicit behavior and full `TextSearchProviderOptions` configuration.
 
-### Phase 5 — Microsoft.Identity.Web integration
+### Phase 5 — Console reference sample
 
-- [ ] Implement the Microsoft.Identity.Web token provider.
-- [ ] Acquire delegated Graph token for `Files.Read.All` and `Sites.Read.All`.
+- [ ] Create the executable console sample.
+- [ ] Configure Azure Identity device-code authentication in the sample host.
+- [ ] Implement a sample-local `IMicrosoft365RetrievalTokenProvider` adapter.
+- [ ] Acquire a delegated Graph token for `Files.Read.All` and `Sites.Read.All`.
 - [ ] Fail clearly when no delegated identity/token is available.
-- [ ] Do not implement interactive consent/challenge behavior.
-- [ ] Add tests using mocked token provider.
+- [ ] Do not use application identity or automatic credential fallback.
+- [ ] Add tenant-independent tests using a fake credential or token provider.
 
 ### Phase 6 — Tests
 
@@ -1705,6 +1724,7 @@ Repository foundation, package metadata, Source Link, package README/icon inclus
 
 - [ ] Configure Entra-authenticated ASP.NET Core API.
 - [ ] Configure Microsoft.Identity.Web OBO.
+- [ ] Implement the Microsoft Identity Web token adapter inside the sample.
 - [ ] Configure Microsoft Agent Framework agent.
 - [ ] Configure M365 Retrieval adapter.
 - [ ] Add authenticated `/api/assistant` endpoint.
@@ -1859,6 +1879,12 @@ Microsoft Foundry SharePoint and Foundry IQ:
 Microsoft Identity Web:
 
 - Documentation: https://learn.microsoft.com/en-us/entra/msidweb/
+
+Azure Identity:
+
+- Credential chains and credential selection: https://learn.microsoft.com/en-us/dotnet/azure/sdk/authentication/credential-chains
+- `DeviceCodeCredential`: https://learn.microsoft.com/en-us/dotnet/api/azure.identity.devicecodecredential
+- `OnBehalfOfCredential`: https://learn.microsoft.com/en-us/dotnet/api/azure.identity.onbehalfofcredential
 
 Before coding against an API shape, or documenting concrete parameter names, limits, supported scopes, or Foundry limitations, verify the current official Microsoft documentation. Agent Framework, Foundry Agent Service, Foundry IQ, and the Retrieval API are actively evolving; clearly mark Preview behavior and do not treat undocumented behavior as a stable contract.
 

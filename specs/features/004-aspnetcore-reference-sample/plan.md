@@ -2,13 +2,14 @@
 
 ## Overview
 
-Build the executable `net10.0` Minimal API sample that connects an authenticated employee request to an Azure OpenAI Chat Completions agent enriched with automatic Microsoft 365 retrieval. The sample remains explicit and small: ASP.NET Core owns the HTTP and authorization boundary, Microsoft Identity Web owns delegated OBO token acquisition, Features 001 through 003 own retrieval, and Agent Framework owns model invocation and citation-aware context handling.
+Build the executable `net10.0` Minimal API sample that connects an authenticated employee request to an Azure OpenAI Chat Completions agent enriched with automatic Microsoft 365 retrieval. The sample remains explicit and small: ASP.NET Core owns the HTTP and authorization boundary, Microsoft Identity Web owns delegated OBO token acquisition, a sample-local adapter implements `IMicrosoft365RetrievalTokenProvider`, Features 001 and 002 own retrieval integration, and Agent Framework owns model invocation and citation-aware context handling.
 
 This plan is local to Feature 004. The executable checklist is [`todo.md`](todo.md), and the governing specification is [`004-aspnetcore-reference-sample.md`](004-aspnetcore-reference-sample.md).
 
 ## Planning Baseline
 
-- Features 001, 002, and 003 must be implemented, approved, and available to the sample before this plan starts.
+- Features 001 and 002 must be implemented, approved, and available to the sample before this plan starts.
+- Feature 003 is an independent console reference sample and is not a prerequisite.
 - The sample uses Minimal APIs and exposes only authenticated `POST /api/assistant` for the v0.1 scenario.
 - Azure OpenAI Chat Completions is selected for broad model compatibility and the direct `ChatClient.AsAIAgent(...)` path required by Feature 002.
 - Model authentication uses `DefaultAzureCredential` for local development. The README must recommend a deliberately selected managed or workload identity credential for production.
@@ -21,7 +22,7 @@ This plan is local to Feature 004. The executable checklist is [`todo.md`](todo.
 ### In Scope
 
 - Executable sample project, committed non-secret configuration, launch profile, and `Program.cs`.
-- Protected bearer authentication, downstream token acquisition, in-memory token cache, and explicit Feature 003 registration.
+- Protected bearer authentication, downstream token acquisition, in-memory token cache, and a sample-local Microsoft Identity Web token-provider adapter.
 - Azure OpenAI `AzureOpenAIClient` with `DefaultAzureCredential`, `GetChatClient(deploymentName)`, and `AsAIAgent(...)`.
 - Default automatic retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)`.
 - Request validation, cancellation propagation, safe Problem Details, focused host tests, sample README, and implementation evidence.
@@ -54,9 +55,11 @@ Configure the host in this order:
 2. `EnableTokenAcquisitionToCallDownstreamApi()` and `AddInMemoryTokenCaches()`;
 3. `AddAuthorization()`;
 4. `AddMicrosoft365Retrieval(configurationSection)`;
-5. `AddMicrosoft365RetrievalMicrosoftIdentityWeb()`.
+5. register the sample-local `MicrosoftIdentityWebRetrievalTokenProvider` as `IMicrosoft365RetrievalTokenProvider`.
 
-The endpoint does not acquire or inspect tokens. Feature 003 obtains the authenticated caller's delegated Graph token. The model uses a separate Azure credential and that credential must never be used for Microsoft Graph retrieval.
+The endpoint does not acquire or inspect tokens. The sample-local provider uses `ITokenAcquisition` to obtain the authenticated caller's delegated Graph token. The model uses a separate Azure credential and that credential must never be used for Microsoft Graph retrieval.
+
+The adapter remains in `samples/Microsoft365Retrieval.AspNetCore`; neither it nor Microsoft Identity Web is moved into the base package.
 
 ### 3. Model and Retrieval Pipeline
 
@@ -87,7 +90,7 @@ The fake agent is test-only. Production code resolves the native `AIAgent`; no s
 ## Dependency Graph
 
 ```text
-Features 001-003 approved
+Features 001-002 approved
         |
         v
 Task 1: package and executable-host probe
@@ -109,7 +112,7 @@ Task 5: startup, full validation, and evidence
 
 | Task | Outcome | Size | Depends on |
 | --- | --- | --- | --- |
-| 1 | Prove the pinned provider graph and executable Minimal API host | M | Features 001-003 |
+| 1 | Prove the pinned provider graph and executable Minimal API host | M | Features 001-002 |
 | 2 | Deliver the authenticated and validated endpoint against a fake native agent | M | Task 1 |
 | 3 | Wire delegated identity, Azure OpenAI, and automatic retrieval explicitly | M | Task 2 |
 | 4 | Document setup, modes, configuration, and all security boundaries | M | Task 3 |
@@ -123,7 +126,7 @@ Detailed acceptance criteria, likely files, and commands are maintained in [`tod
 | --- | --- |
 | Executable `net10.0` ASP.NET Core sample | Tasks 1 and 5 build/startup evidence |
 | Authenticated, validated, cancellable endpoint | Task 2 host tests |
-| Delegated caller identity reaches retrieval | Task 3 service-graph tests and Feature 003 evidence |
+| Delegated caller identity reaches retrieval | Task 3 service-graph and sample-token-provider tests |
 | Automatic retrieval with documented on-demand mode | Tasks 3 and 4 |
 | Secret-free configuration and complete security guidance | Task 4 review and repository scan |
 | Credential-free normal CI | Tasks 1 through 5 host tests and Release gate |
@@ -136,7 +139,7 @@ Detailed acceptance criteria, likely files, and commands are maintained in [`tod
 | Provider packages resolve incompatible OpenAI dependencies | High | Compile the exact centrally pinned graph in Task 1 before endpoint work |
 | Host startup triggers external authentication | High | Construct clients without network calls and prove startup using placeholders |
 | Testability introduces a sample-only service layer | Medium | Replace the native `AIAgent` registration in `WebApplicationFactory` |
-| Model credential is accidentally reused for Graph | High | Keep Azure model construction and Feature 003 delegated provider as explicit separate registrations |
+| Model credential is accidentally reused for Graph | High | Keep Azure model construction and the sample-local delegated provider as explicit separate registrations |
 | Endpoint leaks provider or retrieval details | High | Central Problem Details handling plus negative host tests |
 | Configured KQL is mistaken for authorization | High | Accept only trusted configuration and repeat the authorization warning in code guidance |
 | In-memory cache guidance is copied to production | Medium | State the single-instance limitation and require a distributed production cache |

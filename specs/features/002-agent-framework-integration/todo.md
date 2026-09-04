@@ -2,9 +2,15 @@
 
 **Specification:** [`002-agent-framework-integration.md`](002-agent-framework-integration.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Awaiting plan approval
+**Status:** Blocked: `OnDemandFunctionCalling` cannot be composed through `AIAgentBuilder` in Microsoft.Agents.AI 1.19.0.
 
 Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisfy every acceptance and verification item below.
+
+## Current Blocker
+
+`AIAgentBuilder.UseAIContextProviders` accepts `MessageAIContextProvider`, whose message-only invocation path rejects `TextSearchProviderOptions.TextSearchBehavior.OnDemandFunctionCalling`. The framework's full `AIContextProvider` pipeline, which can advertise tools, is exposed for `IChatClient` through `ChatClientBuilder.UseAIContextProviders`, not for an arbitrary `AIAgent`.
+
+The package now rejects this configuration during `UseMicrosoft365Retrieval` rather than producing an agent that fails at its first invocation. Completing Task 5 requires either a supported Agent Framework agent-level API or an approved change to this feature's public integration boundary.
 
 ## Phase 1: Contract and Mapping
 
@@ -29,9 +35,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalSearch.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalAgentBuilderExtensions.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFrameworkPublicContractTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalSearch.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/AgentFrameworkPublicContractTests.cs`
 
 ## Task 2: Implement Deterministic Result Mapping
 
@@ -54,8 +60,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalSearch.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalSearchTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalSearch.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalSearchTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/StubRetrievalClient.cs`
 
 ## Checkpoint: Adapter Contract
@@ -88,9 +94,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalAgentBuilderExtensions.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingAgent.cs`
 
 ## Task 4: Prove Automatic Retrieval Behavior
@@ -114,7 +120,7 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalAgentBehaviorTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBehaviorTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingAgent.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/StubRetrievalClient.cs`
 
@@ -139,8 +145,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalAgentBehaviorTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBehaviorTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingAgent.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingPipelineAgent.cs`
 
@@ -174,8 +180,8 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalSearch.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalSearch.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
 - `specs/features/002-agent-framework-integration/implementation-evidence.md`
 
 ## Checkpoint: Feature Complete

@@ -1,15 +1,15 @@
 # Feature 001: SharePoint Retrieval Client
 
-**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
-**Status:** Draft  
-**Depends on:** Repository foundation  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
+**Status:** Draft
+**Depends on:** Repository foundation
 **Enables:** Features 002, 003, 004, and 005
 
 ## Objective
 
 Provide a small, host-independent .NET client that sends a validated natural-language query to the Microsoft 365 Copilot Retrieval API and returns typed SharePoint retrieval hits.
 
-A package consumer supplies a delegated Microsoft Graph token through an abstraction. The client owns request construction, transport, deserialization, diagnostics, and API error translation. It does not own login, consent, endpoint authorization, or Agent Framework result mapping.
+A package consumer supplies a host-acquired delegated Microsoft Graph token through an abstraction. The client owns request construction, transport, deserialization, diagnostics, and API error translation. It does not own credential selection, token acquisition, login, consent, endpoint authorization, or Agent Framework result mapping.
 
 ## User Outcome
 
@@ -21,7 +21,7 @@ This feature MUST comply with the parent specification, especially:
 
 - §8, Microsoft 365 Copilot Retrieval API;
 - §11.1 and §11.2, options and retrieval client responsibilities;
-- §12.1, §12.2, and §12.4, delegated identity and token abstraction;
+- §12.1 through §12.5, delegated identity and token abstraction;
 - §13, authorization and security model;
 - §14, HTTP and resilience;
 - §15, dependency injection;
@@ -47,7 +47,8 @@ If this document conflicts with the parent specification, the parent specificati
 
 ### Out of Scope
 
-- `Microsoft.Identity.Web` token acquisition implementation; see Feature 003.
+- Identity acquisition implementations or dependencies, including Azure Identity, Microsoft Identity Web, MSAL, and ASP.NET Core.
+- Host-specific token caching, login, consent, claims challenges, credential selection, or app registration.
 - `TextSearchProvider` or any Agent Framework mapping; see Feature 002.
 - ASP.NET Core authentication or endpoints; see Feature 004.
 - OneDrive, Copilot connectors, thumbnails, batching, caching, and live-tenant tests.
@@ -77,7 +78,7 @@ Task<string> GetAccessTokenAsync(
     CancellationToken cancellationToken = default);
 ```
 
-The client MUST request a token for each operation through this abstraction and MUST NOT inspect `HttpContext`, persist tokens, or fall back to another identity.
+The client MUST request the host-supplied token for each operation through this abstraction and MUST NOT inspect `HttpContext`, select a credential, acquire identity directly, persist tokens, or fall back to another identity.
 
 ### Retrieval Operation
 
@@ -135,7 +136,7 @@ Default logs MUST NOT include token values, authorization headers, full queries,
 
 ## Dependency Injection Contract
 
-The feature MUST provide a thin `IServiceCollection` registration method that configures a typed `HttpClient` and validates options. Registration MUST require the host to provide an `IMicrosoft365RetrievalTokenProvider` unless an explicit integration such as Feature 003 is selected.
+The feature MUST provide a thin `IServiceCollection` registration method that configures a typed `HttpClient` and validates options. Registration MUST require the host to provide an `IMicrosoft365RetrievalTokenProvider`; the package MUST NOT register a default provider.
 
 Registration MUST NOT alter authentication, authorization, token caches, or unrelated global HTTP configuration.
 
