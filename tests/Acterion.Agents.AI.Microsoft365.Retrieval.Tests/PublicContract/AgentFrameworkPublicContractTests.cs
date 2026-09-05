@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Xunit;
 
 namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
@@ -23,7 +24,7 @@ public sealed class AgentFrameworkPublicContractTests
             [typeof(string), typeof(CancellationToken)],
             searchMethod.GetParameters().Select(parameter => parameter.ParameterType));
 
-        MethodInfo[] extensionMethods = typeof(Microsoft365RetrievalAgentBuilderExtensions)
+        MethodInfo[] extensionMethods = typeof(Microsoft365RetrievalChatClientBuilderExtensions)
             .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
             .OrderBy(method => method.GetParameters()[1].ParameterType.FullName)
             .ToArray();
@@ -32,8 +33,8 @@ public sealed class AgentFrameworkPublicContractTests
         Assert.All(extensionMethods, method =>
         {
             Assert.Equal("UseMicrosoft365Retrieval", method.Name);
-            Assert.Equal(typeof(AIAgentBuilder), method.ReturnType);
-            Assert.Equal(typeof(AIAgentBuilder), method.GetParameters()[0].ParameterType);
+            Assert.Equal(typeof(ChatClientBuilder), method.ReturnType);
+            Assert.Equal(typeof(ChatClientBuilder), method.GetParameters()[0].ParameterType);
         });
         Assert.Equal(
             typeof(TextSearchProviderOptions),
@@ -54,14 +55,14 @@ public sealed class AgentFrameworkPublicContractTests
     }
 
     private static void CompileConsumerUsage(
-        AIAgentBuilder builder,
+        ChatClientBuilder builder,
         Microsoft365RetrievalSearch search,
         TextSearchProviderOptions options)
     {
         Func<string, CancellationToken, Task<IEnumerable<TextSearchProvider.TextSearchResult>>> searchDelegate =
             search.SearchAsync;
 
-        _ = builder.UseMicrosoft365Retrieval(TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke);
+        _ = builder.UseMicrosoft365Retrieval(TextSearchProviderOptions.TextSearchBehavior.OnDemandFunctionCalling);
         _ = builder.UseMicrosoft365Retrieval(options);
         _ = searchDelegate;
     }

@@ -80,7 +80,7 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 - [ ] Microsoft Identity Web configures bearer authentication, downstream token acquisition, and in-memory caching.
 - [ ] A provider under `samples/Microsoft365Retrieval.AspNetCore` adapts `ITokenAcquisition` to `IMicrosoft365RetrievalTokenProvider`; no model credential is registered as a Graph token provider.
 - [ ] Microsoft Identity Web and the sample provider are absent from the base package dependency graph and source tree.
-- [ ] `AzureOpenAIClient` uses `DefaultAzureCredential`, `GetChatClient(deploymentName)`, and `AsAIAgent(...)`, then `AIAgentBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke).Build(serviceProvider)`.
+- [ ] `AzureOpenAIClient` uses `DefaultAzureCredential` and `GetChatClient(deploymentName)`, decorates that client through `ChatClientBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)`, then creates the agent with `AsAIAgent(...)`.
 - [ ] Retrieval binds maximum results, metadata fields, and optional trusted `FilterExpression` from configuration; endpoint messages never become KQL or system instructions.
 
 **Verification:**

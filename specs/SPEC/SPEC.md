@@ -533,41 +533,39 @@ AIAgent agent = chatClient.AsAIAgent(
 
 ### 10.2 Convenience API
 
-The package MUST provide a thin `AIAgentBuilder` extension that attaches Microsoft 365 retrieval without requiring the developer to resolve `Microsoft365RetrievalSearch` or construct `TextSearchProvider` manually.
+The package MUST provide a thin `ChatClientBuilder` extension that attaches Microsoft 365 retrieval without requiring the developer to resolve `Microsoft365RetrievalSearch` or construct `TextSearchProvider` manually.
 
 The convenience API MUST expose the retrieval timing explicitly in the short overload and MUST accept the standard `TextSearchProviderOptions` type for advanced configuration:
 
 ```csharp
-public static AIAgentBuilder UseMicrosoft365Retrieval(
-    this AIAgentBuilder builder,
+public static ChatClientBuilder UseMicrosoft365Retrieval(
+    this ChatClientBuilder builder,
     TextSearchProviderOptions.TextSearchBehavior behavior);
 
-public static AIAgentBuilder UseMicrosoft365Retrieval(
-    this AIAgentBuilder builder,
+public static ChatClientBuilder UseMicrosoft365Retrieval(
+    this ChatClientBuilder builder,
     TextSearchProviderOptions options);
 ```
 
 The package MUST NOT provide a parameterless overload because `BeforeAIInvoke` and `OnDemandFunctionCalling` have materially different execution semantics.
 
-Service registration remains separate from per-agent configuration:
+Service registration remains separate from per-agent configuration. Build the decorated chat client before creating the agent:
 
-Agent construction should then be possible without service-location code at the call site:
-services.AddMicrosoft365Retrieval(options =>
-{
-AIAgent agent = chatClient
-    .AsAIAgent(
-        new ChatClientAgentOptions
-
-            ChatOptions = new()
-            {
-                Instructions =
-                    "You are an internal company assistant."
-            }
-        })
-    .AsBuilder()
+```csharp
+IChatClient retrievalChatClient = new ChatClientBuilder(chatClient)
     .UseMicrosoft365Retrieval(
         TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke)
     .Build(serviceProvider);
+
+AIAgent agent = retrievalChatClient.AsAIAgent(
+    new ChatClientAgentOptions
+    {
+        ChatOptions = new()
+        {
+            Instructions = "You are an internal company assistant."
+        }
+    },
+    services: serviceProvider);
 ```
 
 Advanced Agent Framework options remain available without a package-specific configuration model:
@@ -576,31 +574,34 @@ Advanced Agent Framework options remain available without a package-specific con
 .UseMicrosoft365Retrieval(
     new TextSearchProviderOptions
     {
-        SearchTime =
-            TextSearchProviderOptions.TextSearchBehavior
-                .OnDemandFunctionCalling,
+        SearchTime = TextSearchProviderOptions.TextSearchBehavior.OnDemandFunctionCalling,
         RecentMessageMemoryLimit = 3,
         FunctionToolName = "search_company_knowledge"
     })
 ```
 
+For `OnDemandFunctionCalling`, create the agent with the pre-decorated pipeline as is:
+
+```csharp
+AIAgent agent = retrievalChatClient.AsAIAgent(
+    new ChatClientAgentOptions
+    {
+        UseProvidedChatClientAsIs = true,
+    },
+    services: serviceProvider);
+```
+
 The extension MUST:
 
-- resolve `Microsoft365RetrievalSearch` from the `IServiceProvider` supplied to `AIAgentBuilder.Build`;
-- create one `TextSearchProvider` for each built agent;
-- attach it through Agent Framework's `UseAIContextProviders` pipeline behavior;
-- preserve any other agent middleware and context providers;
+- resolve `Microsoft365RetrievalSearch` from the `IServiceProvider` supplied to `ChatClientBuilder.Build`;
+- create one `TextSearchProvider` for each built chat-client pipeline;
+- attach it through `ChatClientBuilder.UseAIContextProviders`, which accepts the complete `AIContextProvider` contract;
+- append Agent Framework's native `UseFunctionInvocation` decorator after the context provider only for `OnDemandFunctionCalling`;
+- preserve other chat-client pipeline stages;
 - pass the supplied `TextSearchProviderOptions` to `TextSearchProvider` without replacing its prompts, formatter, filters, memory settings, telemetry settings, or tool metadata;
 - fail clearly during `Build` when `AddMicrosoft365Retrieval` has not registered the required services.
 
-The extension MUST NOT create or own the underlying agent, introduce a custom agent abstraction, or duplicate Agent Framework's context-provider lifecycle. `Microsoft365RetrievalProvider` MUST NOT be added; it would retain the service-location and manual factory ceremony that this extension removes.
-                    SearchTime =
-                        TextSearchProviderOptions.TextSearchBehavior
-                            .BeforeAIInvoke
-                })
-        ]
-    });
-```
+The caller creates the `ChatClientAgent` with `AsAIAgent`. For `OnDemandFunctionCalling`, it MUST set `UseProvidedChatClientAsIs = true` because the extension already contains the correctly ordered native function invoker; adding the agent's default outer invoker would handle tool calls before the provider-added tool is visible. This setting disables all default `ChatClientAgent` decorators, so the host MUST explicitly add to `ChatClientBuilder` any other decorators it requires. This enables on-demand retrieval without a custom search tool. The extension MUST NOT create or own the underlying agent, introduce a custom agent abstraction, or duplicate Agent Framework's context-provider lifecycle. `Microsoft365RetrievalProvider` MUST NOT be added.
 
 Do not invent a large custom builder DSL for v0.1.
 
@@ -633,6 +634,8 @@ Model
 SearchTime =
     TextSearchProviderOptions.TextSearchBehavior.OnDemandFunctionCalling;
 ```
+
+When using the convenience extension, create the agent with `UseProvidedChatClientAsIs = true`. The extension adds Agent Framework's native function invoker inside the provider-enriched chat-client pipeline.
 
 Flow:
 
@@ -668,7 +671,7 @@ IMicrosoft365RetrievalClient
 Microsoft365RetrievalClient
 Microsoft365RetrievalSearch
 IMicrosoft365RetrievalTokenProvider
-Microsoft365RetrievalAgentBuilderExtensions
+Microsoft365RetrievalChatClientBuilderExtensions
 ```
 
 Identity-SDK-specific token providers MUST NOT be part of the base package public API. Hosts or optional future integration packages may implement `IMicrosoft365RetrievalTokenProvider`.
@@ -1435,7 +1438,7 @@ This is guidance, not a rigid requirement:
 src/Acterion.Agents.AI.Microsoft365.Retrieval/
 │
 ├── AgentFramework/
-│   ├── Microsoft365RetrievalAgentBuilderExtensions.cs
+│   ├── Microsoft365RetrievalChatClientBuilderExtensions.cs
 │   └── Microsoft365RetrievalSearch.cs
 ├── Authentication/
 │   └── IMicrosoft365RetrievalTokenProvider.cs
@@ -1476,23 +1479,24 @@ builder.Services.AddMicrosoft365Retrieval(options =>
 Then:
 
 ```csharp
-var agent = chatClient
-    .AsAIAgent(
-        new ChatClientAgentOptions
-        {
-            ChatOptions = new()
-            {
-                Instructions = """
-                    You are an internal company assistant.
-                    Use retrieved company knowledge when relevant.
-                    Cite the source document whenever available.
-                    """
-            }
-        })
-    .AsBuilder()
+IChatClient retrievalChatClient = new ChatClientBuilder(chatClient)
     .UseMicrosoft365Retrieval(
         TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke)
     .Build(serviceProvider);
+
+var agent = retrievalChatClient.AsAIAgent(
+    new ChatClientAgentOptions
+    {
+        ChatOptions = new()
+        {
+            Instructions = """
+                You are an internal company assistant.
+                Use retrieved company knowledge when relevant.
+                Cite the source document whenever available.
+                """
+        }
+    },
+    services: serviceProvider);
 ```
 
 Do not optimize for fewer lines at the cost of hiding security, authentication, or Agent Framework concepts.
@@ -1612,7 +1616,7 @@ The MVP is complete when all of the following are true:
 - [ ] Typed `Path` and `SiteID` filters compose deterministically with `OR`.
 - [ ] `resourceMetadata` is supported.
 - [ ] Results map to `TextSearchProvider.TextSearchResult`.
-- [ ] `AIAgentBuilder.UseMicrosoft365Retrieval` attaches retrieval without manual service resolution or `TextSearchProvider` construction.
+- [ ] `ChatClientBuilder.UseMicrosoft365Retrieval` attaches retrieval without manual service resolution or `TextSearchProvider` construction before `AsAIAgent` creates the agent.
 - [ ] Source name and source link are preserved.
 - [ ] Multiple extracts are handled.
 - [ ] The package supports a delegated token provider abstraction.

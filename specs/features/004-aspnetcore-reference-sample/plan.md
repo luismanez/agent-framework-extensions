@@ -24,7 +24,7 @@ This plan is local to Feature 004. The executable checklist is [`todo.md`](todo.
 - Executable sample project, committed non-secret configuration, launch profile, and `Program.cs`.
 - Protected bearer authentication, downstream token acquisition, in-memory token cache, and a sample-local Microsoft Identity Web token-provider adapter.
 - Azure OpenAI `AzureOpenAIClient` with `DefaultAzureCredential`, `GetChatClient(deploymentName)`, and `AsAIAgent(...)`.
-- Default automatic retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)`.
+- Default automatic retrieval through `ChatClientBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)` before calling `AsAIAgent`.
 - Request validation, cancellation propagation, safe Problem Details, focused host tests, sample README, and implementation evidence.
 
 ### Out of Scope
@@ -63,15 +63,14 @@ The adapter remains in `samples/Microsoft365Retrieval.AspNetCore`; neither it no
 
 ### 3. Model and Retrieval Pipeline
 
-Register a singleton base agent from:
+Register a singleton model chat client from:
 
 ```csharp
 new AzureOpenAIClient(endpoint, new DefaultAzureCredential())
-    .GetChatClient(deploymentName)
-    .AsAIAgent(instructions: ..., name: ...)
+        .GetChatClient(deploymentName)
 ```
 
-Wrap it through `new AIAgentBuilder(baseAgent).UseMicrosoft365Retrieval(options => ..., Microsoft365RetrievalBehavior.BeforeAIInvoke).Build(serviceProvider)`. The full-options overload binds maximum results, metadata fields, and the optional trusted `FilterExpression` from `Microsoft365Retrieval` configuration. No endpoint input is interpolated into KQL.
+Decorate it through `new ChatClientBuilder(chatClient).UseMicrosoft365Retrieval(TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke).Build(serviceProvider)`, then create the native agent with `AsAIAgent`. For an on-demand sample variant, use `UseProvidedChatClientAsIs = true` when creating that agent, because the extension supplies its native function invoker after context enrichment. That setting disables default agent decorators, so the host must add any required additional decorators to the chat-client builder. The retrieval options continue to bind maximum results, metadata fields, and the optional trusted `FilterExpression` from `Microsoft365Retrieval` configuration. No endpoint input is interpolated into KQL.
 
 The README shows that changing only the behavior to `OnDemandFunctionCalling` enables model-directed search and explains that model-generated search queries remain untrusted input to the retrieval boundary.
 

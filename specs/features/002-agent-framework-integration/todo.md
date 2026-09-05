@@ -2,15 +2,13 @@
 
 **Specification:** [`002-agent-framework-integration.md`](002-agent-framework-integration.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Blocked: `OnDemandFunctionCalling` cannot be composed through `AIAgentBuilder` in Microsoft.Agents.AI 1.19.0.
+**Status:** Both retrieval behaviors are implemented and covered by focused tests; closure verification remains.
 
 Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisfy every acceptance and verification item below.
 
-## Current Blocker
+## Integration Boundary
 
-`AIAgentBuilder.UseAIContextProviders` accepts `MessageAIContextProvider`, whose message-only invocation path rejects `TextSearchProviderOptions.TextSearchBehavior.OnDemandFunctionCalling`. The framework's full `AIContextProvider` pipeline, which can advertise tools, is exposed for `IChatClient` through `ChatClientBuilder.UseAIContextProviders`, not for an arbitrary `AIAgent`.
-
-The package now rejects this configuration during `UseMicrosoft365Retrieval` rather than producing an agent that fails at its first invocation. Completing Task 5 requires either a supported Agent Framework agent-level API or an approved change to this feature's public integration boundary.
+`UseMicrosoft365Retrieval` decorates an `IChatClient` through `ChatClientBuilder.UseAIContextProviders`, which accepts the full `AIContextProvider` contract. For `OnDemandFunctionCalling`, it adds the native `UseFunctionInvocation` decorator after context enrichment. The caller creates its `ChatClientAgent` with `UseProvidedChatClientAsIs = true` for that mode, avoiding a second function invoker outside the provider.
 
 ## Phase 1: Contract and Mapping
 
@@ -20,15 +18,15 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 **Acceptance criteria:**
 
-- [ ] `Microsoft365RetrievalSearch.SearchAsync` is assignable to the required `TextSearchProvider` delegate.
-- [ ] Both specified `UseMicrosoft365Retrieval` overloads compile and no prohibited convenience API exists.
-- [ ] The probe exercises `RawRepresentation`, both `TextSearchBehavior` values, deferred builder middleware, and public XML documentation.
+- [x] `Microsoft365RetrievalSearch.SearchAsync` is assignable to the required `TextSearchProvider` delegate.
+- [x] Both specified `UseMicrosoft365Retrieval` overloads compile on `ChatClientBuilder` and no prohibited convenience API exists.
+- [x] The probe exercises `RawRepresentation`, both `TextSearchBehavior` values, deferred builder middleware, and public XML documentation.
 
 **Verification:**
 
-- [ ] RED observed for `*AgentFrameworkPublicContractTests`.
-- [ ] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*AgentFrameworkPublicContractTests"`
-- [ ] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
+- [ ] RED observed for `*AgentFrameworkPublicContractTests` (not recorded before the existing implementation).
+- [x] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*AgentFrameworkPublicContractTests"`
+- [x] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
 
 **Dependencies:** Approved Feature 001 public contract
 **Estimated scope:** S, 3 files
@@ -36,7 +34,7 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 **Files likely touched:**
 
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalSearch.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalChatClientBuilderExtensions.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/AgentFrameworkPublicContractTests.cs`
 
 ## Task 2: Implement Deterministic Result Mapping
@@ -45,15 +43,15 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 **Acceptance criteria:**
 
-- [ ] Query and cancellation are forwarded unchanged, hit order is preserved, and empty hits return an empty sequence.
-- [ ] Title, decoded URI-segment, and original-URL source-name paths are deterministic; source links remain unchanged.
-- [ ] Non-whitespace extracts join with one newline, empty extracts produce empty text, raw hit identity is retained, and sensitivity data is absent from visible fields.
+- [x] Query and cancellation are forwarded unchanged, hit order is preserved, and empty hits return an empty sequence.
+- [x] Title, decoded URI-segment, and original-URL source-name paths are deterministic; source links remain unchanged.
+- [x] Non-whitespace extracts join with one newline, empty extracts produce empty text, raw hit identity is retained, and sensitivity data is absent from visible fields.
 
 **Verification:**
 
-- [ ] RED observed for `*Microsoft365RetrievalSearchTests`.
-- [ ] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*Microsoft365RetrievalSearchTests"`
-- [ ] Task 1 contract tests and Release build pass.
+- [ ] RED observed for `*Microsoft365RetrievalSearchTests` (not recorded before the existing implementation).
+- [x] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*Microsoft365RetrievalSearchTests"`
+- [x] Task 1 contract tests and Release build pass.
 
 **Dependencies:** Task 1
 **Estimated scope:** M, 3 files
@@ -66,37 +64,37 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 ## Checkpoint: Adapter Contract
 
-- [ ] Tasks 1 and 2 focused tests pass together.
-- [ ] Release build succeeds.
+- [x] Tasks 1 and 2 focused tests pass together.
+- [x] Release build succeeds.
 - [ ] Human confirms empty-extract and source-name fallback behavior.
-- [ ] No custom RAG, tool, prompt, memory, ranking, or citation type exists.
+- [x] No custom RAG, tool, prompt, memory, ranking, or citation type exists.
 
 ## Phase 2: Builder and Runtime Behavior
 
 ## Task 3: Add Deferred Builder Composition
 
-**Description:** Implement both builder overloads using Agent Framework middleware and resolve the adapter only from the service provider supplied to `Build`.
+**Description:** Implement both chat-client builder overloads using Agent Framework middleware and resolve the adapter only from the service provider supplied to `Build`.
 
 **Acceptance criteria:**
 
-- [ ] The short overload sets only the explicit behavior and delegates to the options overload.
-- [ ] The options overload resolves the adapter at build time, preserves the same options instance, and creates one provider per built agent.
-- [ ] Null arguments fail synchronously and missing retrieval registration fails clearly during `Build`.
+- [x] The short overload sets only the explicit behavior and delegates to the options overload.
+- [x] The options overload resolves the adapter at build time, preserves the same options instance, and creates one provider per built chat-client pipeline.
+- [x] Null arguments fail synchronously and missing retrieval registration fails clearly during `Build`.
 
 **Verification:**
 
-- [ ] RED observed for `*Microsoft365RetrievalAgentBuilderExtensionsTests`.
-- [ ] Focused builder tests pass.
-- [ ] Mapping and public-contract tests and Release build pass.
+- [ ] RED observed for `*Microsoft365RetrievalChatClientBuilderExtensionsTests` (not recorded before the existing implementation).
+- [x] Focused builder tests pass.
+- [x] Mapping and public-contract tests and Release build pass.
 
 **Dependencies:** Task 2
 **Estimated scope:** M, 4 files
 
 **Files likely touched:**
 
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalChatClientBuilderExtensions.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalChatClientBuilderExtensionsTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingAgent.cs`
 
 ## Task 4: Prove Automatic Retrieval Behavior
@@ -105,15 +103,15 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 **Acceptance criteria:**
 
-- [ ] Search executes before the underlying fake agent.
-- [ ] Framework-formatted retrieval context containing source name, link, and text reaches the model invocation.
-- [ ] Cancellation reaches retrieval and no retrieved content is promoted to application or system policy.
+- [x] Search executes before the underlying fake agent.
+- [x] Framework-formatted retrieval context containing source name, link, and text reaches the model invocation.
+- [x] Cancellation reaches retrieval and no retrieved content is promoted to application or system policy.
 
 **Verification:**
 
-- [ ] RED observed for the automatic-mode cases in `*Microsoft365RetrievalAgentBehaviorTests`.
-- [ ] Focused behavior tests pass.
-- [ ] Tasks 1 through 3 tests and Release build pass.
+- [ ] RED observed for the automatic-mode cases in `*Microsoft365RetrievalAgentBehaviorTests` (not recorded before the existing implementation).
+- [x] Focused behavior tests pass.
+- [x] Tasks 1 through 3 tests and Release build pass.
 
 **Dependencies:** Task 3
 **Estimated scope:** M, 3 files
@@ -130,15 +128,15 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 **Acceptance criteria:**
 
-- [ ] On-demand mode performs no eager retrieval and advertises the Agent Framework search function.
-- [ ] Invoking the advertised function reaches the fake retrieval client with its query and cancellation token.
-- [ ] Existing pipeline behavior remains active, repeated builds do not share providers, and absent services produce actionable build-time failure.
+- [x] On-demand mode performs no eager retrieval and advertises the Agent Framework search function.
+- [x] The native function-invocation decorator reaches the fake retrieval client and makes a second model call with the result.
+- [x] Surrounding chat-client stages remain active, repeated builds do not share providers, and absent services produce actionable build-time failure.
 
 **Verification:**
 
-- [ ] RED observed for the on-demand and composition cases in the behavior and builder test classes.
-- [ ] Focused `*Microsoft365RetrievalAgentBehaviorTests` and `*Microsoft365RetrievalAgentBuilderExtensionsTests` pass.
-- [ ] Full package tests and Release build pass.
+- [x] RED observed for the on-demand and composition cases in the behavior and builder test classes.
+- [x] Focused `*Microsoft365RetrievalAgentBehaviorTests` and `*Microsoft365RetrievalChatClientBuilderExtensionsTests` pass.
+- [x] Full package tests and Release build pass.
 
 **Dependencies:** Task 4
 **Estimated scope:** M, 4 files
@@ -146,16 +144,16 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 **Files likely touched:**
 
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBehaviorTests.cs`
-- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalAgentBuilderExtensionsTests.cs`
+- `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/AgentFramework/Microsoft365RetrievalChatClientBuilderExtensionsTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingAgent.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/TestDoubles/RecordingPipelineAgent.cs`
 
 ## Checkpoint: Framework Integration
 
-- [ ] Both real `TextSearchProvider` modes pass through public behavior tests.
-- [ ] Builder composition and two-build isolation tests pass.
-- [ ] All tests remain tenant-, credential-, model-, and network-independent.
-- [ ] Release build succeeds.
+- [x] Both real `TextSearchProvider` modes pass through public behavior tests.
+- [x] Builder composition and two-build isolation tests pass.
+- [x] All tests remain tenant-, credential-, model-, and network-independent.
+- [x] Release build succeeds.
 
 ## Phase 3: Closure
 
@@ -165,15 +163,15 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 
 **Acceptance criteria:**
 
-- [ ] Evidence maps every acceptance criterion to a focused test or command and records the observed result and commit/worktree reference.
-- [ ] Public XML documentation describes untrusted retrieved content and both overloads without duplicating framework documentation.
-- [ ] Evidence confirms no prohibited convenience type, custom tool, live dependency, or sensitivity-data projection was added.
+- [x] Evidence maps every acceptance criterion to a focused test or command and records the observed result and commit/worktree reference, including the on-demand pipeline requirement.
+- [x] Public XML documentation describes untrusted retrieved content and both overloads without duplicating framework documentation.
+- [x] Evidence confirms no prohibited convenience type, custom tool, live dependency, or sensitivity-data projection was added.
 
 **Verification:**
 
-- [ ] Full tests pass: `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release`
-- [ ] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
-- [ ] Focused mapping, public-contract, builder, and behavior classes pass together.
+- [x] Full tests pass: `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release` (59 passed).
+- [x] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release` (0 warnings, 0 errors).
+- [x] Focused mapping, public-contract, builder, and behavior classes pass together.
 
 **Dependencies:** Task 5
 **Estimated scope:** S, 3 files
@@ -181,14 +179,14 @@ The package now rejects this configuration during `UseMicrosoft365Retrieval` rat
 **Files likely touched:**
 
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalSearch.cs`
-- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalAgentBuilderExtensions.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/AgentFramework/Microsoft365RetrievalChatClientBuilderExtensions.cs`
 - `specs/features/002-agent-framework-integration/implementation-evidence.md`
 
 ## Checkpoint: Feature Complete
 
-- [ ] Every Feature 002 acceptance criterion has recorded evidence.
-- [ ] Full tests and Release build pass on Microsoft Testing Platform.
-- [ ] Public API remains exactly the specified adapter, method, and two builder overloads.
+- [x] Every Feature 002 acceptance criterion has recorded evidence.
+- [x] Full tests and Release build pass on Microsoft Testing Platform.
+- [x] Public API remains exactly the specified adapter, method, and two builder overloads.
 - [ ] Human review approves Feature 002 before Feature 004 consumes it.
 
 ## Plan Approval

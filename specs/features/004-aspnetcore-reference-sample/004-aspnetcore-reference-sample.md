@@ -97,7 +97,7 @@ The sample MUST configure Feature 001 options from the `Microsoft365Retrieval` c
 
 `FilterExpression` MAY contain a trusted application-configured SharePoint path. The sample MUST NOT build KQL from the endpoint message and MUST document that filtering is not authorization.
 
-The default executable path MUST attach retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval` using `BeforeAIInvoke`, without resolving `Microsoft365RetrievalSearch` or constructing `TextSearchProvider` manually. The README MUST show the full-options overload and the minimal change for `OnDemandFunctionCalling`, and explain that the model controls search queries in that mode.
+The default executable path MUST decorate the model `IChatClient` through `ChatClientBuilder.UseMicrosoft365Retrieval` using `BeforeAIInvoke`, then create the agent through `AsAIAgent`. It MUST not resolve `Microsoft365RetrievalSearch` or construct `TextSearchProvider` manually. The README MUST show the full-options overload and the minimal change for `OnDemandFunctionCalling`: create the agent with `UseProvidedChatClientAsIs = true`, because the extension supplies the correctly ordered native function invoker. It must also explain that this disables default agent decorators, so any required additional decorators must be composed on the chat-client builder, and that the model controls search queries in that mode.
 
 Retrieved content MUST remain context data supplied through Agent Framework, not system instructions.
 

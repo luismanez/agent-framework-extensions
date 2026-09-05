@@ -7,11 +7,11 @@
 
 ## Objective
 
-Adapt Microsoft 365 retrieval hits to Microsoft Agent Framework's existing `TextSearchProvider` contract so agents can use permission-trimmed SharePoint grounding automatically or on demand without introducing another RAG lifecycle.
+Adapt Microsoft 365 retrieval hits to Microsoft Agent Framework's existing `TextSearchProvider` contract so chat-client agents can use permission-trimmed SharePoint grounding automatically or on demand without introducing another RAG lifecycle.
 
 ## User Outcome
 
-A developer can attach Microsoft 365 retrieval through `AIAgentBuilder.UseMicrosoft365Retrieval`, select either `BeforeAIInvoke` or `OnDemandFunctionCalling`, and retain access to standard `TextSearchProviderOptions` without resolving the search adapter or constructing `TextSearchProvider` manually.
+A developer can attach Microsoft 365 retrieval through `ChatClientBuilder.UseMicrosoft365Retrieval`, select either `BeforeAIInvoke` or `OnDemandFunctionCalling`, and retain access to standard `TextSearchProviderOptions` without resolving the search adapter or constructing `TextSearchProvider` manually. The decorated chat client is then converted to an agent through `AsAIAgent`. On-demand agents use the already decorated pipeline as is.
 
 ## Global Requirements Inherited
 
@@ -38,7 +38,7 @@ Feature 001 defines the retrieval-client and raw-hit contracts consumed here. If
 - Empty-result behavior.
 - DI registration of the adapter.
 - Documentation and tests proving compatibility with both Agent Framework search modes.
-- A thin `AIAgentBuilder.UseMicrosoft365Retrieval` extension that composes the adapter through Agent Framework's context-provider pipeline.
+- A thin `ChatClientBuilder.UseMicrosoft365Retrieval` extension that composes the adapter through Agent Framework's full context-provider pipeline.
 
 ### Out of Scope
 
@@ -99,21 +99,21 @@ Retrieved `Text` is untrusted model context. The adapter MUST preserve it as dat
 
 ## Public API Constraint
 
-The required public surface for this feature is `Microsoft365RetrievalSearch`, its search delegate-compatible method, and `Microsoft365RetrievalAgentBuilderExtensions` with these overloads:
+The required public surface for this feature is `Microsoft365RetrievalSearch`, its search delegate-compatible method, and `Microsoft365RetrievalChatClientBuilderExtensions` with these overloads:
 
 ```csharp
-public static AIAgentBuilder UseMicrosoft365Retrieval(
-    this AIAgentBuilder builder,
+public static ChatClientBuilder UseMicrosoft365Retrieval(
+    this ChatClientBuilder builder,
     TextSearchProviderOptions.TextSearchBehavior behavior);
 
-public static AIAgentBuilder UseMicrosoft365Retrieval(
-    this AIAgentBuilder builder,
+public static ChatClientBuilder UseMicrosoft365Retrieval(
+    this ChatClientBuilder builder,
     TextSearchProviderOptions options);
 ```
 
 The short overload MUST require an explicit behavior. The options overload MUST expose the standard Agent Framework options directly rather than copy them into a package-specific options type.
 
-The extension MUST resolve `Microsoft365RetrievalSearch` from the service provider passed to `AIAgentBuilder.Build`, construct one `TextSearchProvider` per built agent, and attach it using `UseAIContextProviders`. It MUST preserve other pipeline stages and context providers and MUST NOT create the underlying agent.
+The extension MUST resolve `Microsoft365RetrievalSearch` from the service provider passed to `ChatClientBuilder.Build`, construct one `TextSearchProvider` per built chat-client pipeline, and attach it using `UseAIContextProviders`. For `OnDemandFunctionCalling`, it MUST append Agent Framework's native `UseFunctionInvocation` decorator after the context-provider stage. The resulting `IChatClient` is passed to `AsAIAgent`; on-demand callers MUST set `ChatClientAgentOptions.UseProvidedChatClientAsIs` to `true` so the agent does not add a second, outer function-invocation decorator that cannot observe provider-added tools. Since that setting disables all default agent decorators, hosts MUST compose any additional required decorators on the chat-client builder.
 
 Do not add `Microsoft365RetrievalProvider`, a parameterless convenience overload, or a custom agent builder.
 
@@ -144,7 +144,7 @@ Unit tests MUST cover:
 The behavior tests MUST prove these observable outcomes without network access:
 
 - `BeforeAIInvoke` invokes the fake search delegate before the fake model and supplies formatted retrieval context to the model invocation;
-- `OnDemandFunctionCalling` does not search eagerly, advertises the Agent Framework search function to the fake model, and invoking that function reaches the fake search delegate.
+- `OnDemandFunctionCalling` does not search eagerly, advertises the Agent Framework search function to the model, invokes it through the native decorator, and sends the result to the model's next turn.
 
 If the stable public Agent Framework API cannot expose one of these observations directly, the Plan gate MUST define the nearest public contract test and document the residual integration gap. Merely constructing `TextSearchProvider` is not sufficient proof.
 
@@ -162,7 +162,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 ### Always
 
-- Reuse `TextSearchProvider` and its current stable contracts.
+- Reuse `TextSearchProvider` and its current stable contracts through `ChatClientBuilder`.
 - Preserve source names, links, raw hits, extract order, and cancellation.
 - Treat retrieved text as untrusted context.
 
@@ -185,7 +185,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 - [ ] Multiple extracts and empty/missing values have deterministic tested behavior.
 - [ ] Empty retrieval results return an empty sequence.
 - [ ] `SearchAsync` is directly usable by `TextSearchProvider` in both supported modes.
-- [ ] `UseMicrosoft365Retrieval` builds an agent with one `TextSearchProvider` without manual service resolution and preserves other pipeline composition.
+- [ ] `UseMicrosoft365Retrieval` builds a chat-client pipeline with one `TextSearchProvider` without manual service resolution and preserves other pipeline composition before `AsAIAgent` creates the agent.
 - [ ] Raw representation is retained while sensitivity metadata stays out of LLM-visible text.
 - [ ] Focused tests and the full Release build pass without network access.
 
@@ -193,5 +193,5 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 - Compile a probe against centrally pinned `Microsoft.Agents.AI` that exercises `TextSearchResult`, `RawRepresentation`, both `SearchTime` values, and the public provider lifecycle used by the behavior tests.
 - Decide the empty-extract behavior from that probe and add an explicit contract test before implementation proceeds.
-- Compile both `UseMicrosoft365Retrieval` overloads against the centrally pinned `AIAgentBuilder` API and prove that service resolution occurs when `Build` is called.
+- Compile both `UseMicrosoft365Retrieval` overloads against the centrally pinned `ChatClientBuilder` API and prove that service resolution occurs when `Build` is called.
 - Omit `Microsoft365RetrievalProvider`; the builder extension is the sole convenience API for v0.1.

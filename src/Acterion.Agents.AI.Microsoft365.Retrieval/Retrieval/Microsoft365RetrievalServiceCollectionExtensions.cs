@@ -45,6 +45,7 @@ public static class Microsoft365RetrievalServiceCollectionExtensions
             serviceProvider.GetRequiredService<IMicrosoft365RetrievalTokenProvider>(),
             serviceProvider.GetRequiredService<IOptions<Microsoft365RetrievalOptions>>().Value,
             serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Microsoft365RetrievalClient>>()));
+        services.AddTransient<Microsoft365RetrievalSearch>();
 
         return services;
     }
