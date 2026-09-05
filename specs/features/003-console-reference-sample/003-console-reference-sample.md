@@ -1,7 +1,7 @@
 # Feature 003: Console Reference Sample
 
 **Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
-**Status:** Draft
+**Status:** Implemented; full solution validation pending
 **Target release:** v0.1
 **Depends on:** Features 001 and 002
 
