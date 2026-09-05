@@ -93,6 +93,35 @@ public sealed class Microsoft365RetrievalClientRequestTests
     }
 
     [Fact]
+    public async Task RetrieveAsync_SerializesTypedFilterExpressionWithoutAdditionalRequests()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        SharePointRetrievalFilter filter = SharePointRetrievalFilter.AnyOf(
+            SharePointRetrievalFilter.Path(new Uri("https://contoso.sharepoint.com/sites/engineering/")),
+            SharePointRetrievalFilter.SiteId(Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6")));
+        Microsoft365RetrievalClient client = new(
+            httpClient,
+            tokenProvider,
+            new Microsoft365RetrievalOptions { FilterExpression = filter.Expression });
+
+        IReadOnlyList<Microsoft365RetrievalHit> hits = await client.RetrieveAsync(
+            "engineering plans",
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(hits);
+        Assert.Equal(1, tokenProvider.CallCount);
+        Assert.Equal(1, handler.RequestCount);
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        Assert.Equal(filter.Expression, request.RootElement.GetProperty("filterExpression").GetString());
+    }
+
+    [Fact]
     public async Task RetrieveAsync_RejectsNullQueryBeforeTokenOrHttp()
     {
         using HttpResponseMessage response = new(HttpStatusCode.OK);

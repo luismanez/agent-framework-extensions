@@ -2,7 +2,7 @@
 
 **Specification:** [`005-typed-sharepoint-retrieval-filters.md`](005-typed-sharepoint-retrieval-filters.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Awaiting plan approval
+**Status:** Implementation complete; awaiting human sign-off
 
 Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisfy every acceptance and verification item below.
 
@@ -14,15 +14,15 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] The sealed type exposes only read-only `Expression` and static `Path(Uri)`, `SiteId(Guid)`, and `AnyOf(params SharePointRetrievalFilter[])` factories.
-- [ ] No public constructor, setter, implicit conversion, raw-string factory, interface, options type, or extension method exists.
-- [ ] The type and every public member have XML documentation that describes retrieval filtering without authorization claims.
+- [x] The sealed type exposes only read-only `Expression` and static `Path(Uri)`, `SiteId(Guid)`, and `AnyOf(params SharePointRetrievalFilter[])` factories.
+- [x] No public constructor, setter, implicit conversion, raw-string factory, interface, options type, or extension method exists.
+- [x] The type and every public member have XML documentation that describes retrieval filtering without authorization claims.
 
 **Verification:**
 
-- [ ] RED observed for `*SharePointRetrievalFilterPublicContractTests` before the type exists.
-- [ ] Focused public-contract tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilterPublicContractTests"`
-- [ ] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
+- [x] RED observed for `*SharePointRetrievalFilterPublicContractTests` before the type exists.
+- [x] Focused public-contract tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilterPublicContractTests"`
+- [x] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
 
 **Dependencies:** Approved Feature 001 options contract
 **Estimated scope:** S, 2 files
@@ -38,15 +38,15 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Valid site, folder, and file HTTPS URIs emit `Path:"{AbsoluteUri}"` while preserving escaped path and trailing-slash semantics.
-- [ ] Null, relative, non-HTTPS, user-info, query, and fragment URI inputs fail synchronously with the specified exception category; `Guid.Empty` fails and non-empty GUIDs emit lowercase invariant `SiteID:"..."`.
-- [ ] Unicode, `%22`, and KQL-looking URI segments remain escaped data and cannot create another term or operator.
+- [x] Valid site, folder, and file HTTPS URIs emit `Path:"{AbsoluteUri}"` while preserving escaped path and trailing-slash semantics.
+- [x] Null, relative, non-HTTPS, user-info, query, and fragment URI inputs fail synchronously with the specified exception category; `Guid.Empty` fails and non-empty GUIDs emit lowercase invariant `SiteID:"..."`.
+- [x] Unicode, `%22`, and KQL-looking URI segments remain escaped data and cannot create another term or operator.
 
 **Verification:**
 
-- [ ] RED observed for primitive cases in `*SharePointRetrievalFilterTests`.
-- [ ] Focused filter tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilterTests"`
-- [ ] Public-contract tests and Release build pass.
+- [x] RED observed for primitive cases in `*SharePointRetrievalFilterTests`.
+- [x] Focused filter tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilterTests"`
+- [x] Public-contract tests and Release build pass.
 
 **Dependencies:** Task 1
 **Estimated scope:** M, 2 files
@@ -58,9 +58,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 ## Checkpoint: Primitive Filters
 
-- [ ] Tasks 1 and 2 focused tests pass together.
-- [ ] Recorded .NET 10 `AbsoluteUri` outputs match the Plan Gate semantics.
-- [ ] No URI decoding, ad hoc parsing, host allowlist, or Graph lookup exists.
+- [x] Tasks 1 and 2 focused tests pass together.
+- [x] Recorded .NET 10 `AbsoluteUri` outputs match the Plan Gate semantics.
+- [x] No URI decoding, ad hoc parsing, host allowlist, or Graph lookup exists.
 - [ ] Human confirms exact path and GUID output.
 
 ## Phase 2: Composition and Integration
@@ -71,15 +71,15 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] A single filter keeps its expression unchanged; multiple path, site-ID, mixed, nested, ordered, and duplicate inputs emit one deterministic uppercase ` OR ` expression.
-- [ ] `AnyOf(A, AnyOf(B, C))` emits `(A OR B OR C)` and caller array mutation after construction cannot alter the result.
-- [ ] Null arrays use `ArgumentNullException`; empty arrays and null elements use `ArgumentException`, all synchronously.
+- [x] A single filter keeps its expression unchanged; multiple path, site-ID, mixed, nested, ordered, and duplicate inputs emit one deterministic uppercase ` OR ` expression.
+- [x] `AnyOf(A, AnyOf(B, C))` emits `(A OR B OR C)` and caller array mutation after construction cannot alter the result.
+- [x] Null arrays use `ArgumentNullException`; empty arrays and null elements use `ArgumentException`, all synchronously.
 
 **Verification:**
 
-- [ ] RED observed for composition cases in `*SharePointRetrievalFilterTests`.
-- [ ] Focused filter tests pass.
-- [ ] Public-contract tests and Release build pass.
+- [x] RED observed for composition cases in `*SharePointRetrievalFilterTests`.
+- [x] Focused filter tests pass.
+- [x] Public-contract tests and Release build pass.
 
 **Dependencies:** Task 2
 **Estimated scope:** S, 2 files
@@ -95,16 +95,16 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Assigning `filter.Expression` to `Microsoft365RetrievalOptions.FilterExpression` produces the same `filterExpression` JSON value in Feature 001's request and triggers no parallel request behavior.
-- [ ] Documentation shows path, site-ID, mixed, and nested examples and preserves raw `FilterExpression` for advanced KQL.
-- [ ] Guidance states that inputs are trusted application values, filtering is not authorization, Microsoft 365 permission trimming is authoritative, and hosts own endpoint and business authorization.
+- [x] Assigning `filter.Expression` to `Microsoft365RetrievalOptions.FilterExpression` produces the same `filterExpression` JSON value in Feature 001's request and triggers no parallel request behavior.
+- [x] Documentation shows path, site-ID, mixed, and nested examples and preserves raw `FilterExpression` for advanced KQL.
+- [x] Guidance states that inputs are trusted application values, filtering is not authorization, Microsoft 365 permission trimming is authoritative, and hosts own endpoint and business authorization.
 
 **Verification:**
 
-- [ ] RED observed for the Feature 001 serialization integration case before final wiring.
-- [ ] Focused filter and request-serialization tests pass together.
-- [ ] `git diff --check` passes for package guidance and Feature 005 documents.
-- [ ] Dependency inspection confirms no new package: `dotnet list src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj package --include-transitive`
+- [x] RED observed for the Feature 001 serialization integration case before final wiring.
+- [x] Focused filter and request-serialization tests pass together.
+- [x] `git diff --check` passes for package guidance and Feature 005 documents.
+- [x] Dependency inspection confirms no new package: `dotnet list src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj package --include-transitive`
 
 **Dependencies:** Task 3 and implemented Feature 001 serialization
 **Estimated scope:** M, 4 files
@@ -118,10 +118,10 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 ## Checkpoint: Integrated Filter
 
-- [ ] Composition and Feature 001 serialization tests pass without credentials or network access.
-- [ ] Raw `FilterExpression` remains supported and unchanged.
-- [ ] Documentation never describes filters as scopes or authorization.
-- [ ] Release build succeeds with no new dependency or project.
+- [x] Composition and Feature 001 serialization tests pass without credentials or network access.
+- [x] Raw `FilterExpression` remains supported and unchanged.
+- [x] Documentation never describes filters as scopes or authorization.
+- [x] Release build succeeds with no new dependency or project.
 
 ## Phase 3: Closure
 
@@ -131,16 +131,16 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Evidence maps every acceptance criterion to a focused test or command with observed result and commit/worktree reference.
-- [ ] Evidence records representative `AbsoluteUri` outputs, exact `Path`, `SiteID`, and flattened `OR` forms, and unchanged Feature 001 serialization.
-- [ ] Evidence confirms no new dependency, project, DI registration, live test, authorization claim, length limit, or raw-expression factory.
+- [x] Evidence maps every acceptance criterion to a focused test or command with observed result and commit/worktree reference.
+- [x] Evidence records representative `AbsoluteUri` outputs, exact `Path`, `SiteID`, and flattened `OR` forms, and unchanged Feature 001 serialization.
+- [x] Evidence confirms no new dependency, project, DI registration, live test, authorization claim, length limit, or raw-expression factory.
 
 **Verification:**
 
-- [ ] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilter*"`
-- [ ] Full tests pass: `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release`
-- [ ] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
-- [ ] Repository-wide `git diff --check` passes.
+- [x] Focused tests pass: `dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj --configuration Release --filter-class "*SharePointRetrievalFilter*"`
+- [x] Full tests pass: `dotnet test --solution Acterion.Agents.AI.slnx --configuration Release`
+- [x] Release build passes: `dotnet build Acterion.Agents.AI.slnx --configuration Release`
+- [x] Repository-wide `git diff --check` passes.
 
 **Dependencies:** Task 4
 **Estimated scope:** S, 2 files
@@ -152,15 +152,15 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 ## Checkpoint: Feature Complete
 
-- [ ] Every Feature 005 acceptance criterion and Plan Gate item has recorded evidence.
-- [ ] Full tests and Release build pass on Microsoft Testing Platform.
-- [ ] Public API remains exactly the specified sealed type and four members.
+- [x] Every tool-verifiable Feature 005 acceptance criterion and Plan Gate item has recorded evidence.
+- [x] Full tests and Release build pass on Microsoft Testing Platform.
+- [x] Public API remains exactly the specified sealed type and four members.
 - [ ] Human review approves Feature 005 for v0.1.
 
 ## Plan Approval
 
-- [ ] Approve `Uri.AbsoluteUri` as the path serialization boundary.
-- [ ] Approve URI component rejection and lowercase invariant `D` GUID formatting.
-- [ ] Approve nested `AnyOf` flattening with order and duplicates preserved.
-- [ ] Approve no length limit, dependency, project, DI registration, or raw-expression factory.
-- [ ] Approve this plan and authorize Task 1 implementation.
+- [x] Approve `Uri.AbsoluteUri` as the path serialization boundary.
+- [x] Approve URI component rejection and lowercase invariant `D` GUID formatting.
+- [x] Approve nested `AnyOf` flattening with order and duplicates preserved.
+- [x] Approve no length limit, dependency, project, DI registration, or raw-expression factory.
+- [x] Approve this plan and authorize Task 1 implementation.

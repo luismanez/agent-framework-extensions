@@ -1,9 +1,9 @@
 # Feature 005: Typed SharePoint Retrieval Filters
 
-**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
-**Origin:** [`typed-sharepoint-retrieval-filters.md`](../../../docs/ideas/typed-sharepoint-retrieval-filters.md)  
-**Status:** Draft  
-**Depends on:** Repository foundation and the Feature 001 options contract  
+**Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
+**Origin:** [`typed-sharepoint-retrieval-filters.md`](../../../docs/ideas/typed-sharepoint-retrieval-filters.md)
+**Status:** Implementation complete; awaiting human sign-off
+**Depends on:** Repository foundation and the Feature 001 options contract
 **Enables:** Safer v0.1 SharePoint filter configuration and documentation
 
 ## Objective

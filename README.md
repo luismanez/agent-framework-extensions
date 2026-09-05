@@ -9,6 +9,32 @@ Microsoft provides higher-level SharePoint grounding options through Foundry Age
 
 It is a community project and is not an official Microsoft package. See the [project specification](specs/SPEC/SPEC.md) for architecture, security guidance, and current platform comparison notes.
 
+## Typed SharePoint filters
+
+Use `SharePointRetrievalFilter` to create the supported `Path` and `SiteID` constraints from trusted application configuration. Assign its `Expression` to the existing `FilterExpression` option:
+
+```csharp
+Uri engineeringSite = new("https://contoso.sharepoint.com/sites/engineering/");
+Guid hrSiteId = Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6");
+
+options.FilterExpression = SharePointRetrievalFilter.Path(engineeringSite).Expression;
+options.FilterExpression = SharePointRetrievalFilter.SiteId(hrSiteId).Expression;
+options.FilterExpression = SharePointRetrievalFilter
+	.AnyOf(
+		SharePointRetrievalFilter.Path(engineeringSite),
+		SharePointRetrievalFilter.SiteId(hrSiteId))
+	.Expression;
+options.FilterExpression = SharePointRetrievalFilter
+	.AnyOf(
+		SharePointRetrievalFilter.Path(engineeringSite),
+		SharePointRetrievalFilter.AnyOf(
+			SharePointRetrievalFilter.SiteId(hrSiteId),
+			SharePointRetrievalFilter.Path(new Uri("https://contoso.sharepoint.com/sites/legal/"))))
+	.Expression;
+```
+
+`FilterExpression` remains available for advanced KQL scenarios outside this typed builder's narrow contract. Only construct typed filters from trusted application values, never arbitrary end-user input. A filter narrows retrieval; it is not authorization. Incorrectly applied or ignored filtering must never expose content the delegated user cannot already access. Microsoft 365 permission trimming remains the authoritative content-access boundary, and the host remains responsible for endpoint authorization and business rules.
+
 ## Agent Framework usage
 
 Register the host-owned token provider and Retrieval services, then decorate the model client before creating the agent:

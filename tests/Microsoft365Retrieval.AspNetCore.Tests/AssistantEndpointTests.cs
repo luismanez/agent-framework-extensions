@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
@@ -24,7 +25,10 @@ public sealed class AssistantEndpointTests : IClassFixture<SampleWebApplicationF
     {
         using HttpClient client = factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/assistant", new { message = "Find the policy." });
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/assistant",
+            new { message = "Find the policy." },
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -34,7 +38,10 @@ public sealed class AssistantEndpointTests : IClassFixture<SampleWebApplicationF
     {
         using HttpClient client = CreateAuthenticatedClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/assistant", new { message = " " });
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/assistant",
+            new { message = " " },
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType!.MediaType);
@@ -45,10 +52,14 @@ public sealed class AssistantEndpointTests : IClassFixture<SampleWebApplicationF
     {
         using HttpClient client = CreateAuthenticatedClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/assistant", new { message = "Find the policy." });
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/assistant",
+            new { message = "Find the policy." },
+            TestContext.Current.CancellationToken);
 
         response.EnsureSuccessStatusCode();
-        AssistantResponse? responseBody = await response.Content.ReadFromJsonAsync<AssistantResponse>();
+        AssistantResponse? responseBody = await response.Content.ReadFromJsonAsync<AssistantResponse>(
+            TestContext.Current.CancellationToken);
         Assert.Equal("Grounded answer.", responseBody!.Answer);
         Assert.Equal(1, factory.ChatClient.ResponseCallCount);
         Assert.True(factory.ChatClient.LastCancellationToken.CanBeCanceled);
@@ -68,10 +79,13 @@ public sealed class AssistantEndpointTests : IClassFixture<SampleWebApplicationF
             .CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthenticationHandler.SchemeName);
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/assistant", new { message = "Find the policy." });
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/api/assistant",
+            new { message = "Find the policy." },
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        string responseBody = await response.Content.ReadAsStringAsync();
+        string responseBody = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("sensitive failure details", responseBody, StringComparison.Ordinal);
     }
 
