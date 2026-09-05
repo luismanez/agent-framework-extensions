@@ -2,7 +2,7 @@
 
 **Specification:** [`004-aspnetcore-reference-sample.md`](004-aspnetcore-reference-sample.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Awaiting plan approval
+**Status:** Implemented; command validation pending
 
 Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisfy every acceptance and verification item below.
 
@@ -14,9 +14,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Central package management pins `Azure.AI.OpenAI 2.1.0`, `Azure.Identity 1.21.0`, `Microsoft.Agents.AI.OpenAI 1.19.0`, and `Microsoft.AspNetCore.Mvc.Testing 10.0.11` without upgrading Agent Framework core.
-- [ ] The sample is an executable `net10.0` Minimal API with a public partial `Program` entry point and committed placeholder configuration only.
-- [ ] A startup test proves the host can build with placeholder settings without contacting Entra, Graph, SharePoint, or Azure OpenAI.
+- [x] Central package management pins `Azure.AI.OpenAI 2.1.0`, `Azure.Identity 1.21.0`, `Microsoft.Agents.AI.OpenAI 1.19.0`, and `Microsoft.AspNetCore.Mvc.Testing 10.0.11` without upgrading Agent Framework core.
+- [x] The sample is an executable `net10.0` Minimal API with a public partial `Program` entry point and committed placeholder configuration only.
+- [x] A startup test proves the host can build with placeholder settings without contacting Entra, Graph, SharePoint, or Azure OpenAI.
 
 **Verification:**
 
@@ -42,9 +42,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Unauthenticated requests are challenged and null, missing, empty, or whitespace messages return validation Problem Details without invoking the agent.
-- [ ] An authenticated valid request calls the agent once, passes `RequestAborted`, and returns exactly one `answer` string from `AgentResponse.Text`.
-- [ ] Agent failures return safe Problem Details without tokens, exception text, raw Graph content, or retrieved documents.
+- [x] Unauthenticated requests are challenged and null, missing, empty, or whitespace messages return validation Problem Details without invoking the agent.
+- [x] An authenticated valid request calls the agent once, passes `RequestAborted`, and returns exactly one `answer` string from `AgentResponse.Text`.
+- [x] Agent failures return safe Problem Details without tokens, exception text, raw Graph content, or retrieved documents.
 
 **Verification:**
 
@@ -77,11 +77,11 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] Microsoft Identity Web configures bearer authentication, downstream token acquisition, and in-memory caching.
-- [ ] A provider under `samples/Microsoft365Retrieval.AspNetCore` adapts `ITokenAcquisition` to `IMicrosoft365RetrievalTokenProvider`; no model credential is registered as a Graph token provider.
-- [ ] Microsoft Identity Web and the sample provider are absent from the base package dependency graph and source tree.
-- [ ] `AzureOpenAIClient` uses `DefaultAzureCredential` and `GetChatClient(deploymentName)`, decorates that client through `ChatClientBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)`, then creates the agent with `AsAIAgent(...)`.
-- [ ] Retrieval binds maximum results, metadata fields, and optional trusted `FilterExpression` from configuration; endpoint messages never become KQL or system instructions.
+- [x] Microsoft Identity Web configures bearer authentication, downstream token acquisition, and in-memory caching.
+- [x] A provider under `samples/Microsoft365Retrieval.AspNetCore` adapts `ITokenAcquisition` to `IMicrosoft365RetrievalTokenProvider`; no model credential is registered as a Graph token provider.
+- [x] Microsoft Identity Web and the sample provider are absent from the base package dependency graph and source tree.
+- [x] `AzureOpenAIClient` uses `DefaultAzureCredential` and `GetChatClient(deploymentName)`, decorates that client through `ChatClientBuilder.UseMicrosoft365Retrieval(..., BeforeAIInvoke)`, then creates the agent with `AsAIAgent(...)`.
+- [x] Retrieval binds maximum results, metadata fields, and optional trusted `FilterExpression` from configuration; endpoint messages never become KQL or system instructions.
 
 **Verification:**
 
@@ -116,9 +116,9 @@ Update this file after each RED-GREEN-REFACTOR cycle. A checked task must satisf
 
 **Acceptance criteria:**
 
-- [ ] The README covers prerequisites, supported accounts/licenses, app registration and exposed scope, delegated `Files.Read.All` and `Sites.Read.All`, consent, secure OBO credentials, model settings, and authenticated request instructions.
-- [ ] It shows user-secrets/environment configuration, automatic and on-demand retrieval, trusted SharePoint path filters, model-controlled on-demand queries, and the production distributed-cache requirement.
-- [ ] It includes every parent section 27 boundary and states that the repository is a community sample rather than an official Microsoft package; no secret or real tenant value is present.
+- [x] The README covers prerequisites, supported accounts/licenses, app registration and exposed scope, delegated `Files.Read.All` and `Sites.Read.All`, consent, secure OBO credentials, model settings, and authenticated request instructions.
+- [x] It shows user-secrets/environment configuration, automatic and on-demand retrieval, trusted SharePoint path filters, model-controlled on-demand queries, and the production distributed-cache requirement.
+- [x] It includes every parent section 27 boundary and states that the repository is a community sample rather than an official Microsoft package; no secret or real tenant value is present.
 
 **Verification:**
 

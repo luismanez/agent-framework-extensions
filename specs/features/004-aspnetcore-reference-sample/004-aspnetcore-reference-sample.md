@@ -1,7 +1,7 @@
 # Feature 004: ASP.NET Core Reference Sample
 
 **Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)
-**Status:** Draft
+**Status:** Implemented; command validation pending
 **Depends on:** Features 001 and 002
 **Enables:** v0.1 release documentation and end-to-end validation
 

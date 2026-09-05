@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests.csproj" />
+    <Project Path="tests/Microsoft365Retrieval.AspNetCore.Tests/Microsoft365Retrieval.AspNetCore.Tests.csproj" />
     <Project Path="tests/Microsoft365Retrieval.Console.Tests/Microsoft365Retrieval.Console.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
