@@ -15,19 +15,64 @@ The sample requests `https://graph.microsoft.com/.default`, which uses the permi
 
 ## Configuration
 
-Set these environment variables before running the sample:
+Copy the committed template to the ignored local settings file:
+
+```sh
+cp samples/Microsoft365Retrieval.Console/appsettings.json \
+	samples/Microsoft365Retrieval.Console/appsettings.local.json
+```
+
+Configure the local file with your tenant-specific values:
+
+```json
+{
+	"MicrosoftEntra": {
+		"TenantId": "<Microsoft Entra tenant ID>",
+		"ClientId": "<public client application ID>"
+	},
+	"AzureOpenAI": {
+		"Endpoint": "https://<resource-name>.openai.azure.com/",
+		"DeploymentName": "<chat-completions-deployment-name>"
+	},
+	"Microsoft365Retrieval": {
+		"SharePointSiteUrl": "https://<tenant>.sharepoint.com/sites/<site>/",
+		"MaximumNumberOfResults": 8
+	}
+}
+```
+
+`appsettings.local.json` is excluded from Git. The sample loads the committed template first, then local settings, then environment variables. Use double underscores for hierarchical environment-variable overrides:
 
 ```text
-AZURE_TENANT_ID=<Microsoft Entra tenant ID>
-AZURE_CLIENT_ID=<public client application ID>
-AZURE_OPENAI_ENDPOINT=https://<resource-name>.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT_NAME=<chat-completions-deployment-name>
-MICROSOFT365_RETRIEVAL_FILTER=<optional trusted filter expression>
+MicrosoftEntra__TenantId=<Microsoft Entra tenant ID>
+MicrosoftEntra__ClientId=<public client application ID>
+AzureOpenAI__Endpoint=https://<resource-name>.openai.azure.com
+AzureOpenAI__DeploymentName=<chat-completions-deployment-name>
+Microsoft365Retrieval__SharePointSiteUrl=https://<tenant>.sharepoint.com/sites/<site>/
+Microsoft365Retrieval__MaximumNumberOfResults=8
 ```
+
+The previous flat environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`, and `MICROSOFT365_RETRIEVAL_FILTER`) remain supported for compatibility. `SharePointSiteUrl` is converted to a typed `Path` filter. Leave it empty to search all SharePoint content available to the signed-in user, or use the legacy raw-filter variable only for advanced KQL scenarios.
 
 The Retrieval package is independent of the model provider. This host uses Azure OpenAI and `DefaultAzureCredential` for the model service only; Graph retrieval always uses `DeviceCodeCredential`. For production, prefer a deliberately selected credential for the model service instead of `DefaultAzureCredential`.
 
+Before running locally, authenticate Azure CLI with an identity that can invoke the configured Azure OpenAI deployment:
+
+```sh
+az login
+```
+
 ## Run
+
+To validate Microsoft 365 Retrieval without an Azure OpenAI resource, run:
+
+```sh
+dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
+```
+
+This mode calls the Retrieval API directly and prints result titles, SharePoint URLs, and retrieved extracts. It does not construct an Azure OpenAI client or invoke a model, so `AzureOpenAI` settings and `az login` are not required. Because retrieved document text is printed to the terminal, use this diagnostic mode only in an appropriate development environment.
+
+To run the complete Agent Framework flow with automatic retrieval and an Azure OpenAI response, run:
 
 ```sh
 dotnet run --project samples/Microsoft365Retrieval.Console
