@@ -78,13 +78,15 @@ To run the complete Agent Framework flow with automatic retrieval and an Azure O
 dotnet run --project samples/Microsoft365Retrieval.Console
 ```
 
-On the first token request, follow the device-code instructions printed by the console. Authentication does not begin until a non-empty question requires retrieval. Press `Ctrl+C` to cancel a pending request or submit an empty line to exit.
+On the first run, follow the device-code instructions printed by the console. The sample stores the resulting Azure Identity `AuthenticationRecord` in the current user's local application-data directory and keeps tokens in Azure Identity's encrypted persistent cache. Later runs select the same account and authenticate silently while its refresh token remains valid.
+
+The authentication-record file contains account metadata, not access or refresh tokens. Delete `Acterion/Microsoft365Retrieval.Console/authentication-record.json` from the operating system's local application-data directory to select another account or reset authentication. Press `Ctrl+C` to cancel a pending request or submit an empty line to exit.
 
 `InteractiveBrowserCredential` can be used as an explicit host-local alternative where a browser is available; it is intentionally not an automatic fallback in this sample.
 
 ## Security notes
 
-Do not commit credentials, tokens, filters containing sensitive identifiers, or local environment files. The sample prints the device-code instruction but never an access token, and it does not log retrieved document text.
+Do not commit credentials, tokens, filters containing sensitive identifiers, or local environment files. The sample prints the device-code instruction but never an access token. Retrieval-only mode deliberately prints retrieved document text for local diagnostics; the complete agent flow does not log it directly.
 
 Treat retrieved content as untrusted model input. The agent instruction explicitly resists instructions embedded in retrieved content, but application-specific prompt-injection defenses and authorization controls remain the host's responsibility. Configure `MICROSOFT365_RETRIEVAL_FILTER` only from a trusted source because it scopes which SharePoint content can be retrieved.
 

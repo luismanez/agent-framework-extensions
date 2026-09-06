@@ -34,16 +34,28 @@ Console.CancelKeyPress += (_, eventArgs) =>
 	cancellationSource.Cancel();
 };
 
-DeviceCodeCredential graphCredential = new(new DeviceCodeCredentialOptions
+DeviceCodeCredential graphCredential;
+try
 {
-	TenantId = configuration.TenantId,
-	ClientId = configuration.ClientId,
-	DeviceCodeCallback = (deviceCodeInfo, _) =>
-	{
-		Console.WriteLine(deviceCodeInfo.Message);
-		return Task.CompletedTask;
-	},
-});
+	graphCredential = await PersistentDeviceCodeCredential.CreateAsync(
+		configuration.TenantId,
+		configuration.ClientId,
+		(deviceCodeInfo, _) =>
+		{
+			Console.WriteLine(deviceCodeInfo.Message);
+			return Task.CompletedTask;
+		},
+		cancellationSource.Token);
+}
+catch (OperationCanceledException) when (cancellationSource.IsCancellationRequested)
+{
+	return;
+}
+catch (Exception exception)
+{
+	Console.Error.WriteLine($"Microsoft Graph authentication could not be initialized: {exception.Message}");
+	return;
+}
 
 ServiceCollection services = new();
 services.AddSingleton<IMicrosoft365RetrievalTokenProvider>(new AzureIdentityRetrievalTokenProvider(graphCredential));
