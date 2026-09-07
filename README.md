@@ -1,43 +1,96 @@
-# agent-framework-extensions
-Community-driven .NET extensions and integrations for Microsoft Agent Framework.
+# Microsoft 365 Retrieval for .NET agents
 
-`Acterion.Agents.AI.Microsoft365.Retrieval` provides a lightweight, native Microsoft Agent Framework `TextSearchProvider` integration for calling the Microsoft 365 Copilot Retrieval API directly from .NET applications.
+Bring permission-trimmed SharePoint knowledge into .NET applications and Microsoft Agent Framework agents with one focused package.
 
-The package consumes a delegated Microsoft Graph token through `IMicrosoft365RetrievalTokenProvider`; it does not acquire identity and does not depend on Azure Identity, Microsoft Identity Web, MSAL, or ASP.NET Core. Host applications select their authentication flow and supply the provider. The planned console and ASP.NET Core samples demonstrate Azure Identity device-code and Microsoft Identity Web On-Behalf-Of flows without moving those SDKs into the base package.
+`Acterion.Agents.AI.Microsoft365.Retrieval` calls the Microsoft 365 Copilot Retrieval API directly and adapts its results to Agent Framework's native `TextSearchProvider`. Use the retrieval client by itself, or add grounded context to an existing agent without provisioning a separate search index.
 
-Microsoft provides higher-level SharePoint grounding options through Foundry Agent Service and Foundry IQ. This package targets a different scenario: .NET developers who already use Microsoft Agent Framework and want to call the Microsoft 365 Copilot Retrieval API directly through a native `TextSearchProvider` integration, without introducing additional Foundry IQ or Azure AI Search infrastructure.
+> This is a community project and is not an official Microsoft package.
 
-It is a community project and is not an official Microsoft package. See the [project specification](specs/SPEC/SPEC.md) for architecture, security guidance, and current platform comparison notes.
+## Why use it?
 
-## Typed SharePoint filters
+- **No duplicate index**: retrieve from SharePoint content already indexed by Microsoft 365.
+- **Permission trimmed**: results are evaluated for the signed-in user by Microsoft 365 and SharePoint.
+- **Host-owned identity**: choose device code, interactive browser, On-Behalf-Of, or another delegated flow in your application.
+- **Two integration levels**: call `IMicrosoft365RetrievalClient` directly or compose retrieval into an Agent Framework pipeline.
+- **Typed site filters**: build supported `Path` and `SiteID` constraints without assembling KQL by hand.
 
-Use `SharePointRetrievalFilter` to create the supported `Path` and `SiteID` constraints from trusted application configuration. Assign its `Expression` to the existing `FilterExpression` option:
+## Supported today
 
-```csharp
-Uri engineeringSite = new("https://contoso.sharepoint.com/sites/engineering/");
-Guid hrSiteId = Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6");
+| Capability | Support |
+| --- | --- |
+| Data source | SharePoint Online |
+| Identity | Delegated work or school identity |
+| Runtime | .NET 10 |
+| Direct retrieval | `IMicrosoft365RetrievalClient` |
+| Agent integration | Microsoft Agent Framework `TextSearchProvider` |
+| Retrieval timing | Before every model call or on demand |
 
-options.FilterExpression = SharePointRetrievalFilter.Path(engineeringSite).Expression;
-options.FilterExpression = SharePointRetrievalFilter.SiteId(hrSiteId).Expression;
-options.FilterExpression = SharePointRetrievalFilter
-	.AnyOf(
-		SharePointRetrievalFilter.Path(engineeringSite),
-		SharePointRetrievalFilter.SiteId(hrSiteId))
-	.Expression;
-options.FilterExpression = SharePointRetrievalFilter
-	.AnyOf(
-		SharePointRetrievalFilter.Path(engineeringSite),
-		SharePointRetrievalFilter.AnyOf(
-			SharePointRetrievalFilter.SiteId(hrSiteId),
-			SharePointRetrievalFilter.Path(new Uri("https://contoso.sharepoint.com/sites/legal/"))))
-	.Expression;
+Application permissions, app-only retrieval, OneDrive retrieval, and Microsoft 365 Copilot connector retrieval are not exposed by this package.
+
+## Prerequisites
+
+You need:
+
+1. A Microsoft Entra app registration with delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
+2. A host authentication flow that obtains a delegated Graph token for the current user.
+3. Access to the Microsoft 365 Copilot Retrieval API through either:
+   - a Microsoft 365 Copilot license for the calling user; or
+   - Retrieval API pay-as-you-go consumption enabled for the tenant.
+
+The delegated Graph permissions do not require admin consent by definition, but tenant consent policies can still require administrator approval. Pay-as-you-go is a preview feature and requires an Azure subscription, an Azure resource group, Microsoft 365 administrator access, and at least one Microsoft 365 Copilot license in the tenant. A model deployment is optional for direct retrieval and required only when your application also invokes a model.
+
+## Install
+
+```sh
+dotnet add package Acterion.Agents.AI.Microsoft365.Retrieval
 ```
 
-`FilterExpression` remains available for advanced KQL scenarios outside this typed builder's narrow contract. Only construct typed filters from trusted application values, never arbitrary end-user input. A filter narrows retrieval; it is not authorization. Incorrectly applied or ignored filtering must never expose content the delegated user cannot already access. Microsoft 365 permission trimming remains the authoritative content-access boundary, and the host remains responsible for endpoint authorization and business rules.
+## Quick start
 
-## Agent Framework usage
+Your host supplies an `IMicrosoft365RetrievalTokenProvider`; the package never selects or acquires credentials for you.
 
-Register the host-owned token provider and Retrieval services, then decorate the model client before creating the agent:
+```csharp
+using Acterion.Agents.AI.Microsoft365.Retrieval;
+using Microsoft.Extensions.DependencyInjection;
+
+ServiceCollection services = new();
+
+services.AddSingleton<IMicrosoft365RetrievalTokenProvider, MyGraphTokenProvider>();
+services.AddMicrosoft365Retrieval(options =>
+{
+	options.MaximumNumberOfResults = 8;
+	options.FilterExpression = SharePointRetrievalFilter
+		.Path(new Uri("https://contoso.sharepoint.com/sites/engineering/"))
+		.Expression;
+});
+
+await using ServiceProvider serviceProvider = services.BuildServiceProvider();
+IMicrosoft365RetrievalClient retrieval =
+	serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>();
+
+IReadOnlyList<Microsoft365RetrievalHit> hits = await retrieval.RetrieveAsync(
+	"What is our incident response process?");
+```
+
+`MyGraphTokenProvider` implements one method and returns a delegated token for Microsoft Graph:
+
+```csharp
+public sealed class MyGraphTokenProvider : IMicrosoft365RetrievalTokenProvider
+{
+	public Task<string> GetAccessTokenAsync(
+		CancellationToken cancellationToken = default)
+	{
+		// Acquire and return a delegated Microsoft Graph access token here.
+		throw new NotImplementedException();
+	}
+}
+```
+
+See the runnable [console sample](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.Console) for Azure Identity device-code authentication and retrieval without a model.
+
+## Add retrieval to an agent
+
+Register the same retrieval services, then decorate your model client before creating the agent:
 
 ```csharp
 IChatClient retrievalChatClient = new ChatClientBuilder(chatClient)
@@ -50,12 +103,31 @@ AIAgent agent = retrievalChatClient.AsAIAgent(
 	services: serviceProvider);
 ```
 
-For on-demand retrieval, pass `OnDemandFunctionCalling` to `UseMicrosoft365Retrieval` and create the agent with `UseProvidedChatClientAsIs = true`. The extension then uses Agent Framework's native function invocation after `TextSearchProvider` adds its search tool; the model decides when to search.
+Use `OnDemandFunctionCalling` when the model should decide whether to search. In that mode, create the agent with `UseProvidedChatClientAsIs = true`; this preserves the package's native function-invocation pipeline but disables Agent Framework's default agent decorators, so compose any other required decorators on `ChatClientBuilder` yourself.
 
-```csharp
-AIAgent agent = retrievalChatClient.AsAIAgent(
-	new ChatClientAgentOptions { UseProvidedChatClientAsIs = true },
-	services: serviceProvider);
-```
+The [ASP.NET Core sample](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.AspNetCore) demonstrates a protected API using Microsoft Identity Web On-Behalf-Of authentication.
 
-`UseProvidedChatClientAsIs` disables all default `ChatClientAgent` decorators. Configure any other Agent Framework decorators required by the host on the `ChatClientBuilder` before creating the agent.
+## Documentation
+
+- [Getting started](https://github.com/luismanez/agent-framework-extensions/blob/main/docs/getting-started.md)
+- [Microsoft Entra ID setup](https://github.com/luismanez/agent-framework-extensions/blob/main/docs/entra-id-setup.md)
+- [Configuration reference](https://github.com/luismanez/agent-framework-extensions/blob/main/docs/configuration.md)
+- [Security and production guidance](https://github.com/luismanez/agent-framework-extensions/blob/main/docs/security.md)
+- [Troubleshooting](https://github.com/luismanez/agent-framework-extensions/blob/main/docs/troubleshooting.md)
+
+## Security boundaries
+
+- Retrieval is delegated-only. Never fall back to application credentials when user token acquisition fails.
+- A filter narrows a query; it is not authorization. Build filters from trusted application configuration, not raw user input.
+- Microsoft 365 permission trimming is the content-access boundary. Your host still owns endpoint, business, and tool authorization.
+- Retrieved documents are untrusted input. Apply prompt-injection defenses appropriate to your application.
+- Do not log access tokens, authorization headers, raw Graph responses, or retrieved document content by default.
+
+## Samples
+
+- [Console](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.Console): device-code sign-in, persistent token cache, retrieval-only mode, and an Azure OpenAI agent flow.
+- [ASP.NET Core](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.AspNetCore): bearer authentication, OBO token acquisition, and grounded responses from a protected API.
+
+## License
+
+Licensed under the [MIT License](https://github.com/luismanez/agent-framework-extensions/blob/main/LICENSE).

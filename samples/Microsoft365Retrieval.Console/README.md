@@ -2,9 +2,20 @@
 
 This sample demonstrates automatic Microsoft 365 retrieval for an Agent Framework agent. The console host obtains a delegated Microsoft Graph token through Azure Identity device-code authentication and supplies it to the Retrieval package through a sample-local `IMicrosoft365RetrievalTokenProvider` implementation.
 
+For package installation and integration choices, start with [getting started](../../docs/getting-started.md). See [Microsoft Entra ID setup](../../docs/entra-id-setup.md) for the complete public-client registration flow and [troubleshooting](../../docs/troubleshooting.md) for live-request diagnostics.
+
+## Prerequisites
+
+- A work or school Microsoft Entra tenant with SharePoint Online content available to the test user.
+- Retrieval API access through a Microsoft 365 Copilot license for that user or tenant-enabled pay-as-you-go consumption.
+- A public-client app registration configured as described below.
+- .NET 10 SDK.
+
+Azure OpenAI is required only for the complete agent flow, not for `--retrieval-only`.
+
 ## App registration
 
-Create a Microsoft Entra app registration for a work or school tenant, then enable public client flows. Add and grant consent for these delegated Microsoft Graph permissions:
+Create a Microsoft Entra app registration for a work or school tenant, then enable public client flows. Add these delegated Microsoft Graph permissions and complete consent according to tenant policy:
 
 ```text
 Files.Read.All

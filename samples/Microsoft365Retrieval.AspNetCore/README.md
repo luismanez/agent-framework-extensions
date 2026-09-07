@@ -4,9 +4,11 @@ This community sample demonstrates a protected ASP.NET Core API whose authentica
 
 The host validates its own bearer token, uses Microsoft Identity Web to acquire a delegated Microsoft Graph token on behalf of that caller, and supplies it through the sample-local `IMicrosoft365RetrievalTokenProvider`. The Retrieval package does not acquire identity and has no Microsoft Identity Web, MSAL, Azure Identity, or ASP.NET Core dependency.
 
+For package installation and integration choices, start with [getting started](../../docs/getting-started.md). See [Microsoft Entra ID setup](../../docs/entra-id-setup.md) for the complete OBO registration flow and [security and production guidance](../../docs/security.md) before adapting this sample for deployment.
+
 ## Prerequisites
 
-- A work or school Microsoft Entra tenant and an account licensed for the Microsoft 365 Copilot Retrieval API.
+- A work or school Microsoft Entra tenant and Retrieval API access through a Microsoft 365 Copilot license for the caller or tenant-enabled pay-as-you-go consumption.
 - An Azure OpenAI Chat Completions deployment accessible to the host's Azure credential.
 - A Microsoft Entra app registration for this protected API and a confidential-client credential for OBO.
 - Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`, granted with the appropriate tenant consent.

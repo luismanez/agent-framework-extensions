@@ -5,8 +5,8 @@
     <Company>Acterion</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>acterion-nuget-icon-blue.png</PackageIcon>
-    <PackageProjectUrl>https://github.com/luis-manez/agent-framework-extensions</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/luis-manez/agent-framework-extensions</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/luismanez/agent-framework-extensions</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/luismanez/agent-framework-extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
