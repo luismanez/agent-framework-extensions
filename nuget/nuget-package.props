@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>Luis Mañez</Authors>
+    <Company>Acterion</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>acterion-nuget-icon-blue.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/luis-manez/agent-framework-extensions</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/luis-manez/agent-framework-extensions</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)/nuget/acterion-nuget-icon-blue.png"
+          Link="acterion-nuget-icon-blue.png"
+          Pack="true"
+          PackagePath="." />
+  </ItemGroup>
+</Project>

@@ -200,6 +200,14 @@ agent-framework-extensions/
 │
 ├── .github/
 │   └── workflows/
+│       └── ci.yml
+│
+├── eng/
+│   ├── Directory.Build.props
+│   └── Directory.Packages.props
+│
+├── nuget/
+│   └── nuget-package.props
 │
 ├── Directory.Build.props
 ├── Directory.Packages.props
@@ -1122,8 +1130,10 @@ The test command uses Microsoft Testing Platform selected in `global.json`. Unti
 Common NuGet metadata should live in:
 
 ```text
-Directory.Build.props
+nuget/nuget-package.props
 ```
+
+Each packable project imports this file explicitly. Repository-wide build settings and centrally managed package versions live under `eng/`, with the root `Directory.Build.props` and `Directory.Packages.props` retained as MSBuild entry points.
 
 Suggested shared metadata:
 
@@ -1141,11 +1151,9 @@ Suggested shared metadata:
     <PackageProjectUrl>https://github.com/&lt;owner&gt;/agent-framework-extensions</PackageProjectUrl>
 
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
+    <PackageIcon>acterion-nuget-icon-blue.png</PackageIcon>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <ContinuousIntegrationBuild
-        Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 </Project>
 ```

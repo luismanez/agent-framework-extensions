@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
+
   <PropertyGroup>
     <Description>Microsoft 365 Copilot Retrieval API integration for Microsoft Agent Framework on .NET.</Description>
     <PackageId>Acterion.Agents.AI.Microsoft365.Retrieval</PackageId>
