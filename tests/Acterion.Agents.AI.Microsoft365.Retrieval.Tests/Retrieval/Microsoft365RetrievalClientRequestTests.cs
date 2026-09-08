@@ -102,9 +102,12 @@ public sealed class Microsoft365RetrievalClientRequestTests
         using RecordingHttpMessageHandler handler = new(response);
         using HttpClient httpClient = new(handler);
         StubTokenProvider tokenProvider = new();
-        SharePointRetrievalFilter filter = SharePointRetrievalFilter.AnyOf(
-            SharePointRetrievalFilter.Path(new Uri("https://contoso.sharepoint.com/sites/engineering/")),
-            SharePointRetrievalFilter.SiteId(Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6")));
+        SharePointRetrievalFilter filter = SharePointRetrievalFilter.AllOf(
+            SharePointRetrievalFilter.SiteId(
+                Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6")),
+            SharePointRetrievalFilter.FileExtensions("pdf", "docx"),
+            SharePointRetrievalFilter.LastModifiedOnOrAfter(
+                new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)));
         Microsoft365RetrievalClient client = new(
             httpClient,
             tokenProvider,

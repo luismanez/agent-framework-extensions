@@ -50,7 +50,20 @@ Metadata values are exposed on each `Microsoft365RetrievalHit` as JSON elements 
 
 ## Typed SharePoint filters
 
-Use `SharePointRetrievalFilter` for the supported `Path` and `SiteID` constraints. Values must come from trusted application configuration.
+`SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. Values must come from trusted application configuration.
+
+| Retrieval property | Typed factory |
+| --- | --- |
+| `Author` | `Author(string)` |
+| `FileExtension` | `FileExtension(string)` or `FileExtensions(params string[])` |
+| `Filename` | `FileName(string)` |
+| `FileType` | `FileType(string)` |
+| `InformationProtectionLabelId` | `InformationProtectionLabelId(Guid)` |
+| `LastModifiedTime` | `LastModifiedOnOrAfter`, `LastModifiedOnOrBefore`, or `LastModifiedBetween` |
+| `ModifiedBy` | `ModifiedBy(string)` |
+| `Path` | `Path(Uri)` |
+| `SiteID` | `SiteId(Guid)` |
+| `Title` | `Title(string)` |
 
 ### Filter by path
 
@@ -72,19 +85,26 @@ options.FilterExpression = SharePointRetrievalFilter
 
 The site ID must be a nonempty GUID.
 
-### Combine trusted scopes
+### Compose filters
 
 ```csharp
 options.FilterExpression = SharePointRetrievalFilter
-    .AnyOf(
-        SharePointRetrievalFilter.Path(
-            new Uri("https://contoso.sharepoint.com/sites/engineering/")),
+    .AllOf(
         SharePointRetrievalFilter.SiteId(
-            Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6")))
+            Guid.Parse("f9a9f9bc-5d23-4ed4-a960-05ba6a83bdb6")),
+        SharePointRetrievalFilter.FileExtensions("pdf", "docx", "pptx"),
+        SharePointRetrievalFilter.LastModifiedOnOrAfter(
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)),
+        SharePointRetrievalFilter.Not(
+            SharePointRetrievalFilter.Title("Draft")))
     .Expression;
 ```
 
-`AnyOf` requires at least one non-null filter and combines all terms with logical `OR`.
+`AllOf` combines filters with `AND`, `AnyOf` combines them with `OR`, and `Not` excludes a filter. Nested expressions retain their logical grouping, while repeated uses of the same operator are flattened into deterministic output.
+
+Date factories accept `DateTimeOffset`, compare inclusively, and emit UTC ISO 8601 values. `FileExtension` and `FileType` accept an optional leading period and normalize ASCII letters to lowercase.
+
+Text factories trim surrounding whitespace and reject empty values, quotation marks, backslashes, wildcards, and control characters. These restrictions prevent values from changing the generated KQL structure. Use a reviewed raw expression when intentional wildcard or other advanced KQL behavior is required.
 
 ## Raw filter expressions
 
@@ -100,7 +120,7 @@ Microsoft documents that an incorrectly formed Retrieval API filter can execute 
 
 - A filter must never be treated as an authorization boundary.
 - Test raw filters against representative tenant content before release.
-- Prefer typed filters when `Path`, `SiteID`, or their union is sufficient.
+- Prefer typed filters whenever their supported properties and operators are sufficient.
 - Enforce endpoint and business authorization independently of retrieval scope.
 
 ## Configuration binding

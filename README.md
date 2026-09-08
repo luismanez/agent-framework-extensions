@@ -12,7 +12,7 @@ Bring permission-trimmed SharePoint knowledge into .NET applications and Microso
 - **Permission trimmed**: results are evaluated for the signed-in user by Microsoft 365 and SharePoint.
 - **Host-owned identity**: choose device code, interactive browser, On-Behalf-Of, or another delegated flow in your application.
 - **Two integration levels**: call `IMicrosoft365RetrievalClient` directly or compose retrieval into an Agent Framework pipeline.
-- **Typed site filters**: build supported `Path` and `SiteID` constraints without assembling KQL by hand.
+- **Typed SharePoint filters**: filter by location, document properties, people, labels, and modification time without assembling KQL by hand.
 
 ## Supported today
 

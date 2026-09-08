@@ -56,7 +56,7 @@ app.MapPost("/api/assistant", HandleAssistantRequest)
 
 Do not use `FilterExpression` as the policy check. Microsoft documents that a Retrieval API query with incorrect KQL can execute without the intended scoping. A filter may improve relevance or constrain an approved corpus, but it is not a fail-closed security boundary.
 
-Use the typed `SharePointRetrievalFilter` for trusted paths and site IDs. If advanced raw KQL is required:
+Use the typed `SharePointRetrievalFilter` for trusted SharePoint properties and logical composition. Its text factories reject KQL structural characters rather than accepting arbitrary expressions. If advanced raw KQL is required:
 
 - Store it in controlled configuration.
 - Validate and test it before deployment.

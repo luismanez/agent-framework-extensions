@@ -429,7 +429,7 @@ The Microsoft 365 Retrieval API can execute an incorrectly formed KQL filter wit
 - do not concatenate arbitrary user input directly into KQL;
 - document that the authoritative access boundary remains Microsoft 365 permission trimming for the delegated user.
 
-Feature 005 provides optional typed helpers for trusted SharePoint path and site-ID filters. The raw `FilterExpression` option remains available for advanced KQL scenarios.
+Feature 005 introduced optional typed helpers for trusted SharePoint path and site-ID filters. The helper now covers every SharePoint property supported by the Retrieval API, inclusive last-modified bounds, and explicit `AND`, `OR`, and `NOT` composition. The raw `FilterExpression` option remains available for advanced KQL scenarios.
 
 ---
 

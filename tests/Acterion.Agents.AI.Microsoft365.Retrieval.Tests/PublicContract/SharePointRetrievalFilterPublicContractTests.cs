@@ -24,7 +24,26 @@ public sealed class SharePointRetrievalFilterPublicContractTests
             .OrderBy(method => method.Name)
             .ToArray();
 
-        Assert.Equal(["AnyOf", "Path", "SiteId"], factoryMethods.Select(method => method.Name));
+        Assert.Equal(
+            [
+                "AllOf",
+                "AnyOf",
+                "Author",
+                "FileExtension",
+                "FileExtensions",
+                "FileName",
+                "FileType",
+                "InformationProtectionLabelId",
+                "LastModifiedBetween",
+                "LastModifiedOnOrAfter",
+                "LastModifiedOnOrBefore",
+                "ModifiedBy",
+                "Not",
+                "Path",
+                "SiteId",
+                "Title",
+            ],
+            factoryMethods.Select(method => method.Name));
         Assert.Equal(typeof(Uri), Assert.Single(factoryMethods.Single(method => method.Name == "Path").GetParameters()).ParameterType);
         Assert.Equal(typeof(Guid), Assert.Single(factoryMethods.Single(method => method.Name == "SiteId").GetParameters()).ParameterType);
         Assert.True(Assert.Single(factoryMethods.Single(method => method.Name == "AnyOf").GetParameters()).GetCustomAttribute<ParamArrayAttribute>() is not null);
