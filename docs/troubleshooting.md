@@ -133,6 +133,12 @@ An empty result is not necessarily an error. Check:
 
 Run once without `FilterExpression`. If results appear, verify the canonical SharePoint path from the item's **Details** pane rather than using a sharing link or browser address.
 
+## Sensitivity label is missing
+
+`Microsoft365RetrievalHit.SensitivityLabel` is `null` when Microsoft Graph does not include sensitivity-label information for a hit. The `ResourceMetadata` option does not request or control this object, and the package does not infer it from other fields.
+
+Confirm the source item has a Microsoft Purview sensitivity label and inspect the current Retrieval API response behavior for that content type. Keep application authorization independent of whether a label is present.
+
 ## Configuration validation failure
 
 `AddMicrosoft365Retrieval` validates options when services resolve. Check that:

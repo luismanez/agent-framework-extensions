@@ -48,6 +48,14 @@ options.ResourceMetadata = ["title", "author", "lastModifiedDateTime"];
 
 Metadata values are exposed on each `Microsoft365RetrievalHit` as JSON elements because fields can have different shapes. Request only fields your application uses, and tolerate absent metadata.
 
+## Sensitivity labels
+
+When Microsoft Graph returns Microsoft Purview label information for a SharePoint result, the package exposes it as `Microsoft365RetrievalHit.SensitivityLabel`. The immutable `Microsoft365RetrievalSensitivityLabel` contains nullable `SensitivityLabelId`, `DisplayName`, `ToolTip`, `Priority`, and `Color` properties.
+
+Sensitivity labels are response metadata and are independent of the configured `ResourceMetadata` collection. `SensitivityLabel` is `null` when Graph omits the object, and individual properties can also be `null` in a partial response. The package does not infer a label from requested metadata or require the identifier to have a particular format.
+
+The Agent Framework adapter retains the complete hit in `TextSearchResult.RawRepresentation`. It does not copy sensitivity-label values into `Text`, `SourceName`, or other model-visible fields.
+
 ## Typed SharePoint filters
 
 `SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. Values must come from trusted application configuration.

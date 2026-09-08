@@ -103,10 +103,17 @@ foreach (Microsoft365RetrievalHit hit in hits)
     {
         Console.WriteLine(extract.Text);
     }
+
+    if (hit.SensitivityLabel is { } label)
+    {
+        Console.WriteLine($"Sensitivity: {label.DisplayName ?? label.SensitivityLabelId}");
+    }
 }
 ```
 
-This is the simplest path for search interfaces, diagnostics, custom orchestration, and applications that do not use Agent Framework.
+This is the simplest path for search interfaces, diagnostics, custom orchestration, and applications that do not use Agent Framework. `SensitivityLabel` is optional because Microsoft Graph does not return it for every hit.
+
+Agent Framework keeps the typed hit in `TextSearchResult.RawRepresentation`, so hosts can inspect the label there. The adapter does not add label fields to the text sent to the model.
 
 ## Automatic agent retrieval
 

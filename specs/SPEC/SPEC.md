@@ -446,6 +446,8 @@ Each hit can contain:
 - sensitivity label information;
 - other future fields.
 
+The public typed hit preserves sensitivity-label information as an optional immutable model with nullable ID, display name, tooltip, priority, and color properties. It remains separate from requested `resourceMetadata`; absent or partial label data maps to null values without inference.
+
 ### 9.1 Mapping to Agent Framework
 
 For the MVP, map **one retrieval hit to one `TextSearchResult`**.
@@ -473,6 +475,8 @@ When multiple extracts exist for a hit, concatenate them with a clear separator 
 Preserve the received hit sequence, but do not claim stable ranking or ordering across hits: the Retrieval API does not guarantee it. The adapter MUST NOT sort or apply its own relevance filtering in v0.1.
 
 Do not include sensitivity label metadata in the LLM-visible text by default.
+
+Keep the complete typed hit, including optional sensitivity-label metadata, in `TextSearchResult.RawRepresentation` for host-side inspection.
 
 The raw response representation may retain metadata for debugging/custom formatting, but sensitive data MUST NOT be logged by default.
 
@@ -1274,6 +1278,7 @@ Verify:
 - multiple extracts are concatenated;
 - empty extracts;
 - empty hit list;
+- optional and partial sensitivity-label mapping;
 - unknown JSON fields do not break deserialization.
 
 #### HTTP behavior
@@ -1623,6 +1628,7 @@ The MVP is complete when all of the following are true:
 - [ ] `filterExpression` is supported.
 - [ ] Typed `Path` and `SiteID` filters compose deterministically with `OR`.
 - [ ] `resourceMetadata` is supported.
+- [ ] Sensitivity-label metadata is preserved as an optional typed result.
 - [ ] Results map to `TextSearchProvider.TextSearchResult`.
 - [ ] `ChatClientBuilder.UseMicrosoft365Retrieval` attaches retrieval without manual service resolution or `TextSearchProvider` construction before `AsAIAgent` creates the agent.
 - [ ] Source name and source link are preserved.

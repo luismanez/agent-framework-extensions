@@ -14,7 +14,13 @@ public sealed class Microsoft365RetrievalSearchTests
         Microsoft365RetrievalHit firstHit = CreateHit(
             "https://contoso.sharepoint.com/sites/finance/Q1%20Report.docx",
             [CreateExtract("First extract"), CreateExtract("  "), CreateExtract("Second extract")],
-            [("title", "Quarterly report"), ("sensitivityLabel", "Confidential")]);
+            [("title", "Quarterly report")],
+            Create<Microsoft365RetrievalSensitivityLabel>(
+                "f0ddcc93-d3c0-4993-b5cc-76b0a283e252",
+                "Confidential",
+                "Confidential organizational data",
+                4,
+                "#FF8C00"));
         Microsoft365RetrievalHit secondHit = CreateHit(
             "https://contoso.sharepoint.com/sites/finance/Budget.xlsx",
             [CreateExtract("Budget extract")],
@@ -34,6 +40,7 @@ public sealed class Microsoft365RetrievalSearchTests
         Assert.Equal(firstHit.WebUrl, results[0].SourceLink);
         Assert.Equal("First extract\nSecond extract", results[0].Text);
         Assert.Same(firstHit, results[0].RawRepresentation);
+        Assert.Equal("Confidential", firstHit.SensitivityLabel?.DisplayName);
         Assert.DoesNotContain("Confidential", results[0].Text);
         Assert.Equal("Budget.xlsx", results[1].SourceName);
         Assert.Same(secondHit, results[1].RawRepresentation);
@@ -72,7 +79,8 @@ public sealed class Microsoft365RetrievalSearchTests
     private static Microsoft365RetrievalHit CreateHit(
         string webUrl,
         IReadOnlyList<Microsoft365RetrievalExtract> extracts,
-        IReadOnlyList<(string Name, string Value)> metadata)
+        IReadOnlyList<(string Name, string Value)> metadata,
+        Microsoft365RetrievalSensitivityLabel? sensitivityLabel = null)
     {
         using JsonDocument document = JsonDocument.Parse(
             JsonSerializer.Serialize(metadata.ToDictionary(item => item.Name, item => item.Value)));
@@ -80,7 +88,7 @@ public sealed class Microsoft365RetrievalSearchTests
             .EnumerateObject()
             .ToDictionary(property => property.Name, property => property.Value);
 
-        return Create<Microsoft365RetrievalHit>(webUrl, extracts, null, elements);
+        return Create<Microsoft365RetrievalHit>(webUrl, extracts, null, elements, sensitivityLabel);
     }
 
     private static Microsoft365RetrievalExtract CreateExtract(string text) =>

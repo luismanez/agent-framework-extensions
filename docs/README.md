@@ -25,7 +25,7 @@ Use these guides to move from tenant setup to a production-ready Microsoft 365 R
 The package owns:
 
 - Retrieval API request construction and transport.
-- Response parsing and typed retrieval results.
+- Response parsing and typed retrieval results, including optional Microsoft Purview sensitivity labels.
 - SharePoint `Path` and `SiteID` filter construction.
 - Agent Framework `TextSearchProvider` adaptation.
 

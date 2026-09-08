@@ -111,7 +111,8 @@ public sealed class Microsoft365RetrievalAgentBehaviorTests
                 "https://contoso.sharepoint.com/sites/projects/plan.docx",
                 new[] { extract },
                 null,
-                metadata]);
+                metadata,
+                null]);
     }
 
     private sealed class StubRetrievalClient(List<string> events, IReadOnlyList<Microsoft365RetrievalHit>? hits = null)

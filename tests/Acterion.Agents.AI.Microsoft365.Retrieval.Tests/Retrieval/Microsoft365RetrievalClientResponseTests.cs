@@ -28,6 +28,13 @@ public sealed class Microsoft365RetrievalClientResponseTests
                         "isCurrent": true,
                         "owner": null
                       },
+                      "sensitivityLabel": {
+                        "sensitivityLabelId": "f0ddcc93-d3c0-4993-b5cc-76b0a283e252",
+                        "displayName": "Confidential",
+                        "toolTip": "Confidential organizational data",
+                        "priority": 4,
+                        "color": "#FF8C00"
+                      },
                       "unknownField": "ignored"
                     },
                     {
@@ -65,13 +72,50 @@ public sealed class Microsoft365RetrievalClientResponseTests
         Assert.Equal(2, first.ResourceMetadata["rank"].GetInt32());
         Assert.True(first.ResourceMetadata["isCurrent"].GetBoolean());
         Assert.Equal(System.Text.Json.JsonValueKind.Null, first.ResourceMetadata["owner"].ValueKind);
+        Assert.NotNull(first.SensitivityLabel);
+        Assert.Equal(
+          "f0ddcc93-d3c0-4993-b5cc-76b0a283e252",
+          first.SensitivityLabel.SensitivityLabelId);
+        Assert.Equal("Confidential", first.SensitivityLabel.DisplayName);
+        Assert.Equal("Confidential organizational data", first.SensitivityLabel.ToolTip);
+        Assert.Equal(4, first.SensitivityLabel.Priority);
+        Assert.Equal("#FF8C00", first.SensitivityLabel.Color);
 
         Microsoft365RetrievalHit second = hits[1];
         Assert.Equal("https://contoso.sharepoint.com/sites/Engineering/roadmap.docx", second.WebUrl);
         Assert.Null(second.ResourceType);
         Assert.Empty(second.Extracts);
         Assert.Empty(second.ResourceMetadata);
+        Assert.Null(second.SensitivityLabel);
     }
+
+      [Fact]
+      public async Task RetrieveAsync_PreservesMissingSensitivityLabelFieldsAsNull()
+      {
+        Microsoft365RetrievalClient client = CreateClient(
+          """
+          {
+            "retrievalHits": [
+              {
+                "webUrl": "https://contoso.sharepoint.com/sites/Engineering/plan.docx",
+                "sensitivityLabel": { "displayName": "Confidential" }
+              }
+            ]
+          }
+          """);
+
+        Microsoft365RetrievalHit hit = Assert.Single(await client.RetrieveAsync(
+          "engineering plan",
+          TestContext.Current.CancellationToken));
+
+        Microsoft365RetrievalSensitivityLabel label =
+          Assert.IsType<Microsoft365RetrievalSensitivityLabel>(hit.SensitivityLabel);
+        Assert.Null(label.SensitivityLabelId);
+        Assert.Equal("Confidential", label.DisplayName);
+        Assert.Null(label.ToolTip);
+        Assert.Null(label.Priority);
+        Assert.Null(label.Color);
+      }
 
       [Fact]
       public async Task RetrieveAsync_MapsMissingOptionalCollectionsToEmptyCollections()
@@ -92,6 +136,7 @@ public sealed class Microsoft365RetrievalClientResponseTests
         Assert.Empty(hit.Extracts);
         Assert.Empty(hit.ResourceMetadata);
         Assert.Null(hit.ResourceType);
+        Assert.Null(hit.SensitivityLabel);
       }
 
       [Theory]

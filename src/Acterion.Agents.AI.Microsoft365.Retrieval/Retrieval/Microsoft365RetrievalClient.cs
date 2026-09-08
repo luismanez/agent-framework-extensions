@@ -207,13 +207,25 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
                 hit.WebUrl,
                 extracts,
                 hit.ResourceType,
-                hit.ResourceMetadata ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal));
+                hit.ResourceMetadata ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+                MapSensitivityLabel(hit.SensitivityLabel));
         }
         catch (ArgumentException exception)
         {
             throw new JsonException("A retrieval hit contained invalid metadata.", exception);
         }
     }
+
+    private static Microsoft365RetrievalSensitivityLabel? MapSensitivityLabel(
+        RetrievalApiSensitivityLabel? sensitivityLabel) =>
+        sensitivityLabel is null
+            ? null
+            : new Microsoft365RetrievalSensitivityLabel(
+                sensitivityLabel.SensitivityLabelId,
+                sensitivityLabel.DisplayName,
+                sensitivityLabel.ToolTip,
+                sensitivityLabel.Priority,
+                sensitivityLabel.Color);
 
     private static string GetFailureMessage(HttpStatusCode statusCode) => statusCode switch
     {

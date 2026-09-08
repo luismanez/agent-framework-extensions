@@ -106,9 +106,10 @@ Task<IReadOnlyList<Microsoft365RetrievalHit>> RetrieveAsync(
 - `WebUrl` as the original response string;
 - `Extracts` as a read-only list of `Microsoft365RetrievalExtract`;
 - `ResourceType` as an optional string;
-- `ResourceMetadata` as a read-only string-keyed collection whose values preserve JSON scalar values without assuming every requested metadata field is a string.
+- `ResourceMetadata` as a read-only string-keyed collection whose values preserve JSON scalar values without assuming every requested metadata field is a string;
+- `SensitivityLabel` as an optional `Microsoft365RetrievalSensitivityLabel`.
 
-`Microsoft365RetrievalExtract` MUST be read-only and expose the extract `Text` plus nullable `RelevanceScore`. Internal wire DTOs MAY retain sensitivity-label data for deserialization, but it is not part of the public result contract in v0.1.
+`Microsoft365RetrievalExtract` MUST be read-only and expose the extract `Text` plus nullable `RelevanceScore`. `Microsoft365RetrievalSensitivityLabel` MUST be read-only and expose nullable `SensitivityLabelId`, `DisplayName`, `ToolTip`, `Priority`, and `Color` properties. Missing label objects and partial label fields MUST be preserved as null rather than inferred or rejected.
 
 The typed hit representation therefore preserves, without making it LLM-visible:
 
@@ -116,6 +117,7 @@ The typed hit representation therefore preserves, without making it LLM-visible:
 - extracts in response order, including text and optional relevance score;
 - `resourceType`;
 - requested resource metadata;
+- optional sensitivity-label metadata;
 - enough requested metadata for source mapping and consumer diagnostics.
 
 Unknown wire fields MUST be ignored safely; preserving them is not a v0.1 contract. Feature 002 assigns the resulting `Microsoft365RetrievalHit` instance to `TextSearchResult.RawRepresentation`.

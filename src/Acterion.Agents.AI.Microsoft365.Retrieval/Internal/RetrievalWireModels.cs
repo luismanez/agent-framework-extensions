@@ -41,6 +41,9 @@ internal sealed class RetrievalApiHit
 
     [JsonPropertyName("resourceMetadata")]
     public IReadOnlyDictionary<string, JsonElement>? ResourceMetadata { get; init; }
+
+    [JsonPropertyName("sensitivityLabel")]
+    public RetrievalApiSensitivityLabel? SensitivityLabel { get; init; }
 }
 
 internal sealed class RetrievalApiExtract
@@ -50,4 +53,22 @@ internal sealed class RetrievalApiExtract
 
     [JsonPropertyName("relevanceScore")]
     public double? RelevanceScore { get; init; }
+}
+
+internal sealed class RetrievalApiSensitivityLabel
+{
+    [JsonPropertyName("sensitivityLabelId")]
+    public string? SensitivityLabelId { get; init; }
+
+    [JsonPropertyName("displayName")]
+    public string? DisplayName { get; init; }
+
+    [JsonPropertyName("toolTip")]
+    public string? ToolTip { get; init; }
+
+    [JsonPropertyName("priority")]
+    public int? Priority { get; init; }
+
+    [JsonPropertyName("color")]
+    public string? Color { get; init; }
 }

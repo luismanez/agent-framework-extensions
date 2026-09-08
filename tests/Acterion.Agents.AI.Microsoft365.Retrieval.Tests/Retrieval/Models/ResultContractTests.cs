@@ -23,12 +23,20 @@ public sealed class ResultContractTests
             Create<Microsoft365RetrievalExtract>("first", 0.9d),
             Create<Microsoft365RetrievalExtract>("second", null),
         ];
+        Microsoft365RetrievalSensitivityLabel sensitivityLabel =
+            Create<Microsoft365RetrievalSensitivityLabel>(
+                "f0ddcc93-d3c0-4993-b5cc-76b0a283e252",
+                "Confidential",
+                "Confidential organizational data",
+                4,
+                "#FF8C00");
 
         Microsoft365RetrievalHit hit = Create<Microsoft365RetrievalHit>(
             "https://contoso.sharepoint.com/report.docx",
             extracts,
             "document",
-            metadata);
+            metadata,
+            sensitivityLabel);
 
         extracts.Clear();
         metadata.Clear();
@@ -44,6 +52,14 @@ public sealed class ResultContractTests
         Assert.True(hit.ResourceMetadata["published"].GetBoolean());
         Assert.Equal(JsonValueKind.Null, hit.ResourceMetadata["owner"].ValueKind);
         Assert.False(hit.ResourceMetadata.ContainsKey("TITLE"));
+        Assert.Same(sensitivityLabel, hit.SensitivityLabel);
+        Microsoft365RetrievalSensitivityLabel actualLabel =
+            Assert.IsType<Microsoft365RetrievalSensitivityLabel>(hit.SensitivityLabel);
+        Assert.Equal("f0ddcc93-d3c0-4993-b5cc-76b0a283e252", actualLabel.SensitivityLabelId);
+        Assert.Equal("Confidential", actualLabel.DisplayName);
+        Assert.Equal("Confidential organizational data", actualLabel.ToolTip);
+        Assert.Equal(4, actualLabel.Priority);
+        Assert.Equal("#FF8C00", actualLabel.Color);
         Assert.Throws<NotSupportedException>(
             () => ((IList)hit.Extracts).Add(Create<Microsoft365RetrievalExtract>("third", 0.1d)));
         Assert.Throws<NotSupportedException>(
@@ -65,7 +81,8 @@ public sealed class ResultContractTests
                 "https://contoso.sharepoint.com/report.docx",
                 Array.Empty<Microsoft365RetrievalExtract>(),
                 null,
-                metadata));
+                metadata,
+                null));
 
         Assert.Equal("resourceMetadata", exception.ParamName);
     }

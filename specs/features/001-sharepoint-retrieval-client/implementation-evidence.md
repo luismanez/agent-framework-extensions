@@ -46,3 +46,10 @@ The human approval item remains open. No implementation beyond the Public Contra
 ### Workflow Note
 
 Task 5 failure and cancellation tests were observed failing before implementation. Per the requested compilation-minimizing workflow, the new Task 6 and Task 7 tests were validated after their implementations rather than in a separately compiled RED pass. All normal verification uses in-memory handlers and stub token providers; no tenant credentials, network access, or Microsoft 365 license are required.
+
+## Sensitivity Label Contract Extension
+
+- RED: focused contract and response tests failed to compile because `Microsoft365RetrievalSensitivityLabel` and `Microsoft365RetrievalHit.SensitivityLabel` did not exist.
+- GREEN: the public contract, immutable result, Graph response mapping, missing-label behavior, and Agent Framework non-projection behavior are covered by the tenant-independent suite.
+- Release validation: restore and Release build succeeded without warnings; all 140 tests passed.
+- Package validation: the `.nupkg` contains the assembly and XML documentation for the new public type, and the matching `.snupkg` contains the portable PDB.

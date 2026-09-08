@@ -42,7 +42,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [x] Hit and extract types are sealed and read-only to consumers.
+- [x] Hit, extract, and sensitivity-label types are sealed and read-only to consumers.
 - [x] Metadata is exposed as an ordinal read-only dictionary of cloned scalar `JsonElement` values.
 - [x] The package exception exposes nullable status and request ID, preserves an inner exception, and can be constructed without response content.
 
@@ -59,6 +59,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalExtract.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalSensitivityLabel.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Models/ResultContractTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
@@ -105,7 +106,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 **Acceptance criteria:**
 
-- [x] Hit/extract order, URLs, relevance, resource type, and scalar metadata types are preserved.
+- [x] Hit/extract order, URLs, relevance, resource type, scalar metadata types, and optional sensitivity-label fields are preserved.
 - [x] Missing optional collections become empty and unknown fields are ignored.
 - [x] Missing required fields, malformed JSON, or nonscalar metadata produce a package exception preserving the inner serialization error.
 

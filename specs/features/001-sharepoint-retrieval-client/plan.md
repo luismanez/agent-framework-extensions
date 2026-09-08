@@ -49,6 +49,7 @@ Use the namespace `Acterion.Agents.AI.Microsoft365.Retrieval` and expose:
 - `Microsoft365RetrievalClient`;
 - `Microsoft365RetrievalHit`;
 - `Microsoft365RetrievalExtract`;
+- `Microsoft365RetrievalSensitivityLabel`;
 - `Microsoft365RetrievalException`;
 - one `IServiceCollection` extension for registration.
 
@@ -67,12 +68,15 @@ Rationale:
 
 Copy values with `JsonElement.Clone()` before exposing them. Preserve property names with ordinal, case-sensitive semantics. Treat object and array metadata values as an invalid known-field shape rather than silently changing the public scalar contract. Missing `resourceMetadata` maps to an empty read-only dictionary.
 
+Expose a present `sensitivityLabel` object as an immutable `Microsoft365RetrievalSensitivityLabel` with nullable ID, display name, tooltip, priority, and color properties. Keep it separate from requested `ResourceMetadata`. A missing label maps to null, partial label fields remain null, and the external identifier remains a string rather than being parsed as a GUID.
+
 ### 3. Required and Optional Response Fields
 
 - `webUrl` is required and remains the original response string; missing or non-string values are invalid.
 - `extracts` may be missing or empty and maps to an empty read-only list.
 - each present extract requires string `text`; `relevanceScore` is nullable.
 - `resourceType` is optional.
+- `sensitivityLabel` is optional and maps independently of requested resource metadata.
 - `retrievalHits` must be present; an empty array returns an empty result collection.
 - unknown JSON properties are ignored.
 
@@ -207,7 +211,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Acceptance criteria:**
 
-- [ ] Hits and extracts are sealed, read-only to consumers, preserve extract order, and expose the specified nullable fields.
+- [ ] Hits, extracts, and sensitivity labels are sealed and read-only to consumers; extracts preserve response order and optional fields remain nullable.
 - [ ] Metadata uses a read-only ordinal dictionary of cloned `JsonElement` scalar values.
 - [ ] The package exception exposes nullable status and request ID, supports an inner exception, and can be constructed without response content.
 
@@ -222,6 +226,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalHit.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalExtract.cs`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Models/Microsoft365RetrievalSensitivityLabel.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalException.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Models/ResultContractTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/PublicContract/PublicContractTests.cs`
@@ -268,7 +273,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 **Acceptance criteria:**
 
-- [ ] Multiple hits and extracts preserve response order, optional relevance scores, original URLs, resource type, and scalar metadata types.
+- [ ] Multiple hits and extracts preserve response order, optional relevance scores, original URLs, resource type, scalar metadata types, and optional sensitivity-label fields.
 - [ ] Missing optional collections map to empty read-only collections and unknown properties are ignored.
 - [ ] Missing required fields, malformed JSON, or object/array metadata values fail with a package exception preserving the inner serialization error.
 

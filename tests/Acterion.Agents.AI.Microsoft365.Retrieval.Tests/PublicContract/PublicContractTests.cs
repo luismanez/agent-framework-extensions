@@ -72,6 +72,7 @@ public sealed class PublicContractTests
             ("Extracts", typeof(IReadOnlyList<Microsoft365RetrievalExtract>)),
             ("ResourceMetadata", typeof(IReadOnlyDictionary<string, JsonElement>)),
             ("ResourceType", typeof(string)),
+            ("SensitivityLabel", typeof(Microsoft365RetrievalSensitivityLabel)),
             ("WebUrl", typeof(string)));
 
         Assert.True(typeof(Microsoft365RetrievalExtract).IsSealed);
@@ -80,6 +81,16 @@ public sealed class PublicContractTests
             typeof(Microsoft365RetrievalExtract),
             ("RelevanceScore", typeof(double?)),
             ("Text", typeof(string)));
+
+        Assert.True(typeof(Microsoft365RetrievalSensitivityLabel).IsSealed);
+        Assert.Empty(typeof(Microsoft365RetrievalSensitivityLabel).GetConstructors());
+        AssertReadOnlyProperties(
+            typeof(Microsoft365RetrievalSensitivityLabel),
+            ("Color", typeof(string)),
+            ("DisplayName", typeof(string)),
+            ("Priority", typeof(int?)),
+            ("SensitivityLabelId", typeof(string)),
+            ("ToolTip", typeof(string)));
 
         Assert.True(typeof(Microsoft365RetrievalException).IsSealed);
         Assert.True(typeof(Exception).IsAssignableFrom(typeof(Microsoft365RetrievalException)));

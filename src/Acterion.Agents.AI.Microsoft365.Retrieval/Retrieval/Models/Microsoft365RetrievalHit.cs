@@ -12,7 +12,8 @@ public sealed class Microsoft365RetrievalHit
         string webUrl,
         IReadOnlyList<Microsoft365RetrievalExtract> extracts,
         string? resourceType,
-        IReadOnlyDictionary<string, JsonElement> resourceMetadata)
+        IReadOnlyDictionary<string, JsonElement> resourceMetadata,
+        Microsoft365RetrievalSensitivityLabel? sensitivityLabel)
     {
         ArgumentNullException.ThrowIfNull(webUrl);
         ArgumentNullException.ThrowIfNull(extracts);
@@ -35,6 +36,7 @@ public sealed class Microsoft365RetrievalHit
         Extracts = new ReadOnlyCollection<Microsoft365RetrievalExtract>(extracts.ToArray());
         ResourceType = resourceType;
         ResourceMetadata = new ReadOnlyDictionary<string, JsonElement>(metadata);
+        SensitivityLabel = sensitivityLabel;
     }
 
     /// <summary>
@@ -56,4 +58,9 @@ public sealed class Microsoft365RetrievalHit
     /// Gets the requested resource metadata as JSON scalar values.
     /// </summary>
     public IReadOnlyDictionary<string, JsonElement> ResourceMetadata { get; }
+
+    /// <summary>
+    /// Gets the Microsoft Purview sensitivity label applied to the result, when available.
+    /// </summary>
+    public Microsoft365RetrievalSensitivityLabel? SensitivityLabel { get; }
 }

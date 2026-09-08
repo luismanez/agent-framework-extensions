@@ -72,13 +72,13 @@ For every retrieval hit, the adapter MUST create exactly one `TextSearchResult` 
 - `SourceName` falling back to the decoded filename or last meaningful URI segment;
 - `SourceName` falling back to `webUrl` when no useful segment exists;
 - `Text` containing non-empty extract text in response order, separated by a single newline;
-- `RawRepresentation` containing the typed retrieval hit from Feature 001.
+- `RawRepresentation` containing the typed retrieval hit from Feature 001, including optional sensitivity-label metadata.
 
 Extract-array order MUST be preserved within each hit. The Retrieval API does not guarantee ranking or ordering across hits, so the adapter MUST preserve the received hit sequence without claiming stable order, sorting it, or applying relevance filtering.
 
 Whitespace-only extracts MUST be omitted. A hit with no non-empty extracts MUST have deterministic behavior finalized in the Plan gate: either map it with empty text if required by Agent Framework or omit it if empty text is not useful. The chosen behavior MUST be documented and tested.
 
-Sensitivity-label metadata MUST NOT be added to `Text`, source names, prompts, or logs by default.
+Sensitivity-label metadata MUST remain available to the host through `RawRepresentation` but MUST NOT be added to `Text`, source names, prompts, or logs by default.
 
 An empty retrieval-hit collection MUST return an empty result sequence and MUST NOT throw.
 

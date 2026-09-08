@@ -23,6 +23,7 @@ Microsoft 365 and SharePoint decide which content the delegated user can access.
 | Delegated acquisition fails and code escalates to app-only | Fail closed; never retry with application credentials |
 | A user or model changes the KQL scope | Build filters only from trusted application configuration |
 | A filter is missing, malformed, or ignored | Enforce authorization independently; treat filters only as query scope |
+| A sensitivity label is treated as an access decision | Use labels only as host policy input; enforce authorization independently |
 | Retrieved text contains indirect prompt injection | Treat extracts as untrusted data, not instructions |
 | Logs disclose content or credentials | Log operational metadata, not tokens, queries, documents, or raw responses |
 | One user's cached token or result reaches another user | Partition caches and state by stable user and tenant identity |
@@ -85,12 +86,16 @@ Retrieval hits can contain confidential organizational text and metadata. Define
 
 - Confirm that the selected model service and deployment meet the organization's data-handling requirements.
 - Minimize requested metadata and the number of results sent downstream.
+- Treat sensitivity-label names, descriptions, identifiers, and colors as content metadata subject to the same handling policy as the hit. With direct retrieval, the host decides whether that metadata is sent to a model.
+- Use sensitivity labels to inform host presentation or policy only after validating that policy independently; a returned or missing label is not an authorization boundary.
 - Avoid persisting raw extracts unless the application has a documented retention purpose.
 - Apply the same classification, retention, deletion, and incident-response controls used for the source content.
 - Do not expose raw hits or extracts to clients unless the product explicitly requires it and the response is authorized.
 - Review telemetry processors, exception reporters, and request capture before production.
 
 Direct retrieval keeps model infrastructure optional. If a use case only needs search results, do not send document text to a model.
+
+The Agent Framework adapter retains sensitivity-label metadata only in `TextSearchResult.RawRepresentation`; it does not send label values to the model. A host that reads `RawRepresentation` and constructs additional context must apply its own authorization and data-handling policy before including those values.
 
 ## Secrets and credentials
 

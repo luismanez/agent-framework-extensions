@@ -13,6 +13,7 @@ Bring permission-trimmed SharePoint knowledge into .NET applications and Microso
 - **Host-owned identity**: choose device code, interactive browser, On-Behalf-Of, or another delegated flow in your application.
 - **Two integration levels**: call `IMicrosoft365RetrievalClient` directly or compose retrieval into an Agent Framework pipeline.
 - **Typed SharePoint filters**: filter by location, document properties, people, labels, and modification time without assembling KQL by hand.
+- **Typed sensitivity labels**: inspect Microsoft Purview label metadata returned with SharePoint hits without adding it to model-visible text.
 
 ## Supported today
 
@@ -24,6 +25,7 @@ Bring permission-trimmed SharePoint knowledge into .NET applications and Microso
 | Direct retrieval | `IMicrosoft365RetrievalClient` |
 | Agent integration | Microsoft Agent Framework `TextSearchProvider` |
 | Retrieval timing | Before every model call or on demand |
+| Sensitivity labels | Optional typed metadata on retrieval hits |
 
 Application permissions, app-only retrieval, OneDrive retrieval, and Microsoft 365 Copilot connector retrieval are not exposed by this package.
 
