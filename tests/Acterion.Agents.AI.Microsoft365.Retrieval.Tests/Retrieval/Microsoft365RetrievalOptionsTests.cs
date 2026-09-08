@@ -45,6 +45,22 @@ public sealed class Microsoft365RetrievalOptionsTests
         Assert.Contains("ResourceMetadata", exception.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t\r\n")]
+    public void AddMicrosoft365Retrieval_RejectsBlankFilterExpressionWhenClientIsResolved(
+        string filterExpression)
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+            options.FilterExpression = filterExpression);
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+
+        Assert.Contains("FilterExpression", exception.Message, StringComparison.Ordinal);
+    }
+
     private static ServiceProvider CreateServiceProvider(Action<Microsoft365RetrievalOptions> configure)
     {
         ServiceCollection services = new();

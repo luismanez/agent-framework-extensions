@@ -44,10 +44,8 @@ The delegated Graph permissions do not require admin consent by definition, but 
 ## Install
 
 ```sh
-dotnet add package Acterion.Agents.AI.Microsoft365.Retrieval --prerelease
+dotnet add package Acterion.Agents.AI.Microsoft365.Retrieval
 ```
-
-The package is currently available as a preview release.
 
 ## Quick start
 
@@ -75,6 +73,8 @@ IMicrosoft365RetrievalClient retrieval =
 IReadOnlyList<Microsoft365RetrievalHit> hits = await retrieval.RetrieveAsync(
 	"What is our incident response process?");
 ```
+
+Retrieval options are validated before token acquisition or HTTP. `MaximumNumberOfResults` must be from 1 through 25, raw filter expressions must be null or non-whitespace, and metadata field names must be nonempty.
 
 `MyGraphTokenProvider` implements one method and returns a delegated token for Microsoft Graph:
 

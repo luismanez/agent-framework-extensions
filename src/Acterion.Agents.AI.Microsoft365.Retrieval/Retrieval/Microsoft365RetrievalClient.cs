@@ -29,6 +29,7 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
     /// <param name="tokenProvider">The host-provided delegated token source.</param>
     /// <param name="options">The retrieval request options.</param>
     /// <param name="logger">The optional logger used for safe operational diagnostics.</param>
+    /// <exception cref="OptionsValidationException">The retrieval options are invalid.</exception>
     public Microsoft365RetrievalClient(
         HttpClient httpClient,
         IMicrosoft365RetrievalTokenProvider tokenProvider,
@@ -37,7 +38,8 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         this.tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
-        this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this.options = Microsoft365RetrievalOptionsValidator.ValidateAndSnapshot(
+            options ?? throw new ArgumentNullException(nameof(options)));
         this.logger = logger;
     }
 
@@ -46,8 +48,9 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
     /// </summary>
     /// <param name="httpClient">The HTTP client used to call Microsoft Graph.</param>
     /// <param name="tokenProvider">The host-provided delegated token source.</param>
-    /// <param name="options">The validated retrieval request options.</param>
+    /// <param name="options">The retrieval request options, validated during construction.</param>
     /// <param name="logger">The logger used for safe operational diagnostics.</param>
+    /// <exception cref="OptionsValidationException">The retrieval options are invalid.</exception>
     public Microsoft365RetrievalClient(
         HttpClient httpClient,
         IMicrosoft365RetrievalTokenProvider tokenProvider,

@@ -396,9 +396,10 @@ The implementation MUST validate known client-side constraints before sending th
 
 - `queryString` must not be null, empty, or whitespace;
 - `queryString` must not exceed 1,500 characters;
-- `maximumNumberOfResults` must be between 1 and 25.
+- `maximumNumberOfResults` must be between 1 and 25;
+- a configured `filterExpression` must contain a non-whitespace KQL expression.
 
-Fail fast with clear argument/configuration exceptions for invalid local input.
+Fail fast with clear argument/configuration exceptions for invalid local input. Apply option validation to both DI-resolved and directly constructed clients before token acquisition or HTTP, and snapshot valid options during construction so later mutation cannot alter request behavior.
 
 ### 8.5 Filter expression
 

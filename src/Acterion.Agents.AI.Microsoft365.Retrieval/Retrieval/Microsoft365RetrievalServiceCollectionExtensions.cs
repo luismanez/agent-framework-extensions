@@ -25,16 +25,8 @@ public static class Microsoft365RetrievalServiceCollectionExtensions
 
         services
             .AddOptions<Microsoft365RetrievalOptions>()
-            .Configure(configure)
-            .Validate(
-                options => options.MaximumNumberOfResults is >= 1 and <= 25,
-                "MaximumNumberOfResults must be between 1 and 25.")
-            .Validate(
-                options => options.ResourceMetadata is not null,
-                "ResourceMetadata must be configured.")
-            .Validate(
-                options => options.ResourceMetadata?.All(metadata => !string.IsNullOrWhiteSpace(metadata)) ?? false,
-                "ResourceMetadata cannot contain null, empty, or whitespace-only values.");
+            .Configure(configure);
+        services.AddSingleton<IValidateOptions<Microsoft365RetrievalOptions>, Microsoft365RetrievalOptionsValidator>();
 
         services.AddHttpClient(nameof(Microsoft365RetrievalClient), httpClient =>
         {

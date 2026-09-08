@@ -62,12 +62,12 @@ If this document conflicts with the parent specification, the parent specificati
 `Microsoft365RetrievalOptions` MUST expose:
 
 - `MaximumNumberOfResults`, default `8`, valid from `1` through `25` inclusive;
-- optional `FilterExpression`;
+- optional `FilterExpression`, which MUST be null or contain a non-whitespace KQL expression;
 - `ResourceMetadata`, defaulting to `title` and `author`.
 
 The data source is fixed internally to `sharePoint` for v0.1. No public data-source enum is introduced.
 
-Configured options MUST be validated when the service graph is resolved. Query-specific validation MUST also occur at the public retrieval boundary.
+Configured options MUST be validated when the service graph is resolved and when the public client is constructed directly. The client MUST snapshot validated option values so later mutation cannot bypass validation or change an existing client. Invalid options and query-specific validation MUST fail before token acquisition or network I/O.
 
 ### Token Boundary
 

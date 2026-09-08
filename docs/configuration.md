@@ -18,10 +18,12 @@ services.AddMicrosoft365Retrieval(options =>
 | Property | Type | Default | Rules |
 | --- | --- | --- | --- |
 | `MaximumNumberOfResults` | `int` | `8` | Must be from 1 through 25 |
-| `FilterExpression` | `string?` | `null` | Optional SharePoint KQL expression |
+| `FilterExpression` | `string?` | `null` | Must be null or contain a non-whitespace SharePoint KQL expression |
 | `ResourceMetadata` | `IReadOnlyCollection<string>` | `title`, `author` | Must be non-null and contain only nonempty values |
 
-Options registered with `AddMicrosoft365Retrieval` are validated when resolved. Invalid result counts or metadata collections fail option validation before a Retrieval request is sent.
+Options registered with `AddMicrosoft365Retrieval` are validated when resolved. The public `Microsoft365RetrievalClient` constructors apply the same validation, so direct construction cannot bypass these rules. Invalid options fail before token acquisition or a Retrieval request.
+
+The client snapshots validated option values and the metadata collection during construction. Later mutations to the source `Microsoft365RetrievalOptions` instance do not change an existing client; construct or resolve a new client to apply new configuration.
 
 ## Query requirements
 
@@ -35,6 +37,8 @@ Prefer one context-rich sentence over a short generic phrase. Retrieval results 
 ## Maximum results
 
 The API supports at most 25 results. The package default is 8 to keep the amount of context passed to a model bounded.
+
+Both boundary values, 1 and 25, are valid. Values outside that inclusive range fail locally and are never sent to Microsoft Graph.
 
 Increasing the value can improve recall but also increases response size, model context usage, and the amount of untrusted document text your application must process. Choose the limit according to the consumer, not as an authorization or site-scoping mechanism.
 
@@ -122,6 +126,8 @@ Text factories trim surrounding whitespace and reject empty values, quotation ma
 options.FilterExpression = configuration["Microsoft365Retrieval:FilterExpression"];
 ```
 
+A raw expression must contain at least one non-whitespace character. Use `null` to omit filtering. This catches an obviously empty configuration but does not parse or prove the correctness of arbitrary KQL.
+
 Only load raw expressions from trusted application configuration. Never concatenate endpoint messages, model output, or other untrusted values into KQL.
 
 Microsoft documents that an incorrectly formed Retrieval API filter can execute without scoping. Therefore:
@@ -154,6 +160,8 @@ services.AddMicrosoft365Retrieval(options =>
         : options.FilterExpression;
 });
 ```
+
+The normalization above intentionally treats an empty configuration value as an omitted filter. Without that normalization, a blank configured value fails options validation.
 
 Use environment-variable double underscores for hierarchical keys, for example `Microsoft365Retrieval__MaximumNumberOfResults=8`.
 

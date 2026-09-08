@@ -6,7 +6,7 @@
     <PackageId>Acterion.Agents.AI.Microsoft365.Retrieval</PackageId>
     <Title>Microsoft 365 Retrieval for Microsoft Agent Framework</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Initial preview with delegated SharePoint retrieval, Microsoft Agent Framework integration, and typed SharePoint filters.</PackageReleaseNotes>
+    <PackageReleaseNotes>Stable 1.0 release with delegated SharePoint retrieval, Microsoft Agent Framework integration, typed SharePoint filters, sensitivity-label metadata, and defensive request validation.</PackageReleaseNotes>
     <PackageTags>agent-framework;microsoft-agent-framework;microsoft365;sharepoint;microsoft-graph;copilot;rag;ai;dotnet</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>

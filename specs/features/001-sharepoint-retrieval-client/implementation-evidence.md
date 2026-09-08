@@ -53,3 +53,12 @@ Task 5 failure and cancellation tests were observed failing before implementatio
 - GREEN: the public contract, immutable result, Graph response mapping, missing-label behavior, and Agent Framework non-projection behavior are covered by the tenant-independent suite.
 - Release validation: restore and Release build succeeded without warnings; all 140 tests passed.
 - Package validation: the `.nupkg` contains the assembly and XML documentation for the new public type, and the matching `.snupkg` contains the portable PDB.
+
+## Pre-1.0 Options Validation Hardening
+
+- Source: the Retrieval API documents a maximum `maximumNumberOfResults` value of 25 and warns that incorrect KQL can execute without scoping.
+- RED: the tenant-independent suite reported 9 expected failures for direct-construction maximum validation, blank filters through DI and direct construction, and mutation of options after client construction.
+- GREEN: DI and both public client constructors use one options validator; valid options and metadata names are snapshotted before use.
+- Boundary coverage: result counts 1 and 25 are accepted; 0 and 26 are rejected. Null or blank metadata and non-null whitespace filters are rejected without token acquisition or HTTP.
+- Release validation: restore and the `1.0.0` Release build succeeded without warnings; all 154 tests passed.
+- Package validation: `Acterion.Agents.AI.Microsoft365.Retrieval.1.0.0.nupkg` contains the stable-install README, assembly, and XML docs; the matching `.snupkg` contains the portable PDB.

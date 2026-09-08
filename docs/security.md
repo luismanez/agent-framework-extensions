@@ -64,6 +64,8 @@ Use the typed `SharePointRetrievalFilter` for trusted SharePoint properties and 
 - Prevent endpoint input and model output from reaching it.
 - Monitor whether a filter is configured without recording its potentially sensitive value.
 
+The package rejects a non-null filter containing only whitespace, but it does not parse or certify arbitrary KQL syntax. Test every raw expression against representative tenant content and keep authorization independent of retrieval scope.
+
 ## Treat retrieved content as untrusted
 
 SharePoint documents can contain malicious, obsolete, or irrelevant instructions. A model can mistake those instructions for application intent.

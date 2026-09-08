@@ -141,12 +141,15 @@ Confirm the source item has a Microsoft Purview sensitivity label and inspect th
 
 ## Configuration validation failure
 
-`AddMicrosoft365Retrieval` validates options when services resolve. Check that:
+`AddMicrosoft365Retrieval` validates options when services resolve, and direct `Microsoft365RetrievalClient` construction applies the same rules. Check that:
 
 - `MaximumNumberOfResults` is between 1 and 25.
+- `FilterExpression` is null or contains a non-whitespace KQL expression.
 - `ResourceMetadata` is not null.
 - Every metadata field is nonempty and not whitespace.
 - The host registered an `IMicrosoft365RetrievalTokenProvider`.
+
+The client snapshots valid options when constructed. If configuration changes at runtime, resolve or construct a new client rather than mutating the original options object.
 
 For all defaults and filter constraints, see the [configuration reference](configuration.md).
 

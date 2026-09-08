@@ -1,12 +1,157 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 
 public sealed class Microsoft365RetrievalClientRequestTests
 {
+    [Theory]
+    [InlineData(1)]
+    [InlineData(25)]
+    public async Task RetrieveAsync_AcceptsMaximumResultBoundaries(int maximumNumberOfResults)
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        Microsoft365RetrievalClient client = new(
+            httpClient,
+            tokenProvider,
+            new Microsoft365RetrievalOptions { MaximumNumberOfResults = maximumNumberOfResults });
+
+        await client.RetrieveAsync("quarterly plan", TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, tokenProvider.CallCount);
+        Assert.Equal(1, handler.RequestCount);
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        Assert.Equal(
+            maximumNumberOfResults,
+            request.RootElement.GetProperty("maximumNumberOfResults").GetInt32());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(26)]
+    public void Constructor_RejectsInvalidMaximumResults(int maximumNumberOfResults)
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK);
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions { MaximumNumberOfResults = maximumNumberOfResults }));
+
+        Assert.Contains("MaximumNumberOfResults", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t\r\n")]
+    public void Constructor_RejectsBlankFilterExpression(string filterExpression)
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK);
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions { FilterExpression = filterExpression }));
+
+        Assert.Contains("FilterExpression", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public void Constructor_RejectsNullResourceMetadata()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK);
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions { ResourceMetadata = null! }));
+
+        Assert.Contains("ResourceMetadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Constructor_RejectsBlankResourceMetadata(string resourceMetadata)
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK);
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions { ResourceMetadata = [resourceMetadata] }));
+
+        Assert.Contains("ResourceMetadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task Constructor_SnapshotsValidatedOptions()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        Microsoft365RetrievalOptions options = new()
+        {
+            MaximumNumberOfResults = 12,
+            FilterExpression = "FileType:\"docx\"",
+            ResourceMetadata = ["title"],
+        };
+        Microsoft365RetrievalClient client = new(httpClient, tokenProvider, options);
+
+        options.MaximumNumberOfResults = 26;
+        options.FilterExpression = " ";
+        options.ResourceMetadata = ["author"];
+
+        await client.RetrieveAsync("quarterly plan", TestContext.Current.CancellationToken);
+
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        Assert.Equal(12, request.RootElement.GetProperty("maximumNumberOfResults").GetInt32());
+        Assert.Equal("FileType:\"docx\"", request.RootElement.GetProperty("filterExpression").GetString());
+        Assert.Equal(
+            ["title"],
+            request.RootElement.GetProperty("resourceMetadata")
+                .EnumerateArray()
+                .Select(element => element.GetString()));
+    }
+
     [Fact]
     public async Task RetrieveAsync_SendsConfiguredSharePointRequestAndReturnsEmptyHits()
     {

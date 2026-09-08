@@ -198,12 +198,13 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 ## Task 7: Add DI Registration and Options Validation
 
-**Description:** Register options and the typed client while declaring only the direct dependencies Feature 001 compiles against.
+**Description:** Register options and the typed client while applying the same validation and defensive option snapshot to direct client construction.
 
 **Acceptance criteria:**
 
 - [x] Registration configures Graph base address, options, and `IMicrosoft365RetrievalClient` without replacing host services.
-- [x] Invalid options and missing token provider fail deterministically when the service graph is resolved.
+- [x] Invalid result counts, blank filters, invalid metadata, and missing token providers fail deterministically for the applicable DI or direct-construction boundary.
+- [x] Valid options are snapshotted so later mutation does not affect an existing client.
 - [x] Required `Microsoft.Extensions.*` packages are direct, centrally pinned stable dependencies and no retry/Graph package is added.
 
 **Verification:**
@@ -221,6 +222,7 @@ Update this file as each RED-GREEN-REFACTOR cycle completes. A checked task must
 
 - `Directory.Packages.props`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/Microsoft365RetrievalOptionsValidator.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/DependencyInjectionTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalOptionsTests.cs`

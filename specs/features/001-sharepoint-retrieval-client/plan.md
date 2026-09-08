@@ -102,9 +102,12 @@ Options validation rejects:
 
 - `MaximumNumberOfResults` outside `1..25`;
 - a null `ResourceMetadata` collection;
-- null, empty, or whitespace-only metadata names.
+- null, empty, or whitespace-only metadata names;
+- a non-null `FilterExpression` containing only whitespace.
 
-`FilterExpression` remains trusted raw application configuration and is not parsed or described as authorization. An empty token returned by a provider fails before HTTP I/O.
+Apply the same validation to DI-resolved and directly constructed clients before token acquisition or HTTP I/O. Snapshot validated scalar values and copy `ResourceMetadata` during construction so later option mutation cannot alter an existing client.
+
+`FilterExpression` remains trusted raw application configuration and is not parsed or described as authorization. Rejecting whitespace catches only an obviously empty expression; it does not validate arbitrary KQL syntax. An empty token returned by a provider fails before HTTP I/O.
 
 ### 6. HTTP and Error Semantics
 
@@ -364,12 +367,13 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 ## Task 7: Add DI Registration and Options Validation
 
-**Description:** Register the typed client and options through a thin service-collection extension, making invalid configuration and a missing token provider fail deterministically while declaring only the direct package dependencies actually compiled against.
+**Description:** Register the typed client and options through a thin service-collection extension, while applying the same validation and defensive option snapshot to direct client construction.
 
 **Acceptance criteria:**
 
 - [ ] Registration configures the Graph base address, options, and `IMicrosoft365RetrievalClient` without replacing unrelated host services.
-- [ ] Invalid result count or metadata configuration fails when the registered client/options graph is resolved; a missing token provider is not silently substituted.
+- [ ] Invalid result count, blank filter, or metadata configuration fails for DI and direct construction before token acquisition or HTTP; a missing token provider is not silently substituted.
+- [ ] Valid options are snapshotted so later mutation does not affect an existing client.
 - [ ] Required `Microsoft.Extensions.*` references are centrally pinned, direct, stable, and no retry/Graph dependency is added.
 
 **Verification:**
@@ -384,6 +388,7 @@ dotnet test --project tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Acte
 
 - `Directory.Packages.props`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj`
+- `src/Acterion.Agents.AI.Microsoft365.Retrieval/Internal/Microsoft365RetrievalOptionsValidator.cs`
 - `src/Acterion.Agents.AI.Microsoft365.Retrieval/Retrieval/Microsoft365RetrievalServiceCollectionExtensions.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/DependencyInjectionTests.cs`
 - `tests/Acterion.Agents.AI.Microsoft365.Retrieval.Tests/Retrieval/Microsoft365RetrievalOptionsTests.cs`
