@@ -1,13 +1,16 @@
 <Project>
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-preview.1</Version>
     <Authors>Luis Mañez</Authors>
     <Company>Acterion</Company>
+    <Copyright>Copyright (c) 2026 Luis Mañez</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>acterion-nuget-icon-blue.png</PackageIcon>
     <PackageProjectUrl>https://github.com/luismanez/agent-framework-extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/luismanez/agent-framework-extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

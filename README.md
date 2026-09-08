@@ -42,8 +42,10 @@ The delegated Graph permissions do not require admin consent by definition, but 
 ## Install
 
 ```sh
-dotnet add package Acterion.Agents.AI.Microsoft365.Retrieval
+dotnet add package Acterion.Agents.AI.Microsoft365.Retrieval --prerelease
 ```
+
+The package is currently available as a preview release.
 
 ## Quick start
 
@@ -127,6 +129,10 @@ The [ASP.NET Core sample](https://github.com/luismanez/agent-framework-extension
 
 - [Console](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.Console): device-code sign-in, persistent token cache, retrieval-only mode, and an Azure OpenAI agent flow.
 - [ASP.NET Core](https://github.com/luismanez/agent-framework-extensions/tree/main/samples/Microsoft365Retrieval.AspNetCore): bearer authentication, OBO token acquisition, and grounded responses from a protected API.
+
+## Feedback
+
+Report bugs and request features through [GitHub Issues](https://github.com/luismanez/agent-framework-extensions/issues).
 
 ## License
 
