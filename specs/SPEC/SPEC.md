@@ -39,6 +39,16 @@ Each feature MUST pass its own specify, plan, tasks, and implementation gates be
 
 CI, packaging, repository-wide documentation, security review, and final quality checks remain release-level concerns in this document. They are not separate product features.
 
+### 1.2 Subsequent package initiatives
+
+The initial `Acterion.Agents.AI.Microsoft365.Retrieval` release remains governed by the feature specifications above. Subsequent independent packages use an approved capability map under `specs/features/` as their initiative index and one specification per stable module id.
+
+The next approved specification initiative is:
+
+- [`007-microsoft365-work-context/capability-map.md`](../features/007-microsoft365-work-context/capability-map.md) - a focused Microsoft 365 work-context package with separate core, Agent Framework provider, Console sample, and ASP.NET Core On-Behalf-Of sample modules.
+
+Feature 007 module specifications inherit this document's repository-wide naming, security, dependency, testing, documentation, packaging, and implementation rules where applicable. They define a separate package and release scope; they do not change the completed Retrieval package contract. If a Feature 007 module conflicts with a repository-wide rule in this document, this document wins until it is explicitly amended.
+
 ---
 
 ## 2. High-Level Goals
