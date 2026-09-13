@@ -2,7 +2,7 @@
 
 **Specification:** [`SPEC-work-context-core.md`](../SPEC-work-context-core.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Approved; permission work complete; Plan Gate awaiting non-permission Calendar decisions; no agent-created commits
+**Status:** Approved; Plan Gate passed; implementation in progress; no agent-created commits
 
 A checked task has completed RED-GREEN verification and stayed within its hard 20-minute timebox. Checkpoints are untimed verification gates. Record observed results directly under the applicable item.
 
@@ -151,11 +151,11 @@ The operation-specific official documentation is authoritative for least privile
 **Status (2026-09-13):** Open as a non-permission specification decision. The official calendarView reference does not guarantee chronological default ordering or explicitly document `$orderby=start/dateTime`; no further manual tenant test will be requested.
 
 **Acceptance criteria:**
-- [ ] The contract does not claim nearest-event semantics without authoritative server-ordering support.
-- [ ] The bounded request and local sorting semantics are explicit and approved.
+- [x] The contract does not claim nearest-event semantics without authoritative server-ordering support.
+- [x] The bounded request and local sorting semantics are explicit and approved.
 
 **Verification:**
-- [ ] The authoritative source and resulting specification decision are appended to the Plan-Gate Evidence Record.
+- [x] The authoritative source and approved specification decision are appended to the Plan-Gate Evidence Record.
 
 **Dependencies:** G6
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
@@ -168,11 +168,11 @@ The operation-specific official documentation is authoritative for least privile
 **Status (2026-09-13):** Open as a non-permission specification decision. The official calendarView reference does not define a mailbox-absence response; no further manual tenant test will be requested.
 
 **Acceptance criteria:**
-- [ ] Only explicitly documented absence responses map to `Unavailable`.
-- [ ] Undocumented mailbox errors remain sanitized failures, and the specification is amended accordingly.
+- [x] Only explicitly documented absence responses map to `Unavailable`.
+- [x] Undocumented mailbox errors remain sanitized failures, and the specification is amended accordingly.
 
 **Verification:**
-- [ ] The authoritative source and resulting specification decision are appended to the Plan-Gate Evidence Record.
+- [x] The authoritative source and approved specification decision are appended to the Plan-Gate Evidence Record.
 
 **Dependencies:** G6
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
@@ -182,13 +182,15 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** After live decisions settle, generate canonical direct and six-operation batch requests with structured URI/JSON APIs in a disposable probe.
 
+**Result (2026-09-13):** An isolated .NET 10 probe generated identical output twice with SHA-256 `d02a4393eee8aea979ac003726fc1623ced5719eeeef5263ee909ba088762615`. Its temporary solution reference was removed and no scratch source remains tracked.
+
 **Acceptance criteria:**
-- [ ] Direct URI starts with `v1.0/`; batch URLs start with `/me`; ids and order match the spec.
-- [ ] Calendar timestamps/query are invariant and escaped; batch has six requests and no `dependsOn`.
-- [ ] Running twice with the same fake time produces identical output.
+- [x] Direct URI starts with `v1.0/`; batch URLs start with `/me`; ids and order match the spec.
+- [x] Calendar timestamps/query are invariant and escaped; batch has six requests and no `dependsOn`.
+- [x] Running twice with the same fake time produces identical output.
 
 **Verification:**
-- [ ] Redacted fixtures are recorded; no scratch source remains tracked.
+- [x] Redacted fixtures are recorded; no scratch source remains tracked.
 
 **Dependencies:** G4-G8 and any required spec reapproval
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
@@ -196,10 +198,10 @@ The operation-specific official documentation is authoritative for least privile
 
 ## Checkpoint C: Plan Gate
 
-- [ ] All seven Plan Gate exit-evidence requirements are satisfied.
-- [ ] State and threat tables agree with authoritative and recorded evidence.
-- [ ] Plan diagnostics, link checks, and `git diff --check` pass.
-- [ ] No spec contradiction remains; plan approval automatically authorizes Tasks 1-33.
+- [x] All seven Plan Gate exit-evidence requirements are satisfied.
+- [x] State and threat tables agree with authoritative and recorded evidence.
+- [x] Plan diagnostics, local link checks, and `git diff --check` pass.
+- [x] No spec contradiction remains; plan approval automatically authorizes Tasks 1-33.
 
 ## Phase 1: Projects and Contracts
 
@@ -207,12 +209,14 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Add the packable Work Context project to the solution with approved metadata and dependencies.
 
+**Result (2026-09-13):** The new `net10.0` packable source project builds in Release. Its four direct packages and all transitive packages are `Microsoft.Extensions.*` 10.0.11; no prohibited framework, Graph, identity, or ASP.NET Core dependency is present.
+
 **Acceptance criteria:**
-- [ ] Project targets `net10.0`, is packable, imports shared metadata, and generates XML docs.
-- [ ] Solution includes the project and dependency graph matches G2.
+- [x] Project targets `net10.0`, is packable, imports shared metadata, and generates XML docs.
+- [x] Solution includes the project and dependency graph matches G2.
 
 **Verification:**
-- [ ] Release source-project build passes.
+- [x] Release source-project build passes with 0 warnings and 0 errors.
 
 **Dependencies:** Plan Gate
 **File cap:** 3: solution, source project, central packages only if required
@@ -222,12 +226,14 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Add the non-packable xUnit v3 test project and one baseline test to the solution.
 
+**Result (2026-09-13):** The new test project references the Work Context source project and uses the repository's centrally pinned xUnit v3 infrastructure. Exact class filtering discovered and passed one baseline test.
+
 **Acceptance criteria:**
-- [ ] Test project references the source project and existing centrally pinned test dependencies.
-- [ ] Exact focused filtering discovers and runs one baseline test.
+- [x] Test project references the source project and existing centrally pinned test dependencies.
+- [x] Exact focused filtering discovers and runs one baseline test.
 
 **Verification:**
-- [ ] Baseline test passes by fully qualified class name.
+- [x] Baseline test passes by fully qualified class name (1 passed, 0 failed).
 
 **Dependencies:** Task 1
 **File cap:** 3: solution, test project, baseline test
@@ -237,13 +243,15 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Add RED consumer tests, then implement exact configuration and operation-boundary contracts.
 
+**Result (2026-09-13):** The focused consumer test first failed on the missing contracts, then passed 5 tests after implementing the four enums, options, token-provider interface, client interface, and a minimal internally constructed snapshot declaration. A Release source build with all warnings as errors also passed.
+
 **Acceptance criteria:**
-- [ ] Enums, defaults, interfaces, namespace, nullability, and cancellation match the spec.
-- [ ] No extra overload, setter beyond options, framework type, or host-specific API is public.
-- [ ] Every public member has XML documentation.
+- [x] Enums, defaults, interfaces, namespace, nullability, and cancellation match the spec.
+- [x] No extra overload, setter beyond options, framework type, or host-specific API is public.
+- [x] Every public member has XML documentation.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextConfigurationContractTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextConfigurationContractTests` (5 passed, 0 failed).
 
 **Dependencies:** Task 2
 **File cap:** 5: enum file, options, two interfaces, test
@@ -251,19 +259,21 @@ The operation-specific official documentation is authoritative for least privile
 
 ## Checkpoint D: Project Foundation
 
-- [ ] Tasks 1-3 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 1-3 focused tests, full solution tests (160 passed), Release build, and diff hygiene pass.
 
 ## Task 4: Define Result Primitives
 
 **Description:** Implement facet result, facet failure, and package exception without creating the snapshot yet.
 
+**Result (2026-09-13):** The focused test first failed on the three missing types, then passed 14 tests covering all approved state combinations, rejection of invalid combinations, sealed/read-only construction, and sanitized exception data.
+
 **Acceptance criteria:**
-- [ ] Types are sealed, read-only, and not publicly constructible.
-- [ ] Valid status/value/failure states are constructible internally; invalid states are rejected.
-- [ ] Exception exposes only approved safe properties and no unsafe inner exception.
+- [x] Types are sealed, read-only, and not publicly constructible.
+- [x] Valid status/value/failure states are constructible internally; invalid states are rejected.
+- [x] Exception exposes only approved safe properties and no unsafe inner exception.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextResultPrimitiveContractTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextResultPrimitiveContractTests` (14 passed, 0 failed).
 
 **Dependencies:** Task 3
 **File cap:** 4: three source files and test
@@ -273,12 +283,14 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Add immutable allowlisted Profile and Manager values.
 
+**Result (2026-09-13):** The shared model contract test first failed on both missing types, then passed the Profile and Manager cases with exact allowlisted properties and internal construction.
+
 **Acceptance criteria:**
-- [ ] Exact nullable properties match the spec.
-- [ ] No id, address, UPN, phone, or public constructor/setter exists.
+- [x] Exact nullable properties match the spec.
+- [x] No id, address, UPN, phone, or public constructor/setter exists.
 
 **Verification:**
-- [ ] RED then GREEN: Profile/Manager cases in `WorkContextModelContractTests`.
+- [x] RED then GREEN: Profile/Manager cases in `WorkContextModelContractTests` (2 passed, 0 failed).
 
 **Dependencies:** Task 4
 **File cap:** 3: two models and test
@@ -288,12 +300,14 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Add immutable Work Settings, locale, and working-hours values.
 
+**Result (2026-09-13):** The shared model test first failed on the three missing types, then passed all four model cases. Working days are defensively copied into a read-only collection and custom time-zone names remain unchanged.
+
 **Acceptance criteria:**
-- [ ] Exact properties/nullability match the spec and time-zone strings remain opaque.
-- [ ] Working days are copied into an immutable snapshot.
+- [x] Exact properties/nullability match the spec and time-zone strings remain opaque.
+- [x] Working days are copied into an immutable snapshot.
 
 **Verification:**
-- [ ] RED then GREEN: Work Settings cases in `WorkContextModelContractTests`.
+- [x] RED then GREEN: Work Settings cases in `WorkContextModelContractTests` (4 passed, 0 failed).
 
 **Dependencies:** Task 4
 **File cap:** 4: three models and test
@@ -301,20 +315,22 @@ The operation-specific official documentation is authoritative for least privile
 
 ## Checkpoint E: Core Models I
 
-- [ ] Tasks 4-6 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 4-6 focused tests, full solution tests (178 passed), warnings-as-errors Release build, and diff hygiene pass.
 
 ## Task 7: Define Calendar and Snapshot Models
 
 **Description:** Add the immutable Calendar event and complete snapshot after every referenced model exists.
 
+**Result (2026-09-13):** The shared model test first failed on the missing Calendar type and incomplete snapshot, then passed 10 tests. A fresh-context review found one blocking mutable Calendar-list path and two contract-test gaps; the snapshot now copies available and failed-partial lists, and tests lock exported types, public members, and nullable model properties.
+
 **Acceptance criteria:**
-- [ ] Calendar exposes only approved fields and copies attendee names.
-- [ ] Snapshot exposes capture time and exactly four facet results.
-- [ ] Complete model surface is sealed, read-only, and internally constructed.
+- [x] Calendar exposes only approved fields and copies attendee names.
+- [x] Snapshot exposes capture time and exactly four facet results.
+- [x] Complete model surface is sealed, read-only, and internally constructed.
 
 **Verification:**
-- [ ] RED then GREEN: Calendar/snapshot cases in `WorkContextModelContractTests`.
-- [ ] Fresh-context public/privacy review has no blocking finding.
+- [x] RED then GREEN: Calendar/snapshot cases in `WorkContextModelContractTests` (10 passed, 0 failed).
+- [x] Fresh-context public/privacy review findings were repaired and focused tests pass.
 
 **Dependencies:** Tasks 5-6
 **File cap:** 3: Calendar model, snapshot, test
@@ -324,13 +340,15 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Snapshot and validate options at client creation, capture fake UTC time, and return all-disabled results without external work.
 
+**Result (2026-09-13):** The focused test first failed on the missing internal client, then passed seven cases. Invalid bounds and enum values fail during construction even when Calendar is disabled; later option mutation has no effect; all-disabled captures fake UTC time with zero token or HTTP calls.
+
 **Acceptance criteria:**
-- [ ] Bounds and enum validation precede token/HTTP even when Calendar is disabled.
-- [ ] Later option mutation cannot alter the client.
-- [ ] All-disabled returns four `Disabled` results with zero token/HTTP calls.
+- [x] Bounds and enum validation precede token/HTTP even when Calendar is disabled.
+- [x] Later option mutation cannot alter the client.
+- [x] All-disabled returns four `Disabled` results with zero token/HTTP calls.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextOptionsTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextOptionsTests` (7 passed, 0 failed).
 
 **Dependencies:** Task 7
 **File cap:** 5: client, validator/snapshot, test, fake token, fake time
@@ -340,13 +358,15 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Complete the default direct path from delegated token through exact Profile request and immutable mapping.
 
+**Result (2026-09-13):** The focused test first failed on the enabled-facet guard, then passed after adding the fixed Profile operation, minimal seven-field wire DTO, delegated Bearer request, and immutable mapping. Unknown identity/contact fields are ignored, and prompt-like, control-character, and long values remain inert model data.
+
 **Acceptance criteria:**
-- [ ] One operation sends one `GET` with exact URI, allowlist, and Bearer token.
-- [ ] Only seven approved fields map; forbidden/unknown fields do not escape, and prompt-like, control-character, or long strings remain inert data without changing control flow.
-- [ ] Profile is `Available`; other facets are `Disabled`.
+- [x] One operation sends one `GET` with exact URI, allowlist, and Bearer token.
+- [x] Only seven approved fields map; forbidden/unknown fields do not escape, and prompt-like, control-character, or long strings remain inert data without changing control flow.
+- [x] Profile is `Available`; other facets are `Disabled`.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextProfileTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextProfileTests` (1 passed, 0 failed).
 
 **Dependencies:** Task 8
 **File cap:** 5: client, operation descriptor, Profile DTO, test, HTTP fake
@@ -354,7 +374,9 @@ The operation-specific official documentation is authoritative for least privile
 
 ## Checkpoint F: First Vertical Slice
 
-- [ ] Tasks 7-9 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 7-9 focused tests pass: 10 model-contract, 7 options/disabled-path, and 1 direct-Profile test.
+- [x] Full solution tests pass: 192 passed, 0 failed.
+- [x] Full Release build passes with warnings treated as errors; touched-file diagnostics and diff hygiene are clean.
 
 ## Task 10: Deliver Direct Manager
 

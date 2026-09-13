@@ -77,7 +77,7 @@ Every behavior task uses RED-GREEN-REFACTOR with one exact focused class filter.
 | Profile | `Disabled` | `Available` value | N/A; no expected-absence status is defined | Malformed successful JSON is `Failed`, null value, `InvalidResponse` | `Failed`, null value | Throw on malformed data or real failure |
 | Manager | `Disabled` | `Available` value | `Unavailable` for no manager | Malformed successful JSON is `Failed`, null value, `InvalidResponse` | `Failed`, null value | Absence returns; malformed data or real failure throws |
 | Work Settings | `Disabled` | All-success or success-plus-absence is `Available` with successful values | `Unavailable` when every child is absent | Any malformed/failed child is `Failed`; preserve successful values, or null when none succeeded | Same partial/null rule; select failure by fixed child order | All-absence returns; first malformed/failed child by fixed order throws |
-| Calendar | `Disabled` | `Available`, including an empty list | `Unavailable` for approved mailbox/calendar absence | Malformed event is `Failed` with all valid events, including an empty list | Facet/HTTP failure is `Failed`, null value | Absence returns; malformed event or real failure throws |
+| Calendar | `Disabled` | `Available`, including an empty list | N/A; no expected-absence response is documented | Malformed event is `Failed` with all valid events, including an empty list | Facet/HTTP failure is `Failed`, null value | Malformed event or real failure throws |
 | Global token, transport, outer HTTP, or outer batch | Disabled facets remain `Disabled` | N/A | N/A | N/A | Every enabled facet is `Failed`, null value | Throw one sanitized global exception; no facet ordering applies |
 | Cancellation | No result is constructed | No result is constructed | No result is constructed | No result is constructed | Propagate `OperationCanceledException` unchanged | Same |
 | Invalid local options | No result is constructed | No result is constructed | No result is constructed | No result is constructed | Throw before token acquisition or HTTP | Same |
@@ -160,8 +160,21 @@ Tasks G1-G9 append sanitized observations here before Task 1 begins:
 | Delegated permission baseline | Passed, 2026-09-13 | Operation-specific Microsoft Graph v1.0 permission tables identify `User.Read` for Profile, `User.Read.All` for Manager, `MailboxSettings.Read` for Work Settings, and `Calendars.ReadBasic` for Calendar. No manual permission comparison or broader permission is required. |
 | Manager absence | Passed, 2026-09-13 | The authoritative List manager API reference specifies `404 Not Found` when no manager is assigned; the client classifies that documented absence as `Unavailable`. |
 | Calendar field coverage | Passed, 2026-09-13 | A delegated `Calendars.ReadBasic` calendar-view request returned HTTP 200 and all 13 selected top-level event properties: subject, start, end, original start/end time zones, location, organizer, attendees, all-day/cancelled flags, sensitivity, availability, and response status. Nested contact and location details were observed but are intentionally excluded from evidence and will be discarded by minimal DTO projection. |
-| Calendar ordering and absence | Pending live probe | - |
-| Exact direct and six-operation batch requests | Pending final probe results | - |
+| Calendar ordering | Passed by approved decision, 2026-09-13 | The request uses documented `$top` without undocumented `$orderby`; the bounded page is sorted locally and is not described as the nearest events in the interval. |
+| Calendar mailbox absence | Passed by approved decision, 2026-09-13 | The calendarView reference documents no mailbox-absence response. Calendar HTTP errors therefore remain sanitized failures; no Calendar response maps to `Unavailable` in V1. |
+| Exact direct and six-operation batch requests | Passed, 2026-09-13 | An isolated .NET 10 probe generated identical output twice (SHA-256 `d02a4393eee8aea979ac003726fc1623ced5719eeeef5263ee909ba088762615`). The direct URI begins with `v1.0/`; all six batch URLs begin with `/me`; ids are stable and ordered; timestamps and query values are escaped; no `dependsOn` is present. |
+
+### Canonical G9 Request Fixtures
+
+Captured time: `2026-09-13T12:34:56.0000000+00:00`.
+
+```text
+direct=v1.0/me?%24select=displayName%2CgivenName%2Csurname%2CjobTitle%2Cdepartment%2CofficeLocation%2CpreferredLanguage
+```
+
+```json
+{"requests":[{"id":"profile","method":"GET","url":"/me?%24select=displayName%2CgivenName%2Csurname%2CjobTitle%2Cdepartment%2CofficeLocation%2CpreferredLanguage"},{"id":"manager","method":"GET","url":"/me/manager?%24select=displayName%2CjobTitle%2Cdepartment%2CofficeLocation"},{"id":"work-time-zone","method":"GET","url":"/me/mailboxSettings/timeZone"},{"id":"work-language","method":"GET","url":"/me/mailboxSettings/language"},{"id":"work-hours","method":"GET","url":"/me/mailboxSettings/workingHours"},{"id":"calendar","method":"GET","url":"/me/calendar/calendarView?startDateTime=2026-09-13T12%3A34%3A56.0000000%2B00%3A00\u0026endDateTime=2026-09-14T12%3A34%3A56.0000000%2B00%3A00\u0026%24top=10\u0026%24select=subject%2Cstart%2Cend%2CoriginalStartTimeZone%2CoriginalEndTimeZone%2Clocation%2Corganizer%2Cattendees%2CisAllDay%2CisCancelled%2Csensitivity%2CshowAs%2CresponseStatus"}]}
+```
 
 ## Checkpoint Gates
 
@@ -200,14 +213,15 @@ Authoritative evidence can force only these specification decisions:
 
 1. adjust Manager permission or absence guidance;
 2. reduce Calendar fields or approve `Calendars.Read`;
-3. approve a server-supported chronological query or revise Calendar limit semantics;
-4. adjust manager/mailbox absence classifications.
+3. revise Calendar page or local-ordering semantics;
+4. adjust documented Manager absence classification.
 
 Any change requires a specification amendment and human approval. Everything else inside the approved plan proceeds autonomously.
 
 ## Plan Approval
 
 - [x] Approved on 2026-09-12, authorizing G1-G9 and automatic continuation through Tasks 1-33 when the Plan Gate passes without a specification contradiction.
+- [x] Plan Gate passed on 2026-09-13 after authoritative permission evidence, approved conservative Calendar decisions, and deterministic request fixtures.
 - [x] Commit mode: no agent-created commits.
 
 ## Authoritative Sources

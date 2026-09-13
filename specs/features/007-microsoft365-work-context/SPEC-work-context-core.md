@@ -6,7 +6,7 @@
 **Origin:** [`microsoft365-work-context-provider.md`](../../../docs/ideas/microsoft365-work-context-provider.md)
 **Plan:** [`plan.md`](work-context-core/plan.md)
 **Task checklist:** [`todo.md`](work-context-core/todo.md)
-**Status:** Approved; Plan Gate awaiting non-permission Calendar decisions
+**Status:** Approved; implementation in progress
 **Depends on:** Repository foundation
 **Enables:** `agent-framework-provider`, `console-sample`, and `aspnetcore-obo-sample`
 
@@ -37,7 +37,7 @@ This module does not inject data into a model. The dependent `agent-framework-pr
 7. Cancelled events and events declined by the signed-in user are omitted. All-day and free events remain with explicit indicators.
 8. Private events preserve time and availability but suppress subject, location, organizer, and attendee names.
 9. Attendee addresses are not exposed downstream. Graph returns attendee name and address together, so addresses can be present transiently in the HTTP payload even though response DTOs, snapshots, logs, exceptions, and model context do not retain them.
-10. A missing manager or unavailable mailbox/calendar is not itself a fail-fast error. Cancellation and invalid local configuration always propagate.
+10. A missing manager is not itself a fail-fast error. Calendar mailbox errors remain failures because the calendarView reference documents no mailbox-absence response. Cancellation and invalid local configuration always propagate.
 
 ## Global Requirements Inherited
 
@@ -255,7 +255,7 @@ Every `WorkContextFacetResult<T>` MUST satisfy exactly one of these states:
 | --- | --- | --- | --- |
 | `Disabled` | `null` | `null` | The facet was disabled and no operation was attempted. |
 | `Available` | non-null | `null` | The facet was retrieved successfully. An empty calendar list is available data, not unavailable data. |
-| `Unavailable` | `null` | `null` | Graph reported an expected absence, such as no manager or no applicable mailbox/calendar resource. |
+| `Unavailable` | `null` | `null` | Graph reported an explicitly documented expected absence, such as no manager. |
 | `Failed` | null or partial | non-null | Retrieval or validation failed. Work Settings and Calendar MAY preserve successfully mapped partial data in best-effort mode. |
 
 For Work Settings:
@@ -350,7 +350,7 @@ The actual URL MUST be one correctly escaped relative URL. The multiline form ab
 
 - `startDateTime` and `endDateTime` MUST include explicit UTC offsets and use invariant ISO 8601 formatting.
 - No `Prefer: outlook.timezone` header is sent, so Graph returns event start and end values in UTC.
-- The client returns at most `MaximumCalendarEvents` and does not follow `@odata.nextLink` in V1.
+- The request uses `$top=MaximumCalendarEvents`; the client does not follow `@odata.nextLink` in V1.
 - Returned events MUST be sorted by `StartUtc`, then `EndUtc`, before snapshot construction.
 - Cancelled events and events whose signed-in-user `responseStatus.response` is `declined` are omitted.
 - All-day and free events remain; `IsAllDay` and `Availability` preserve those semantics.
@@ -364,7 +364,7 @@ The actual URL MUST be one correctly escaped relative URL. The multiline form ab
 
 The documented least-privileged delegated permission is `Calendars.ReadBasic`. Recorded runtime evidence confirms that every selected top-level field needed by this contract is returned under `Calendars.ReadBasic`; no broader Calendar permission is required.
 
-The current official calendar-view reference documents `$top` and says only that the operation supports some OData parameters. It does not explicitly guarantee default chronological order or document `$orderby=start/dateTime`. The Plan gate MUST verify a server-supported chronological query before implementation. The client MUST NOT claim that `$top` returns the nearest events based only on local sorting after server truncation. Cancelled, declined, private-invalid, or malformed entries removed from the bounded server page are not backfilled through paging in V1, so the final list can contain fewer than `MaximumCalendarEvents`.
+The current official calendar-view reference documents `$top` and says only that the operation supports some OData parameters. It does not explicitly guarantee default chronological order or document `$orderby=start/dateTime`. V1 therefore requests one page capped by `$top`, sorts that bounded page locally, and does not claim that the page contains the nearest events in the requested interval. Cancelled, declined, private-invalid, or malformed entries removed from that page are not backfilled through paging, so the final list can contain fewer than `MaximumCalendarEvents`.
 
 ## Batching and Request Selection
 
@@ -671,7 +671,7 @@ Focused Microsoft Testing Platform class filters MUST use an exact fully qualifi
 - [ ] Any combination producing two through six operations issues one Graph `$batch` request with stable ids and no dependencies.
 - [ ] All-disabled configuration returns a fully disabled snapshot without token or network access.
 - [ ] Work Settings uses only the three narrow child endpoints and can preserve partial successful values in best-effort mode.
-- [ ] Calendar uses a 24-hour default window, retrieves a chronologically ordered server page capped at 10, returns its eligible events in chronological order without paging or backfill, and retrieves only the approved metadata.
+- [ ] Calendar uses a 24-hour default window, requests one page capped at 10, sorts eligible events locally without claiming nearest-event semantics, performs no paging or backfill, and retrieves only the approved metadata.
 - [ ] Cancelled and declined events are absent; all-day and free events remain; private-event descriptive fields are absent.
 - [ ] Attendee addresses, user contact fields, raw Graph data, bodies, attachments, links, ids, tokens, and claims never appear in public snapshots, logs, or exceptions.
 - [ ] Batch subrequest failures affect only their facet in best-effort mode, while successful sibling facets remain available.
@@ -696,7 +696,7 @@ If authoritative permission documentation changes, update and reapprove the rele
 
 ## Open Questions
 
-- Calendar chronological ordering and mailbox-absence classification remain Plan-gate decisions because the official API reference does not define those behaviors. Permission selection is complete and not blocking.
+- None blocking implementation. Permission selection is complete. Undocumented Calendar ordering and mailbox-absence behavior use the approved conservative contracts above.
 
 ## Authoritative References
 
