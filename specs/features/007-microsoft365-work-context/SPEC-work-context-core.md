@@ -4,7 +4,9 @@
 **Parent repository specification:** [`SPEC.md`](../../SPEC/SPEC.md)
 **Module id:** `work-context-core`
 **Origin:** [`microsoft365-work-context-provider.md`](../../../docs/ideas/microsoft365-work-context-provider.md)
-**Status:** Approved; planning not started
+**Plan:** [`plan.md`](work-context-core/plan.md)
+**Task checklist:** [`todo.md`](work-context-core/todo.md)
+**Status:** Approved; Plan Gate awaiting live probes
 **Depends on:** Repository foundation
 **Enables:** `agent-framework-provider`, `console-sample`, and `aspnetcore-obo-sample`
 
