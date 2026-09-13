@@ -37,7 +37,7 @@ Checked against Microsoft Learn on 2026-09-12:
 - The current `calendarView` reference does not explicitly guarantee chronological default ordering or document `$orderby=start/dateTime`.
 - JSON batching supports at most 20 requests, requires unique string ids, accepts relative URLs, can reorder subresponses, and requires each subresponse status to be evaluated independently of the outer status.
 
-These sources do not remove the approved specification's live-probe requirement.
+The Manager permission requirement is settled by the operation's authoritative permission table. Live probes remain required for expected absence and the unresolved Calendar behavior.
 
 ## Architecture Decisions
 
@@ -128,7 +128,7 @@ Documentation and closure: Tasks 31-33
 | Batch | Tasks | Outcome | Blocking user action |
 | --- | --- | --- | --- |
 | A | G1-G3 | Local plan-gate evidence | None |
-| B | G4-G6 | Manager probes and Calendar field probe | One prepared tenant session |
+| B | G4-G6 | Manager permission evidence, absence probe, and Calendar field probe | One prepared tenant session for G5-G6 |
 | C | G7-G9 | Calendar order/absence and request fixtures | Only if evidence contradicts spec |
 | D | 1-3 | Projects and public primitives | None |
 | E | 4-6 | Facet models | None |
@@ -156,7 +156,8 @@ Tasks G1-G9 append sanitized observations here before Task 1 begins:
 | Service lifetime analysis | Passed, 2026-09-12 | Transient client field allowlist excludes tokens, HTTP messages/responses, DTOs, outcomes, facet values, and snapshots. A compile probe verified typed `HttpClient` registration and non-replacing `TimeProvider.System` fallback. |
 | Facet/mode state matrix | Passed, 2026-09-12 | Independent review found no missing facet/global state, failure-order rule, or response-order requirement. Live probes can still amend documented absence classifications. |
 | Threat model and controls | Passed, 2026-09-12 | Independent review found no missing disclosure, privacy, cross-user, batch-confusion, diagnostic, or untrusted-string control owner. |
-| Manager permissions and absence | Pending live probe | - |
+| Manager permission | Passed, 2026-09-13 | The Microsoft Graph v1.0 List manager permission table identifies delegated `User.Read.All` as least privileged for work or school accounts; personal Microsoft accounts and application permissions are unsupported. No `User.Read` comparison is required. |
+| Manager absence | Pending live probe | The authoritative API reference documents `404 Not Found` when no manager is assigned; the live observation still needs its HTTP status recorded. |
 | Calendar fields, ordering, and absence | Pending live probe | - |
 | Exact direct and six-operation batch requests | Pending final probe results | - |
 
@@ -187,15 +188,15 @@ Fresh-context review is additionally required after Task 7, Task 25, and Task 33
 
 ## Human Preflight for Live Probes
 
-This prerequisite is not an agent task and has no 20-minute claim. Prepare one disposable Entra app/session with delegated consent variants, synthetic accounts with and without managers, one Exchange-licensed mailbox with synthetic events, and one account representing mailbox absence. No token, tenant identifier, user value, event value, or response body is committed.
+This prerequisite is not an agent task and has no 20-minute claim. Prepare one disposable Entra app/session with the delegated permissions required by the specification, synthetic accounts with and without managers, one Exchange-licensed mailbox with synthetic events, and one account representing mailbox absence. No token, tenant identifier, user value, event value, or response body is committed.
 
 G4-G8 run consecutively in that one prepared session. If prerequisites are incomplete, the session stops once and reports the missing item rather than generating repeated prompts.
 
 ## Approval Boundary
 
-Live evidence can force only these specification decisions:
+Authoritative or live evidence can force only these specification decisions:
 
-1. retain or broaden Manager permission guidance;
+1. adjust Manager permission or absence guidance;
 2. reduce Calendar fields or approve `Calendars.Read`;
 3. approve a server-supported chronological query or revise Calendar limit semantics;
 4. adjust manager/mailbox absence classifications.

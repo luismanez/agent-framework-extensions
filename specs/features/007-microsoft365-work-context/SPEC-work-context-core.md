@@ -310,7 +310,7 @@ GET /v1.0/me/manager?$select=displayName,jobTitle,department,officeLocation
 
 Do not retrieve the management chain, identifiers, email addresses, user principal names, phones, or direct reports. A `404 Not Found` means `Unavailable` rather than `Failed`.
 
-Microsoft's current documentation is inconsistent: the manager operation page lists delegated `User.Read.All`, while the user operation page says `User.Read` permits discovery of the signed-in user's manager. The package documentation MUST surface this discrepancy. The Plan gate MUST establish behavior with real delegated `User.Read` and `User.Read.All` tokens before the permission guidance is finalized.
+The documented least-privileged permission for a work or school account is delegated `User.Read.All`. Personal Microsoft accounts and application permissions are not supported. The package documentation MUST state these constraints and MUST NOT claim that delegated `User.Read` is sufficient.
 
 ### Work Settings
 
@@ -611,7 +611,6 @@ Normal tests MUST require no tenant, credentials, Microsoft 365 license, clock d
 
 Live probes are mandatory Plan-gate evidence but are not normal CI tests. They MUST use a disposable test account and synthetic, non-sensitive calendar data. They establish:
 
-- actual `/me/manager` behavior under `User.Read` versus `User.Read.All`;
 - selected calendar fields returned under `Calendars.ReadBasic`;
 - a supported server-side chronological query for calendar view;
 - representative absence responses for users without a manager or mailbox.
@@ -677,7 +676,7 @@ Focused Microsoft Testing Platform class filters MUST use an exact fully qualifi
 - [ ] Batch subrequest failures affect only their facet in best-effort mode, while successful sibling facets remain available.
 - [ ] Fail-fast mode throws for real failures but not expected absence, and cancellation always propagates unchanged.
 - [ ] Profile-only, partial batch, strict failure, malformed response, private calendar, and no-facet paths have credential-free automated tests.
-- [ ] Required delegated permissions and known Graph documentation inconsistencies are documented without overstating least privilege.
+- [ ] Required delegated permissions and unsupported account or permission types are documented without overstating least privilege.
 - [ ] Release build, focused tests, package creation, editor diagnostics, and `git diff --check` pass.
 
 ## Plan Gate Exit Evidence
@@ -688,15 +687,15 @@ Before implementation tasks are approved, the Plan MUST provide:
 2. Exact serialized direct and six-operation batch requests with encoded URLs and stable ids.
 3. A state-transition table covering every facet under disabled, available, unavailable, partial, and failed outcomes in both error modes.
 4. A threat-model table mapping token and personal-data disclosure risks to tests and controls.
-5. A live synthetic-account result for manager permissions, calendar basic-field coverage, calendar chronological query support, and expected absence responses.
+5. Authoritative permission evidence plus live synthetic-account results for calendar basic-field coverage, calendar chronological query support, and expected absence responses.
 6. A dependency report proving no Graph SDK, Azure Identity, MSAL, Microsoft Identity Web, ASP.NET Core, or new abstraction package was added.
 7. A service-lifetime analysis proving no per-user token or snapshot can survive an invocation or cross requests.
 
-If the manager permission, calendar field, ordering, or expected-absence probes contradict this spec, update and reapprove the relevant permission, field, ordering, absence, or limit requirement before implementation. Do not hide the discrepancy in the Plan.
+If authoritative permission documentation or the calendar field, ordering, or expected-absence probes contradict this spec, update and reapprove the relevant permission, field, ordering, absence, or limit requirement before implementation. Do not hide the discrepancy in the Plan.
 
 ## Open Questions
 
-- None blocking the Specify gate. Manager permission, `Calendars.ReadBasic` field coverage, and calendar chronological query support are deliberately assigned to mandatory Plan-gate evidence because official Microsoft documentation is currently incomplete or inconsistent.
+- None blocking the Specify gate. `Calendars.ReadBasic` field coverage and calendar chronological query support are deliberately assigned to mandatory live Plan-gate evidence because the official Microsoft documentation does not settle those runtime details.
 
 ## Authoritative References
 

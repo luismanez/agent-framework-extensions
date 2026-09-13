@@ -2,7 +2,7 @@
 
 **Specification:** [`SPEC-work-context-core.md`](../SPEC-work-context-core.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Approved; Plan Gate awaiting live probes; no agent-created commits
+**Status:** Approved; Plan Gate awaiting remaining live probes; no agent-created commits
 
 A checked task has completed RED-GREEN verification and stayed within its hard 20-minute timebox. Checkpoints are untimed verification gates. Record observed results directly under the applicable item.
 
@@ -27,12 +27,12 @@ git diff --check
 
 ## Human Preflight
 
-- [ ] Prepare one disposable Entra app/session with the delegated consent variants required by the specification.
+- [ ] Prepare one disposable Entra app/session with the delegated permissions required by the specification.
 - [ ] Prepare synthetic users with and without a manager.
 - [ ] Prepare one licensed mailbox with synthetic events and one account representing mailbox absence.
 - [ ] Confirm that no live token, tenant/user identifier, event value, or response body will be recorded.
 
-This prerequisite is user-owned setup, not a timeboxed agent task. G4-G8 run in one coordinated session.
+This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in one coordinated session.
 
 ## Phase 0: Plan-Gate Evidence
 
@@ -89,19 +89,20 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G4-G8 run in 
 - [x] Plan diagnostics and `git diff --check` pass.
 - [ ] Human preflight is ready for one live session.
 
-## Task G4: Probe Manager Permissions
+## Task G4: Validate Manager Permission Documentation
 
-**Description:** Compare the approved Manager request under delegated `User.Read` and `User.Read.All`.
+**Description:** Confirm the least-privileged permission and supported permission types against the authoritative Microsoft Graph v1.0 List manager reference.
 
 **Acceptance criteria:**
-- [ ] Record only scope set, HTTP status, required-field presence, and safe request id.
-- [ ] A contradiction opens a spec amendment and stops dependent work.
+- [x] Record delegated `User.Read.All` as least privileged for work or school accounts.
+- [x] Record that personal Microsoft accounts and application permissions are unsupported.
+- [x] Remove the unsupported requirement to compare `User.Read` with `User.Read.All`.
 
 **Verification:**
-- [ ] Sanitized result is appended to the Plan-Gate Evidence Record.
+- [x] The result and authoritative source are recorded in the Plan-Gate Evidence Record.
 
-**Dependencies:** Human preflight
-**File cap:** 1 tracked file, [`plan.md`](plan.md)
+**Dependencies:** Plan approval
+**File cap:** 3 tracked specification and plan files
 **Timebox:** 20 minutes
 
 ## Task G5: Probe Manager Absence
@@ -137,7 +138,7 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G4-G8 run in 
 
 ## Checkpoint B: First Live Results
 
-- [ ] G4-G6 completed in the same tenant session.
+- [ ] G4 documentation evidence and G5-G6 live evidence are complete.
 - [ ] Any contradiction has stopped implementation and been surfaced once.
 - [ ] No sensitive value appears in the diff.
 
