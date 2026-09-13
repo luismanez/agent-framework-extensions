@@ -34,10 +34,11 @@ Checked against Microsoft Learn on 2026-09-12:
 
 - `/me/manager` still lists delegated `User.Read.All` as least privileged and documents `404 Not Found` when no manager is assigned.
 - `calendarView` lists delegated `Calendars.ReadBasic`, returns UTC event times when `Prefer: outlook.timezone` is absent, supports `$top`, and can return `@odata.nextLink`.
+- `/me` lists delegated `User.Read`, and the mailbox-settings operation lists delegated `MailboxSettings.Read`, as least privileged.
 - The current `calendarView` reference does not explicitly guarantee chronological default ordering or document `$orderby=start/dateTime`.
 - JSON batching supports at most 20 requests, requires unique string ids, accepts relative URLs, can reorder subresponses, and requires each subresponse status to be evaluated independently of the outer status.
 
-The Manager permission requirement is settled by the operation's authoritative permission table. Live probes remain required for expected absence and the unresolved Calendar behavior.
+The permission baseline for all four facets is settled by the operation-specific authoritative permission tables. No further manual permission or tenant probes are required. Manager absence is also settled by its API reference; Calendar ordering and mailbox absence remain non-permission design decisions.
 
 ## Architecture Decisions
 
@@ -128,8 +129,8 @@ Documentation and closure: Tasks 31-33
 | Batch | Tasks | Outcome | Blocking user action |
 | --- | --- | --- | --- |
 | A | G1-G3 | Local plan-gate evidence | None |
-| B | G4-G6 | Manager permission evidence, absence probe, and Calendar field probe | One prepared tenant session for G5-G6 |
-| C | G7-G9 | Calendar order/absence and request fixtures | Only if evidence contradicts spec |
+| B | G4-G6 | Authoritative permissions, documented Manager absence, and recorded Calendar field evidence | None |
+| C | G7-G9 | Calendar order/absence decisions and request fixtures | Spec decision only; no manual tenant testing |
 | D | 1-3 | Projects and public primitives | None |
 | E | 4-6 | Facet models | None |
 | F | 7-9 | Snapshot, options, Profile | None |
@@ -156,9 +157,10 @@ Tasks G1-G9 append sanitized observations here before Task 1 begins:
 | Service lifetime analysis | Passed, 2026-09-12 | Transient client field allowlist excludes tokens, HTTP messages/responses, DTOs, outcomes, facet values, and snapshots. A compile probe verified typed `HttpClient` registration and non-replacing `TimeProvider.System` fallback. |
 | Facet/mode state matrix | Passed, 2026-09-12 | Independent review found no missing facet/global state, failure-order rule, or response-order requirement. Live probes can still amend documented absence classifications. |
 | Threat model and controls | Passed, 2026-09-12 | Independent review found no missing disclosure, privacy, cross-user, batch-confusion, diagnostic, or untrusted-string control owner. |
-| Manager permission | Passed, 2026-09-13 | The Microsoft Graph v1.0 List manager permission table identifies delegated `User.Read.All` as least privileged for work or school accounts; personal Microsoft accounts and application permissions are unsupported. No `User.Read` comparison is required. |
-| Manager absence | Pending live probe | The authoritative API reference documents `404 Not Found` when no manager is assigned; the live observation still needs its HTTP status recorded. |
-| Calendar fields, ordering, and absence | Pending live probe | - |
+| Delegated permission baseline | Passed, 2026-09-13 | Operation-specific Microsoft Graph v1.0 permission tables identify `User.Read` for Profile, `User.Read.All` for Manager, `MailboxSettings.Read` for Work Settings, and `Calendars.ReadBasic` for Calendar. No manual permission comparison or broader permission is required. |
+| Manager absence | Passed, 2026-09-13 | The authoritative List manager API reference specifies `404 Not Found` when no manager is assigned; the client classifies that documented absence as `Unavailable`. |
+| Calendar field coverage | Passed, 2026-09-13 | A delegated `Calendars.ReadBasic` calendar-view request returned HTTP 200 and all 13 selected top-level event properties: subject, start, end, original start/end time zones, location, organizer, attendees, all-day/cancelled flags, sensitivity, availability, and response status. Nested contact and location details were observed but are intentionally excluded from evidence and will be discarded by minimal DTO projection. |
+| Calendar ordering and absence | Pending live probe | - |
 | Exact direct and six-operation batch requests | Pending final probe results | - |
 
 ## Checkpoint Gates
@@ -177,7 +179,7 @@ Fresh-context review is additionally required after Task 7, Task 25, and Task 33
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Live results contradict approved permissions or fields | High | Probe before production behavior; amend and reapprove the spec |
+| Microsoft changes an operation-specific permission table | High | Recheck authoritative v1.0 references before release and amend the documented baseline if required |
 | `$top` truncates before chronological ordering | High | Require a live-proven server query; never infer nearest events from local sorting |
 | Direct and batch paths diverge | High | Shared operation outcomes and mapping; dual-path tests |
 | Nested Graph fields leak personal data | High | Minimal DTOs, payload canaries, negative assertions |
@@ -186,15 +188,15 @@ Fresh-context review is additionally required after Task 7, Task 25, and Task 33
 | Full builds consume micro-task time | Medium | Full gates are checkpoint work, outside task timeboxes |
 | Too many approval prompts reduce autonomy | Medium | Only live/spec/Ask First/final gates block; progress reports continue automatically |
 
-## Human Preflight for Live Probes
+## Permission Evidence Policy
 
-This prerequisite is not an agent task and has no 20-minute claim. Prepare one disposable Entra app/session with the delegated permissions required by the specification, synthetic accounts with and without managers, one Exchange-licensed mailbox with synthetic events, and one account representing mailbox absence. No token, tenant identifier, user value, event value, or response body is committed.
+Operation-specific Microsoft Graph v1.0 permission tables are authoritative for least privilege. Profile uses delegated `User.Read`, Manager uses delegated `User.Read.All`, Work Settings uses delegated `MailboxSettings.Read`, and Calendar uses delegated `Calendars.ReadBasic`. No manual permission comparison or additional user-run tenant probe is required.
 
-G4-G8 run consecutively in that one prepared session. If prerequisites are incomplete, the session stops once and reports the missing item rather than generating repeated prompts.
+The previously recorded Calendar field observation contains no committed token, tenant identifier, user value, event value, or response body. G7 and G8 address non-permission Calendar semantics and must be resolved through conservative specification decisions rather than further manual testing.
 
 ## Approval Boundary
 
-Authoritative or live evidence can force only these specification decisions:
+Authoritative evidence can force only these specification decisions:
 
 1. adjust Manager permission or absence guidance;
 2. reduce Calendar fields or approve `Calendars.Read`;

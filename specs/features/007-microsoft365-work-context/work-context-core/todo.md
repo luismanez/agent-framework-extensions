@@ -2,7 +2,7 @@
 
 **Specification:** [`SPEC-work-context-core.md`](../SPEC-work-context-core.md)
 **Plan:** [`plan.md`](plan.md)
-**Status:** Approved; Plan Gate awaiting remaining live probes; no agent-created commits
+**Status:** Approved; permission work complete; Plan Gate awaiting non-permission Calendar decisions; no agent-created commits
 
 A checked task has completed RED-GREEN verification and stayed within its hard 20-minute timebox. Checkpoints are untimed verification gates. Record observed results directly under the applicable item.
 
@@ -25,14 +25,14 @@ Checkpoint gate:
 git diff --check
 ```
 
-## Human Preflight
+## Permission Baseline
 
-- [ ] Prepare one disposable Entra app/session with the delegated permissions required by the specification.
-- [ ] Prepare synthetic users with and without a manager.
-- [ ] Prepare one licensed mailbox with synthetic events and one account representing mailbox absence.
-- [ ] Confirm that no live token, tenant/user identifier, event value, or response body will be recorded.
+- [x] Profile uses delegated `User.Read` from the Microsoft Graph v1.0 Get user permission table.
+- [x] Manager uses delegated `User.Read.All` from the Microsoft Graph v1.0 List manager permission table.
+- [x] Work Settings uses delegated `MailboxSettings.Read` from the Microsoft Graph v1.0 Get mailbox settings permission table.
+- [x] Calendar uses delegated `Calendars.ReadBasic` from the Microsoft Graph v1.0 List calendarView permission table.
 
-This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in one coordinated session.
+The operation-specific official documentation is authoritative for least privilege. No manual permission comparison or further user-run tenant probe is required.
 
 ## Phase 0: Plan-Gate Evidence
 
@@ -87,7 +87,7 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in 
 
 - [x] G1-G3 evidence is recorded.
 - [x] Plan diagnostics and `git diff --check` pass.
-- [ ] Human preflight is ready for one live session.
+- [x] Authoritative least-privilege permission evidence is complete.
 
 ## Task G4: Validate Manager Permission Documentation
 
@@ -105,18 +105,18 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in 
 **File cap:** 3 tracked specification and plan files
 **Timebox:** 20 minutes
 
-## Task G5: Probe Manager Absence
+## Task G5: Validate Manager Absence Documentation
 
-**Description:** Observe `/me/manager` for the synthetic no-manager user.
+**Description:** Confirm the no-manager response against the authoritative Microsoft Graph v1.0 List manager reference.
 
 **Acceptance criteria:**
-- [ ] Status and classification are recorded without body or personal data.
-- [ ] Result supports `Unavailable` or triggers a spec amendment.
+- [x] The documented no-manager status is recorded as `404 Not Found`.
+- [x] The documented absence is classified as `Unavailable`.
 
 **Verification:**
-- [ ] Sanitized result is appended to the Plan-Gate Evidence Record.
+- [x] Authoritative evidence is appended to the Plan-Gate Evidence Record.
 
-**Dependencies:** Human preflight
+**Dependencies:** Plan approval
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
 **Timebox:** 10 minutes, hard stop at 20
 
@@ -124,51 +124,57 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in 
 
 **Description:** Request every approved Calendar field under delegated `Calendars.ReadBasic` using synthetic events.
 
+**Result (2026-09-13):** The approved calendar-view request returned HTTP 200 under delegated `Calendars.ReadBasic`. All 13 selected top-level properties were present. Nested contact and location details were returned by Graph but no value or response body is retained; the implementation's minimal DTOs will discard them.
+
 **Acceptance criteria:**
-- [ ] Every selected field is classified as returned, redacted, or unavailable.
-- [ ] No event value or response body is recorded.
-- [ ] Missing required fields trigger a spec amendment before Calendar code.
+- [x] Every selected field is classified as returned, redacted, or unavailable.
+- [x] No event value or response body is recorded.
+- [x] No required field was missing; no spec amendment is needed.
 
 **Verification:**
-- [ ] Sanitized field-coverage matrix is appended to the Plan-Gate Evidence Record.
+- [x] Sanitized field-coverage evidence is appended to the Plan-Gate Evidence Record.
 
-**Dependencies:** Human preflight
+**Dependencies:** G4 permission baseline
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
 **Timebox:** 20 minutes
 
-## Checkpoint B: First Live Results
+## Checkpoint B: Permission and Field Evidence
 
-- [ ] G4 documentation evidence and G5-G6 live evidence are complete.
-- [ ] Any contradiction has stopped implementation and been surfaced once.
-- [ ] No sensitive value appears in the diff.
+- [x] G4-G5 authoritative evidence and G6 field evidence are complete.
+- [x] No permission contradiction remains.
+- [x] No sensitive value appears in the diff.
 
-## Task G7: Probe Calendar Ordering
+## Task G7: Resolve Calendar Ordering Contract
 
-**Description:** Prove a server-supported chronological Calendar query before `$top` truncation.
+**Description:** Define conservative bounded Calendar semantics from authoritative documentation without relying on undocumented server ordering.
+
+**Status (2026-09-13):** Open as a non-permission specification decision. The official calendarView reference does not guarantee chronological default ordering or explicitly document `$orderby=start/dateTime`; no further manual tenant test will be requested.
 
 **Acceptance criteria:**
-- [ ] Synthetic events returned with a small `$top` prove server-side ascending start order.
-- [ ] The exact accepted query shape is recorded, or the spec stops for amendment.
+- [ ] The contract does not claim nearest-event semantics without authoritative server-ordering support.
+- [ ] The bounded request and local sorting semantics are explicit and approved.
 
 **Verification:**
-- [ ] Sanitized ordering observation is appended to the Plan-Gate Evidence Record.
+- [ ] The authoritative source and resulting specification decision are appended to the Plan-Gate Evidence Record.
 
 **Dependencies:** G6
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
 **Timebox:** 20 minutes
 
-## Task G8: Probe Mailbox Absence
+## Task G8: Resolve Mailbox Absence Contract
 
-**Description:** Observe Calendar behavior for the synthetic account without an applicable mailbox.
+**Description:** Define Calendar mailbox-absence handling conservatively from documented response behavior.
+
+**Status (2026-09-13):** Open as a non-permission specification decision. The official calendarView reference does not define a mailbox-absence response; no further manual tenant test will be requested.
 
 **Acceptance criteria:**
-- [ ] Status and classification are recorded without response body or personal data.
-- [ ] Result supports `Unavailable` or triggers a spec amendment.
+- [ ] Only explicitly documented absence responses map to `Unavailable`.
+- [ ] Undocumented mailbox errors remain sanitized failures, and the specification is amended accordingly.
 
 **Verification:**
-- [ ] Sanitized result is appended to the Plan-Gate Evidence Record.
+- [ ] The authoritative source and resulting specification decision are appended to the Plan-Gate Evidence Record.
 
-**Dependencies:** Human preflight
+**Dependencies:** G6
 **File cap:** 1 tracked file, [`plan.md`](plan.md)
 **Timebox:** 10 minutes, hard stop at 20
 
@@ -191,7 +197,7 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in 
 ## Checkpoint C: Plan Gate
 
 - [ ] All seven Plan Gate exit-evidence requirements are satisfied.
-- [ ] State and threat tables agree with live observations.
+- [ ] State and threat tables agree with authoritative and recorded evidence.
 - [ ] Plan diagnostics, link checks, and `git diff --check` pass.
 - [ ] No spec contradiction remains; plan approval automatically authorizes Tasks 1-33.
 
@@ -717,11 +723,14 @@ This prerequisite is user-owned setup, not a timeboxed agent task. G5-G8 run in 
 
 ## Task 31: Publish Core Package Guidance
 
-**Description:** Document direct-client setup, delegated permissions, known Graph inconsistencies, data minimization, fresh/no-cache semantics, and host security ownership.
+**Description:** Document direct-client setup, the approved delegated-permission baseline, Graph behavior constraints, data minimization, fresh/no-cache semantics, and host security ownership.
+
+**Completed prerequisite:**
+- [x] The approved baseline is Profile `User.Read`, Manager `User.Read.All`, Work Settings `MailboxSettings.Read`, and Calendar `Calendars.ReadBasic`.
 
 **Acceptance criteria:**
 - [ ] Guidance covers Profile, Manager, Work Settings, Calendar, best effort/fail fast, DI, and token-provider ownership.
-- [ ] Permissions and live findings are stated without overstating least privilege.
+- [ ] Published guidance reproduces the approved baseline and recorded behavior evidence without overstatement.
 - [ ] Work context is explicitly untrusted enrichment, never authorization; no secret or tenant value is present.
 
 **Verification:**

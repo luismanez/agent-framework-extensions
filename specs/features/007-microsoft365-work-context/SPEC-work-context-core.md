@@ -6,7 +6,7 @@
 **Origin:** [`microsoft365-work-context-provider.md`](../../../docs/ideas/microsoft365-work-context-provider.md)
 **Plan:** [`plan.md`](work-context-core/plan.md)
 **Task checklist:** [`todo.md`](work-context-core/todo.md)
-**Status:** Approved; Plan Gate awaiting live probes
+**Status:** Approved; Plan Gate awaiting non-permission Calendar decisions
 **Depends on:** Repository foundation
 **Enables:** `agent-framework-provider`, `console-sample`, and `aspnetcore-obo-sample`
 
@@ -59,7 +59,7 @@ If this module conflicts with a repository-wide requirement in the parent specif
 - Partial batch failure, outer request failure, malformed response, and cancellation behavior.
 - Dependency injection registration, option validation, safe logging, and deterministic time through `TimeProvider` when supplied by the host.
 - Tenant-independent tests using fake token providers, HTTP handlers, loggers, and time providers.
-- Documentation of delegated permissions, least-data behavior, and unresolved Graph permission questions.
+- Documentation of delegated permissions, supported account types, and least-data behavior.
 
 ### Out of Scope
 
@@ -362,7 +362,7 @@ The actual URL MUST be one correctly escaped relative URL. The multiline form ab
 - Organizer and attendee `emailAddress` objects can contain addresses, and a location object can contain an address, coordinates, email address, URI, and identifiers. Minimal wire DTOs MUST declare only organizer/attendee names and location display name, causing `System.Text.Json` to ignore every other nested property.
 - Do not request body, body preview, attachments, extensions, online-meeting details, web links, identifiers, categories, or change keys.
 
-The documented least-privileged delegated permission is `Calendars.ReadBasic`. The Plan gate MUST prove that every selected field needed by this contract is returned under `Calendars.ReadBasic`; otherwise the spec must either reduce fields or explicitly approve and document `Calendars.Read` before implementation.
+The documented least-privileged delegated permission is `Calendars.ReadBasic`. Recorded runtime evidence confirms that every selected top-level field needed by this contract is returned under `Calendars.ReadBasic`; no broader Calendar permission is required.
 
 The current official calendar-view reference documents `$top` and says only that the operation supports some OData parameters. It does not explicitly guarantee default chronological order or document `$orderby=start/dateTime`. The Plan gate MUST verify a server-supported chronological query before implementation. The client MUST NOT claim that `$top` returns the nearest events based only on local sorting after server truncation. Cancelled, declined, private-invalid, or malformed entries removed from the bounded server page are not backfilled through paging in V1, so the final list can contain fewer than `MaximumCalendarEvents`.
 
@@ -607,15 +607,16 @@ Normal tests MUST require no tenant, credentials, Microsoft 365 license, clock d
 - Assert cancellation propagates unchanged from token acquisition, send, and response reading.
 - Assert exceptions and logs contain no token, personal value, URL payload, Graph error message, or raw body.
 
-### Live Plan-Gate Probes
+### Plan-Gate Evidence Policy
 
-Live probes are mandatory Plan-gate evidence but are not normal CI tests. They MUST use a disposable test account and synthetic, non-sensitive calendar data. They establish:
+Least-privileged permissions are established from the operation-specific Microsoft Graph v1.0 permission tables, not manual permission probes:
 
-- selected calendar fields returned under `Calendars.ReadBasic`;
-- a supported server-side chronological query for calendar view;
-- representative absence responses for users without a manager or mailbox.
+- Profile: delegated `User.Read`.
+- Manager: delegated `User.Read.All` for work or school accounts; personal Microsoft accounts and application permissions are unsupported.
+- Work Settings: delegated `MailboxSettings.Read`.
+- Calendar: delegated `Calendars.ReadBasic`.
 
-No live response body or personal value may be committed as evidence.
+The completed Calendar field-coverage observation is retained as sanitized supporting evidence. No further manual tenant testing is required. Calendar ordering and mailbox-absence semantics remain non-permission decisions and MUST NOT be represented as permission uncertainty.
 
 ## Commands
 
@@ -687,15 +688,15 @@ Before implementation tasks are approved, the Plan MUST provide:
 2. Exact serialized direct and six-operation batch requests with encoded URLs and stable ids.
 3. A state-transition table covering every facet under disabled, available, unavailable, partial, and failed outcomes in both error modes.
 4. A threat-model table mapping token and personal-data disclosure risks to tests and controls.
-5. Authoritative permission evidence plus live synthetic-account results for calendar basic-field coverage, calendar chronological query support, and expected absence responses.
+5. Authoritative permission evidence, recorded Calendar field coverage, documented Manager absence behavior, and explicit resolutions for Calendar chronological ordering and mailbox absence.
 6. A dependency report proving no Graph SDK, Azure Identity, MSAL, Microsoft Identity Web, ASP.NET Core, or new abstraction package was added.
 7. A service-lifetime analysis proving no per-user token or snapshot can survive an invocation or cross requests.
 
-If authoritative permission documentation or the calendar field, ordering, or expected-absence probes contradict this spec, update and reapprove the relevant permission, field, ordering, absence, or limit requirement before implementation. Do not hide the discrepancy in the Plan.
+If authoritative permission documentation changes, update and reapprove the relevant permission requirement. Resolve the remaining Calendar ordering and mailbox-absence questions conservatively before implementation without requiring manual tenant testing.
 
 ## Open Questions
 
-- None blocking the Specify gate. `Calendars.ReadBasic` field coverage and calendar chronological query support are deliberately assigned to mandatory live Plan-gate evidence because the official Microsoft documentation does not settle those runtime details.
+- Calendar chronological ordering and mailbox-absence classification remain Plan-gate decisions because the official API reference does not define those behaviors. Permission selection is complete and not blocking.
 
 ## Authoritative References
 
