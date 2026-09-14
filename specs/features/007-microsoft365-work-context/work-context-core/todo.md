@@ -401,13 +401,16 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Generate the exact direct Calendar URI from one captured fake UTC instant using the live-proven query.
 
+**Result (2026-09-14):** The focused test first failed on the missing Calendar URI builder, then passed after adding a pure deterministic builder. It normalizes the captured instant to UTC, applies the configured look-ahead, formats timestamps and `$top` invariantly, escapes values, preserves the approved parameter order and field allowlist, and emits no `$orderby` or timezone preference. This task does not send Calendar HTTP requests; operation selection and transport remain in later tasks.
+
 **Acceptance criteria:**
-- [ ] Start/end, look-ahead, `$top`, ordering, and `$select` are invariant and escaped.
-- [ ] No timezone preference or forbidden field is requested.
-- [ ] Direct request matches G9.
+- [x] Start/end, look-ahead, `$top`, ordering, and `$select` are invariant and escaped.
+- [x] No timezone preference or forbidden field is requested.
+- [x] Direct request matches G9.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextCalendarRequestTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextCalendarRequestTests` (1 passed, 0 failed).
+- [x] Complete Work Context test project passes (42 passed, 0 failed); strict Release build, touched-file diagnostics, and diff hygiene pass.
 
 **Dependencies:** Task 9 and G6-G7
 **File cap:** 3: Calendar operation builder, descriptor/client, test
