@@ -420,13 +420,15 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Build the stable operation list for every facet combination without sending requests.
 
+**Result (2026-09-14):** The focused matrix first failed on the missing operation descriptor and selector, then passed all 16 facet combinations. Selection is pure and deterministic; descriptors carry stable ids, owning facets, direct URIs, and batch URLs in the fixed order, with Work Settings expanding to exactly three contiguous operations and no duplicate ids.
+
 **Acceptance criteria:**
-- [ ] Ids and order are exactly profile, manager, three Work Settings children, Calendar.
-- [ ] Every enablement combination selects only required operations with no duplicates.
-- [ ] Zero/one/many selection is explicit and deterministic.
+- [x] Ids and order are exactly profile, manager, three Work Settings children, Calendar.
+- [x] Every enablement combination selects only required operations with no duplicates.
+- [x] Zero/one/many selection is explicit and deterministic.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.WorkContextOperationSelectionTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.WorkContextOperationSelectionTests` (16 passed, 0 failed).
 
 **Dependencies:** Tasks 10-11
 **File cap:** 3: operation descriptor/list, tests
@@ -434,7 +436,9 @@ The operation-specific official documentation is authoritative for least privile
 
 ## Checkpoint G: Direct Operations
 
-- [ ] Tasks 10-12 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 10-12 focused tests pass: 3 direct-Manager, 1 Calendar-request, and 16 operation-selection cases.
+- [x] Full solution tests pass: 212 passed, 0 failed.
+- [x] Full Release build passes with warnings treated as errors; touched-file diagnostics and diff hygiene are clean.
 
 ## Task 13: Serialize Batch Request
 
