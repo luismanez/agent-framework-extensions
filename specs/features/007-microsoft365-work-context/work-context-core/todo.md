@@ -444,13 +444,16 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Serialize two through six selected operations into one structured JSON batch request.
 
+**Result (2026-09-14):** The focused tests first failed on the pre-transport unsupported-facet guard, then passed after routing every multi-operation selection through one delegated-token acquisition and one `POST v1.0/$batch`. Minimal request DTOs and `JsonContent` provide structured serialization with stable ids, `GET` methods, `/me` URLs, JSON content type, no `dependsOn`, and a six-operation payload identical to G9. Successful outer responses currently stop at an explicit guard until Task 14 adds envelope parsing.
+
 **Acceptance criteria:**
-- [ ] One token and one POST are used for every multi-operation combination.
-- [ ] Stable unique ids, `/me` URLs, no `dependsOn`, and JSON content type match the spec.
-- [ ] Six-operation payload matches G9.
+- [x] One token and one POST are used for every multi-operation combination.
+- [x] Stable unique ids, `/me` URLs, no `dependsOn`, and JSON content type match the spec.
+- [x] Six-operation payload matches G9.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextBatchRequestTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextBatchRequestTests` (13 passed, 0 failed).
+- [x] Complete Work Context test project passes (71 passed, 0 failed); strict Release build, touched-file diagnostics, and diff hygiene pass.
 
 **Dependencies:** Task 12 and G9
 **File cap:** 4: client, batch request DTO, serializer, test

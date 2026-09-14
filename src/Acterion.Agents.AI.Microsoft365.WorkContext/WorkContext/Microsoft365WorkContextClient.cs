@@ -27,8 +27,10 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
     {
         cancellationToken.ThrowIfCancellationRequested();
         DateTimeOffset capturedAtUtc = this.timeProvider.GetUtcNow();
+        IReadOnlyList<MicrosoftGraphOperation> operations =
+            MicrosoftGraphOperations.Select(this.options, capturedAtUtc);
 
-        if (!this.options.HasEnabledFacet)
+        if (operations.Count == 0)
         {
             return new WorkContextSnapshot(
                 capturedAtUtc,
@@ -38,27 +40,40 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
         }
 
-        bool isDirectProfile =
-            this.options.EnableUserProfile &&
-            !this.options.EnableManager &&
-            !this.options.EnableWorkSettings &&
-            !this.options.EnableCalendar;
-        bool isDirectManager =
-            !this.options.EnableUserProfile &&
-            this.options.EnableManager &&
-            !this.options.EnableWorkSettings &&
-            !this.options.EnableCalendar;
-
-        if (!isDirectProfile && !isDirectManager)
+        if (operations.Count == 1 && operations[0].Id is not ("profile" or "manager"))
         {
             throw new InvalidOperationException("The requested work-context facets are not available.");
         }
 
         string accessToken = await this.tokenProvider.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
 
-        return isDirectProfile
+        if (operations.Count > 1)
+        {
+            return await this.SendBatchAsync(operations, accessToken, cancellationToken).ConfigureAwait(false);
+        }
+
+        return operations[0].Id == "profile"
             ? await this.GetProfileSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false)
             : await this.GetManagerSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<WorkContextSnapshot> SendBatchAsync(
+        IReadOnlyList<MicrosoftGraphOperation> operations,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, "v1.0/$batch")
+        {
+            Content = MicrosoftGraphBatchRequestSerializer.CreateContent(operations),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using HttpResponseMessage response = await this.httpClient
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        throw new InvalidOperationException("Batch response parsing is not available.");
     }
 
     private async Task<WorkContextSnapshot> GetProfileSnapshotAsync(
