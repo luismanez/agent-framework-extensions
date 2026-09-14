@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 
 namespace Acterion.Agents.AI.Microsoft365.WorkContext;
 
@@ -37,15 +38,34 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
         }
 
-        if (!this.options.EnableUserProfile ||
-            this.options.EnableManager ||
-            this.options.EnableWorkSettings ||
-            this.options.EnableCalendar)
+        bool isDirectProfile =
+            this.options.EnableUserProfile &&
+            !this.options.EnableManager &&
+            !this.options.EnableWorkSettings &&
+            !this.options.EnableCalendar;
+        bool isDirectManager =
+            !this.options.EnableUserProfile &&
+            this.options.EnableManager &&
+            !this.options.EnableWorkSettings &&
+            !this.options.EnableCalendar;
+
+        if (!isDirectProfile && !isDirectManager)
         {
             throw new InvalidOperationException("The requested work-context facets are not available.");
         }
 
         string accessToken = await this.tokenProvider.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+
+        return isDirectProfile
+            ? await this.GetProfileSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false)
+            : await this.GetManagerSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<WorkContextSnapshot> GetProfileSnapshotAsync(
+        DateTimeOffset capturedAtUtc,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
         using HttpRequestMessage request = new(HttpMethod.Get, MicrosoftGraphOperations.Profile);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -75,6 +95,55 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 profile,
                 failure: null),
             Disabled<WorkContextManager>(),
+            Disabled<WorkContextWorkSettings>(),
+            Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
+    }
+
+    private async Task<WorkContextSnapshot> GetManagerSnapshotAsync(
+        DateTimeOffset capturedAtUtc,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, MicrosoftGraphOperations.Manager);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using HttpResponseMessage response = await this.httpClient
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return new WorkContextSnapshot(
+                capturedAtUtc,
+                Disabled<WorkContextUserProfile>(),
+                new WorkContextFacetResult<WorkContextManager>(
+                    WorkContextFacetStatus.Unavailable,
+                    value: null,
+                    failure: null),
+                Disabled<WorkContextWorkSettings>(),
+                Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        MicrosoftGraphManagerResponse managerResponse = await response.Content
+            .ReadFromJsonAsync<MicrosoftGraphManagerResponse>(cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Microsoft Graph returned an empty Manager response.");
+
+        WorkContextManager manager = new(
+            managerResponse.DisplayName,
+            managerResponse.JobTitle,
+            managerResponse.Department,
+            managerResponse.OfficeLocation);
+
+        return new WorkContextSnapshot(
+            capturedAtUtc,
+            Disabled<WorkContextUserProfile>(),
+            new WorkContextFacetResult<WorkContextManager>(
+                WorkContextFacetStatus.Available,
+                manager,
+                failure: null),
             Disabled<WorkContextWorkSettings>(),
             Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
     }

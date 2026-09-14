@@ -382,13 +382,16 @@ The operation-specific official documentation is authoritative for least privile
 
 **Description:** Implement exact immediate-Manager request, mapping, and no-manager absence on the one-operation path.
 
+**Result (2026-09-14):** The focused tests first failed on the unsupported-facet guard, then passed after adding the fixed Manager operation, minimal four-field wire DTO, delegated Bearer request, and immutable mapping. Forbidden identity and contact fields are ignored, while a documented `404 Not Found` returns `Unavailable` under both error behaviors.
+
 **Acceptance criteria:**
-- [ ] Four allowed fields map and forbidden identity/contact fields do not.
-- [ ] Approved no-manager status becomes `Unavailable` in both modes.
-- [ ] Direct request matches the G9 fixture.
+- [x] Four allowed fields map and forbidden identity/contact fields do not.
+- [x] Approved no-manager status becomes `Unavailable` in both modes.
+- [x] Direct request matches the G9 fixture.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextManagerTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextManagerTests` (3 passed, 0 failed).
+- [x] Complete Work Context test project passes (41 passed, 0 failed); strict Release build, touched-file diagnostics, and diff hygiene pass.
 
 **Dependencies:** Task 9 and G4-G5
 **File cap:** 4: Manager DTO, mapper/client, test, fixture helper if needed
