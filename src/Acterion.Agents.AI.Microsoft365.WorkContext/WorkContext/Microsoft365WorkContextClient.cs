@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net;
+using System.Text.Json;
 
 namespace Acterion.Agents.AI.Microsoft365.WorkContext;
 
@@ -49,7 +50,11 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
 
         if (operations.Count > 1)
         {
-            return await this.SendBatchAsync(operations, accessToken, cancellationToken).ConfigureAwait(false);
+            return await this.SendBatchAsync(
+                operations,
+                capturedAtUtc,
+                accessToken,
+                cancellationToken).ConfigureAwait(false);
         }
 
         return operations[0].Id == "profile"
@@ -59,6 +64,7 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
 
     private async Task<WorkContextSnapshot> SendBatchAsync(
         IReadOnlyList<MicrosoftGraphOperation> operations,
+        DateTimeOffset capturedAtUtc,
         string accessToken,
         CancellationToken cancellationToken)
     {
@@ -72,6 +78,38 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
+
+        IReadOnlyList<MicrosoftGraphBatchSubresponse> responses =
+            await MicrosoftGraphBatchResponseParser.ParseAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
+        IReadOnlyList<MicrosoftGraphCorrelatedResponse> correlated =
+            MicrosoftGraphBatchResponseCorrelator.Correlate(operations, responses);
+
+        if (correlated.Count == 2 &&
+            correlated[0].Operation.Id == "profile" &&
+            correlated[1].Operation.Id == "manager" &&
+            correlated.All(item => item.IsValid && item.Response?.Status == 200))
+        {
+            MicrosoftGraphUserProfileResponse profileResponse =
+                correlated[0].Response!.Body.Deserialize<MicrosoftGraphUserProfileResponse>()
+                ?? throw new InvalidDataException("The Profile batch response body is invalid.");
+            MicrosoftGraphManagerResponse managerResponse =
+                correlated[1].Response!.Body.Deserialize<MicrosoftGraphManagerResponse>()
+                ?? throw new InvalidDataException("The Manager batch response body is invalid.");
+
+            return new WorkContextSnapshot(
+                capturedAtUtc,
+                new WorkContextFacetResult<WorkContextUserProfile>(
+                    WorkContextFacetStatus.Available,
+                    MapProfile(profileResponse),
+                    failure: null),
+                new WorkContextFacetResult<WorkContextManager>(
+                    WorkContextFacetStatus.Available,
+                    MapManager(managerResponse),
+                    failure: null),
+                Disabled<WorkContextWorkSettings>(),
+                Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
+        }
 
         throw new InvalidOperationException("Batch response parsing is not available.");
     }
@@ -94,20 +132,11 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException("Microsoft Graph returned an empty Profile response.");
 
-        WorkContextUserProfile profile = new(
-            profileResponse.DisplayName,
-            profileResponse.GivenName,
-            profileResponse.Surname,
-            profileResponse.JobTitle,
-            profileResponse.Department,
-            profileResponse.OfficeLocation,
-            profileResponse.PreferredLanguage);
-
         return new WorkContextSnapshot(
             capturedAtUtc,
             new WorkContextFacetResult<WorkContextUserProfile>(
                 WorkContextFacetStatus.Available,
-                profile,
+                MapProfile(profileResponse),
                 failure: null),
             Disabled<WorkContextManager>(),
             Disabled<WorkContextWorkSettings>(),
@@ -146,22 +175,33 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException("Microsoft Graph returned an empty Manager response.");
 
-        WorkContextManager manager = new(
-            managerResponse.DisplayName,
-            managerResponse.JobTitle,
-            managerResponse.Department,
-            managerResponse.OfficeLocation);
-
         return new WorkContextSnapshot(
             capturedAtUtc,
             Disabled<WorkContextUserProfile>(),
             new WorkContextFacetResult<WorkContextManager>(
                 WorkContextFacetStatus.Available,
-                manager,
+                MapManager(managerResponse),
                 failure: null),
             Disabled<WorkContextWorkSettings>(),
             Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
     }
+
+    private static WorkContextUserProfile MapProfile(MicrosoftGraphUserProfileResponse response) =>
+        new(
+            response.DisplayName,
+            response.GivenName,
+            response.Surname,
+            response.JobTitle,
+            response.Department,
+            response.OfficeLocation,
+            response.PreferredLanguage);
+
+    private static WorkContextManager MapManager(MicrosoftGraphManagerResponse response) =>
+        new(
+            response.DisplayName,
+            response.JobTitle,
+            response.Department,
+            response.OfficeLocation);
 
     private static WorkContextFacetResult<T> Disabled<T>() where T : class =>
         new(WorkContextFacetStatus.Disabled, value: null, failure: null);

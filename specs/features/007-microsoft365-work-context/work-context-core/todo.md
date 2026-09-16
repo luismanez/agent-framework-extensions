@@ -459,43 +459,68 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: client, batch request DTO, serializer, test
 **Timebox:** 20 minutes
 
-## Task 14: Parse Batch Envelope
+## Remaining Implementation Blocks
+
+Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task still follows its own RED-GREEN cycle, and each block ends with the strongest applicable focused, solution, build, and hygiene checks.
+
+| Block | Tasks | Scope | Exit boundary |
+| --- | --- | --- | --- |
+| 1 | 14-15 | Batch response parsing and correlation | Checkpoint H |
+| 2 | 16-18 | Outcome classification and best-effort failures | Checkpoint I |
+| 3 | 19-20 | Complete and partial Work Settings reduction | Ready for Calendar mapping |
+| 4 | 21-23 | Calendar mapping, privacy, and malformed entries | Checkpoint J plus Calendar privacy foundation |
+| 5 | 24-25 | Fail-fast behavior and cancellation | Checkpoint K plus cancellation review |
+| 6 | 26-27 | Structured logging, diagnostic privacy, and logger resilience | Checkpoint L |
+| 7 | 28-30 | Dependency injection, lifetime isolation, and public contract | Checkpoint M |
+| 8 | 31-33 | Guidance, closure evidence, package gate, and final review | Checkpoints N-O |
+
+## Block 1: Batch Responses
+
+### Task 14: Parse Batch Envelope
 
 **Description:** Parse the outer batch response into minimal internal subresponse records without mapping facets.
 
+**Result (2026-09-15):** The focused tests first failed on the missing parser and subresponse type, then passed after adding a minimal envelope parser. It validates the outer `responses` collection, preserves each status, headers, and body as internal operation-local data, ignores unknown properties, and leaves unexpected body shapes opaque for later classification.
+
 **Acceptance criteria:**
-- [ ] Outer success does not imply subresponse success.
-- [ ] Malformed outer JSON/envelope is distinguished from subresponse bodies.
-- [ ] Unknown body properties are ignored and raw bodies remain internal.
+- [x] Outer success does not imply subresponse success.
+- [x] Malformed outer JSON/envelope is distinguished from subresponse bodies.
+- [x] Unknown body properties are ignored and raw bodies remain internal.
 
 **Verification:**
-- [ ] RED then GREEN: envelope cases in `Microsoft365WorkContextBatchResponseTests`.
+- [x] RED then GREEN: envelope cases in `Microsoft365WorkContextBatchResponseTests` (4 passed, 0 failed).
 
 **Dependencies:** Task 13
 **File cap:** 3: batch response DTO/parser, test
 **Timebox:** 15 minutes, hard stop at 20
 
-## Task 15: Correlate Batch Responses
+### Task 15: Correlate Batch Responses
 
 **Description:** Correlate parsed subresponses to requested operations independently of response order.
 
+**Result (2026-09-15):** The focused tests first failed on the missing correlator, then passed after adding operation-ordered correlation. Unknown ids are discarded; missing or duplicate expected ids produce invalid correlation entries; reordered successful Profile and Manager bodies flow through the same allowlisted mappers used by direct requests.
+
 **Acceptance criteria:**
-- [ ] Reordered responses correlate correctly.
-- [ ] Missing/duplicate expected ids become invalid outcomes; unknown ids are ignored.
-- [ ] Profile and Manager successful bodies reach their existing mappers through batch.
+- [x] Reordered responses correlate correctly.
+- [x] Missing/duplicate expected ids become invalid outcomes; unknown ids are ignored.
+- [x] Profile and Manager successful bodies reach their existing mappers through batch.
 
 **Verification:**
-- [ ] RED then GREEN: correlation cases in `Microsoft365WorkContextBatchResponseTests`.
+- [x] RED then GREEN: correlation cases in `Microsoft365WorkContextBatchResponseTests` (3 passed, 0 failed).
 
 **Dependencies:** Task 14
 **File cap:** 4: correlator, client, batch response test, test fixture
 **Timebox:** 20 minutes
 
-## Checkpoint H: Batch Transport
+### Checkpoint H: Batch Transport
 
-- [ ] Tasks 13-15 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 13-15 focused tests pass: 13 batch-request and 7 batch-response cases.
+- [x] Full solution tests pass: 232 passed, 0 failed.
+- [x] Full Release build passes with warnings treated as errors; touched-file diagnostics and diff hygiene are clean.
 
-## Task 16: Classify Operation Outcomes
+## Block 2: Best-Effort Failure Foundation
+
+### Task 16: Classify Operation Outcomes
 
 **Description:** Normalize success, expected absence, HTTP status, malformed body, and safe request id at the operation boundary.
 
@@ -511,7 +536,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: outcome type, classifier, test, response helper
 **Timebox:** 20 minutes
 
-## Task 17: Apply Best-Effort Global Failures
+### Task 17: Apply Best-Effort Global Failures
 
 **Description:** Convert token, empty-token, transport, outer HTTP, and malformed outer batch failures into enabled-facet results.
 
@@ -527,7 +552,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 5: client, failure reducer, test, HTTP fake, token fake
 **Timebox:** 20 minutes
 
-## Task 18: Apply Best-Effort Facet Failures
+### Task 18: Apply Best-Effort Facet Failures
 
 **Description:** Reduce ordinary direct and batch operation failures to only their owning facet while preserving successful siblings across all four facets.
 
@@ -543,11 +568,13 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 3: facet reducer, test, fixture helper
 **Timebox:** 15 minutes, hard stop at 20
 
-## Checkpoint I: Best-Effort Foundation
+### Checkpoint I: Best-Effort Foundation
 
 - [ ] Tasks 16-18 focused tests, full solution tests, Release build, and diff hygiene pass.
 
-## Task 19: Map Successful Work Settings
+## Block 3: Work Settings
+
+### Task 19: Map Successful Work Settings
 
 **Description:** Map the three narrow mailbox-setting responses and reduce all-success/all-absent outcomes.
 
@@ -563,7 +590,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 5: settings DTOs, mapper/reducer, test
 **Timebox:** 20 minutes
 
-## Task 20: Reduce Partial Work Settings
+### Task 20: Reduce Partial Work Settings
 
 **Description:** Apply deterministic best-effort behavior when one or more Work Settings child operations fail.
 
@@ -579,7 +606,9 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 3: settings reducer, test, fixture helper
 **Timebox:** 15 minutes, hard stop at 20
 
-## Task 21: Map Eligible Calendar Events
+## Block 4: Calendar Mapping and Privacy
+
+### Task 21: Map Eligible Calendar Events
 
 **Description:** Map valid public events and apply cancellation, declined-response, all-day/free, sorting, and maximum rules.
 
@@ -595,11 +624,11 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: Calendar DTO, mapper, test, fixture helper
 **Timebox:** 20 minutes
 
-## Checkpoint J: Settings and Calendar Mapping
+### Checkpoint J: Settings and Calendar Mapping
 
 - [ ] Tasks 19-21 focused tests, full solution tests, Release build, and diff hygiene pass.
 
-## Task 22: Enforce Calendar Privacy
+### Task 22: Enforce Calendar Privacy
 
 **Description:** Redact private-event descriptions and map bounded public-event names without retaining nested contact data.
 
@@ -615,7 +644,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: Calendar DTO, mapper, privacy test, fixture helper
 **Timebox:** 20 minutes
 
-## Task 23: Handle Malformed Calendar Entries
+### Task 23: Handle Malformed Calendar Entries
 
 **Description:** Apply fail-closed sensitivity and best-effort partial-list semantics to malformed individual events.
 
@@ -631,7 +660,9 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 3: Calendar mapper/reducer, test
 **Timebox:** 15 minutes, hard stop at 20
 
-## Task 24: Apply Fail Fast
+## Block 5: Strict Failure and Cancellation
+
+### Task 24: Apply Fail Fast
 
 **Description:** Convert the first real failure in fixed operation order into one sanitized package exception.
 
@@ -647,12 +678,12 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: client, fail-fast reducer, test, fixture helper
 **Timebox:** 20 minutes
 
-## Checkpoint K: Calendar Privacy and Strict Mode
+### Checkpoint K: Calendar Privacy and Strict Mode
 
 - [ ] Tasks 22-24 focused tests and all facet tests pass.
 - [ ] Full solution tests, Release build, and diff hygiene pass.
 
-## Task 25: Preserve Cancellation
+### Task 25: Preserve Cancellation
 
 **Description:** Prove cancellation passes unchanged through token acquisition, send, direct response read, and batch response read.
 
@@ -668,7 +699,9 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: client if required, cancellation test, HTTP fake, token fake
 **Timebox:** 15 minutes, hard stop at 20
 
-## Task 26: Emit Structured Logs
+## Block 6: Observability and Diagnostic Privacy
+
+### Task 26: Emit Structured Logs
 
 **Description:** Add stable start, completion, and failure events with only approved operational dimensions.
 
@@ -684,7 +717,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: client, log definitions, test, collecting logger
 **Timebox:** 20 minutes
 
-## Task 27: Prove Diagnostic Privacy and Resilience
+### Task 27: Prove Diagnostic Privacy and Resilience
 
 **Description:** Test sensitive canaries across logs/exceptions and prove a throwing logger cannot change behavior.
 
@@ -699,12 +732,14 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: logging test, throwing logger, payload fixture, client only if required
 **Timebox:** 15 minutes, hard stop at 20
 
-## Checkpoint L: Cancellation and Logging
+### Checkpoint L: Cancellation and Logging
 
 - [ ] Tasks 25-27 focused tests, full solution tests, Release build, and diff hygiene pass.
 - [ ] State matrix has executable coverage and independent review approval.
 
-## Task 28: Register Services
+## Block 7: Dependency Injection and Public Contract
+
+### Task 28: Register Services
 
 **Description:** Add DI registration for options, typed HTTP client, transient client, required token provider, and TimeProvider fallback.
 
@@ -720,7 +755,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 4: service extension, source project, test, registration helper if needed
 **Timebox:** 20 minutes
 
-## Task 29: Prove Multi-User Lifetime Isolation
+### Task 29: Prove Multi-User Lifetime Isolation
 
 **Description:** Resolve two scopes with distinct token providers and prove no token, response, or snapshot crosses scope/invocation boundaries.
 
@@ -736,7 +771,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 3: DI test, scoped token fake, client only if required
 **Timebox:** 15 minutes, hard stop at 20
 
-## Task 30: Run Complete Public Consumer Gate
+### Task 30: Run Complete Public Consumer Gate
 
 **Description:** Compile consumer-style usage of every public member after DI and all models exist, then reflection-test prohibited surface.
 
@@ -752,11 +787,13 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 2: public-contract test and source member only if a defect is found
 **Timebox:** 15 minutes, hard stop at 20
 
-## Checkpoint M: DI and Public Contract
+### Checkpoint M: DI and Public Contract
 
 - [ ] Tasks 28-30 focused tests, full solution tests, Release build, dependency report, and diff hygiene pass.
 
-## Task 31: Publish Core Package Guidance
+## Block 8: Documentation and Release Closure
+
+### Task 31: Publish Core Package Guidance
 
 **Description:** Document direct-client setup, the approved delegated-permission baseline, Graph behavior constraints, data minimization, fresh/no-cache semantics, and host security ownership.
 
@@ -775,7 +812,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 3: package README, root package table/links, configuration or security doc
 **Timebox:** 20 minutes
 
-## Task 32: Prepare Closure Evidence Matrix
+### Task 32: Prepare Closure Evidence Matrix
 
 **Description:** Create the evidence document with one pending row for every Plan Gate item and success criterion before running the final commands.
 
@@ -791,7 +828,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 2: `implementation-evidence.md`, this checklist
 **Timebox:** 15 minutes, hard stop at 20
 
-## Checkpoint N: Release and Package Gate
+### Checkpoint N: Release and Package Gate
 
 - [ ] Full Work Context tests and full solution tests pass.
 - [ ] Release build and Work Context pack succeed.
@@ -799,7 +836,7 @@ The operation-specific official documentation is authoritative for least privile
 - [ ] Editor diagnostics, secret scan, links, and `git diff --check` are clean.
 - [ ] Complete API and service-lifetime gates pass.
 
-## Task 33: Record Closure Evidence
+### Task 33: Record Closure Evidence
 
 **Description:** Map every Plan Gate and specification success criterion to the observed Checkpoint N release results and complete an independent final review.
 
@@ -815,7 +852,7 @@ The operation-specific official documentation is authoritative for least privile
 **File cap:** 2: `implementation-evidence.md`, this checklist
 **Timebox:** 20 minutes
 
-## Checkpoint O: Module Complete
+### Checkpoint O: Module Complete
 
 - [ ] Task 33 evidence and review pass.
 - [ ] Every Plan Gate item and success criterion has evidence.
