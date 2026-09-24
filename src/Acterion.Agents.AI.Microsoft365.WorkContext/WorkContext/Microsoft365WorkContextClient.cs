@@ -41,25 +41,69 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
         }
 
+        string accessToken;
+        try
+        {
+            accessToken = await this.tokenProvider.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception) when (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            return Microsoft365WorkContextGlobalFailureReducer.Reduce(
+                capturedAtUtc,
+                this.options,
+                WorkContextFailureKind.TokenAcquisition);
+        }
+
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            if (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+            {
+                return Microsoft365WorkContextGlobalFailureReducer.Reduce(
+                    capturedAtUtc,
+                    this.options,
+                    WorkContextFailureKind.TokenAcquisition);
+            }
+
+            throw new Microsoft365WorkContextException(
+                facet: null,
+                WorkContextFailureKind.TokenAcquisition,
+                statusCode: null,
+                requestId: null);
+        }
+
         if (operations.Count == 1 && operations[0].Id is not ("profile" or "manager"))
         {
             throw new InvalidOperationException("The requested work-context facets are not available.");
         }
 
-        string accessToken = await this.tokenProvider.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-
-        if (operations.Count > 1)
+        try
         {
-            return await this.SendBatchAsync(
-                operations,
-                capturedAtUtc,
-                accessToken,
-                cancellationToken).ConfigureAwait(false);
-        }
+            if (operations.Count > 1)
+            {
+                return await this.SendBatchAsync(
+                    operations,
+                    capturedAtUtc,
+                    accessToken,
+                    cancellationToken).ConfigureAwait(false);
+            }
 
-        return operations[0].Id == "profile"
-            ? await this.GetProfileSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false)
-            : await this.GetManagerSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false);
+            return operations[0].Id == "profile"
+                ? await this.GetProfileSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false)
+                : await this.GetManagerSnapshotAsync(capturedAtUtc, accessToken, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception)
+            when (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            return Microsoft365WorkContextGlobalFailureReducer.Reduce(
+                capturedAtUtc,
+                this.options,
+                WorkContextFailureKind.Transport,
+                exception.StatusCode);
+        }
     }
 
     private async Task<WorkContextSnapshot> SendBatchAsync(
@@ -77,11 +121,32 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
         using HttpResponseMessage response = await this.httpClient
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode &&
+            this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            return this.ReduceGlobalHttpFailure(capturedAtUtc, response);
+        }
+
         response.EnsureSuccessStatusCode();
 
-        IReadOnlyList<MicrosoftGraphBatchSubresponse> responses =
-            await MicrosoftGraphBatchResponseParser.ParseAsync(response.Content, cancellationToken)
+        IReadOnlyList<MicrosoftGraphBatchSubresponse> responses;
+        try
+        {
+            responses = await MicrosoftGraphBatchResponseParser
+                .ParseAsync(response.Content, cancellationToken)
                 .ConfigureAwait(false);
+        }
+        catch (Exception exception)
+            when (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort &&
+                exception is JsonException or InvalidDataException)
+        {
+            return this.ReduceGlobalFailure(
+                capturedAtUtc,
+                WorkContextFailureKind.InvalidResponse,
+                response);
+        }
+
         IReadOnlyList<MicrosoftGraphCorrelatedResponse> correlated =
             MicrosoftGraphBatchResponseCorrelator.Correlate(operations, responses);
 
@@ -125,6 +190,13 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
         using HttpResponseMessage response = await this.httpClient
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode &&
+            this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            return this.ReduceGlobalHttpFailure(capturedAtUtc, response);
+        }
+
         response.EnsureSuccessStatusCode();
 
         MicrosoftGraphUserProfileResponse profileResponse = await response.Content
@@ -168,6 +240,12 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
         }
 
+        if (!response.IsSuccessStatusCode &&
+            this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            return this.ReduceGlobalHttpFailure(capturedAtUtc, response);
+        }
+
         response.EnsureSuccessStatusCode();
 
         MicrosoftGraphManagerResponse managerResponse = await response.Content
@@ -202,6 +280,38 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
             response.JobTitle,
             response.Department,
             response.OfficeLocation);
+
+    private WorkContextSnapshot ReduceGlobalHttpFailure(
+        DateTimeOffset capturedAtUtc,
+        HttpResponseMessage response)
+    {
+        WorkContextFailureKind failureKind =
+            MicrosoftGraphOperationOutcomeClassifier.ClassifyFailureKind(response.StatusCode);
+
+        return this.ReduceGlobalFailure(capturedAtUtc, failureKind, response);
+    }
+
+    private WorkContextSnapshot ReduceGlobalFailure(
+        DateTimeOffset capturedAtUtc,
+        WorkContextFailureKind failureKind,
+        HttpResponseMessage response)
+    {
+        string? requestId = MicrosoftGraphOperationOutcomeClassifier.SelectRequestId(
+            GetHeaderValue(response, "request-id"),
+            GetHeaderValue(response, "client-request-id"));
+
+        return Microsoft365WorkContextGlobalFailureReducer.Reduce(
+            capturedAtUtc,
+            this.options,
+            failureKind,
+            response.StatusCode,
+            requestId);
+    }
+
+    private static string? GetHeaderValue(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues(name, out IEnumerable<string>? values)
+            ? values.FirstOrDefault()
+            : null;
 
     private static WorkContextFacetResult<T> Disabled<T>() where T : class =>
         new(WorkContextFacetStatus.Disabled, value: null, failure: null);

@@ -60,7 +60,13 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
                 : Failed(operation, WorkContextFailureKind.InvalidResponse, statusCode, requestId);
         }
 
-        WorkContextFailureKind failureKind = statusCode switch
+        WorkContextFailureKind failureKind = ClassifyFailureKind(statusCode);
+
+        return Failed(operation, failureKind, statusCode, requestId);
+    }
+
+    internal static WorkContextFailureKind ClassifyFailureKind(HttpStatusCode statusCode) =>
+        statusCode switch
         {
             HttpStatusCode.Unauthorized => WorkContextFailureKind.Authentication,
             HttpStatusCode.Forbidden => WorkContextFailureKind.Authorization,
@@ -68,8 +74,8 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
             _ => WorkContextFailureKind.Service,
         };
 
-        return Failed(operation, failureKind, statusCode, requestId);
-    }
+    internal static string? SelectRequestId(string? requestId, string? clientRequestId) =>
+        NormalizeRequestId(requestId) ?? NormalizeRequestId(clientRequestId);
 
     private static MicrosoftGraphOperationOutcome Failed(
         MicrosoftGraphOperation operation,
@@ -81,8 +87,9 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
             new WorkContextFacetFailure(failureKind, statusCode, requestId));
 
     private static string? GetRequestId(IReadOnlyDictionary<string, string>? headers) =>
-        GetHeaderValue(headers, "request-id") ??
-        GetHeaderValue(headers, "client-request-id");
+        SelectRequestId(
+            GetHeaderValue(headers, "request-id"),
+            GetHeaderValue(headers, "client-request-id"));
 
     private static string? GetHeaderValue(
         IReadOnlyDictionary<string, string>? headers,

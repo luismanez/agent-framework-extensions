@@ -542,13 +542,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Convert token, empty-token, transport, outer HTTP, and malformed outer batch failures into enabled-facet results.
 
+**Result (2026-09-24):** Best-effort retrieval now reduces token-provider exceptions, null or blank tokens, transport exceptions, non-success outer batch responses, and malformed outer batch envelopes into one sanitized global failure. Every enabled facet is `Failed`, disabled facets remain `Disabled`, request-id selection remains allowlisted and deterministic, source exceptions and response bodies are discarded, and each token/HTTP boundary is attempted at most once.
+
 **Acceptance criteria:**
-- [ ] Every enabled facet becomes `Failed`; disabled facets remain `Disabled`.
-- [ ] Failure kind/status/request id are safe; no source exception or body is retained.
-- [ ] No automatic retry occurs.
+- [x] Every enabled facet becomes `Failed`; disabled facets remain `Disabled`.
+- [x] Failure kind/status/request id are safe; no source exception or body is retained.
+- [x] No automatic retry occurs.
 
 **Verification:**
-- [ ] RED then GREEN: global cases in `Microsoft365WorkContextBestEffortFailureTests`.
+- [x] RED then GREEN: global cases in `Microsoft365WorkContextBestEffortFailureTests` (12 passed, 0 failed).
 
 **Dependencies:** Task 16
 **File cap:** 5: client, failure reducer, test, HTTP fake, token fake
