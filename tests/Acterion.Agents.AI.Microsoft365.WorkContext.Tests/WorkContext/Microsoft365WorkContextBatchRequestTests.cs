@@ -28,10 +28,8 @@ public sealed class Microsoft365WorkContextBatchRequestTests
         RecordingHttpMessageHandler handler = new();
         Microsoft365WorkContextClient client = CreateClient(enabledFacets, tokenProvider, handler);
 
-        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.GetSnapshotAsync(TestContext.Current.CancellationToken));
+        await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal("Batch response parsing is not available.", exception.Message);
         Assert.Equal(1, tokenProvider.CallCount);
         Assert.Equal(1, handler.RequestCount);
         Assert.Equal(HttpMethod.Post, handler.Method);
@@ -48,8 +46,7 @@ public sealed class Microsoft365WorkContextBatchRequestTests
         RecordingHttpMessageHandler handler = new();
         Microsoft365WorkContextClient client = CreateClient(15, tokenProvider, handler);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.GetSnapshotAsync(TestContext.Current.CancellationToken));
+        await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(
             "{\"requests\":[{\"id\":\"profile\",\"method\":\"GET\",\"url\":\"/me?%24select=displayName%2CgivenName%2Csurname%2CjobTitle%2Cdepartment%2CofficeLocation%2CpreferredLanguage\"}," +

@@ -560,13 +560,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Reduce ordinary direct and batch operation failures to only their owning facet while preserving successful siblings across all four facets.
 
+**Result (2026-09-24):** Best-effort direct and batch responses now flow through the same operation classifier and facet reducer. Profile, Manager, Work Settings child, and Calendar failures affect only their owning facet; successful Profile/Manager siblings and documented Manager absence are preserved; failure metadata remains sanitized and Graph error bodies are discarded.
+
 **Acceptance criteria:**
-- [ ] A failed Profile, Manager, Work Settings child, or Calendar operation produces one owning `Failed` facet with safe failure metadata.
-- [ ] Successful and unavailable sibling facets retain their values/statuses in batch mode.
-- [ ] Direct and batch paths produce equivalent facet outcomes for the same failure.
+- [x] A failed Profile, Manager, Work Settings child, or Calendar operation produces one owning `Failed` facet with safe failure metadata.
+- [x] Successful and unavailable sibling facets retain their values/statuses in batch mode.
+- [x] Direct and batch paths produce equivalent facet outcomes for the same failure.
 
 **Verification:**
-- [ ] RED then GREEN: facet cases in `Microsoft365WorkContextBestEffortFailureTests`.
+- [x] RED then GREEN: facet cases in `Microsoft365WorkContextBestEffortFailureTests` (17 total global/facet cases passed, 0 failed).
 
 **Dependencies:** Tasks 16-17
 **File cap:** 3: facet reducer, test, fixture helper
@@ -574,7 +576,9 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint I: Best-Effort Foundation
 
-- [ ] Tasks 16-18 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 16-18 focused tests pass: 20 operation-outcome and 17 best-effort global/facet cases.
+- [x] Full solution tests pass: 269 passed, 0 failed.
+- [x] Full Release build passes with 0 warnings and 0 errors; touched-file diagnostics and diff hygiene are clean.
 
 ## Block 3: Work Settings
 

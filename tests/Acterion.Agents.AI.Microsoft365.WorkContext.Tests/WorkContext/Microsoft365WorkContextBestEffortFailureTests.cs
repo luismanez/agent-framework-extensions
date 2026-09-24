@@ -179,6 +179,248 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             "graph-request-id");
     }
 
+    [Fact]
+    public async Task GetSnapshotAsync_WhenProfileBatchOperationFails_PreservesSuccessfulManager()
+    {
+        using HttpResponseMessage response = BatchResponse("""
+            {
+              "responses": [
+                {
+                  "id": "manager",
+                  "status": 200,
+                  "body": {
+                    "displayName": "Morgan Lee",
+                    "jobTitle": "Director",
+                    "department": "Platform",
+                    "officeLocation": "Building 2"
+                  }
+                },
+                {
+                  "id": "profile",
+                  "status": 403,
+                  "headers": { "request-id": "profile-request-id" },
+                  "body": { "error": { "message": "sensitive Graph error body" } }
+                }
+              ]
+            }
+            """);
+        Microsoft365WorkContextClient client = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(response),
+            ProfileAndManagerOptions());
+
+        WorkContextSnapshot snapshot = await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
+
+        AssertFailed(
+            snapshot.UserProfile,
+            WorkContextFailureKind.Authorization,
+            HttpStatusCode.Forbidden,
+            "profile-request-id");
+        Assert.Equal(WorkContextFacetStatus.Available, snapshot.Manager.Status);
+        Assert.Equal("Morgan Lee", snapshot.Manager.Value?.DisplayName);
+        Assert.Null(snapshot.Manager.Failure);
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.WorkSettings.Status);
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_WhenWorkSettingsChildFails_PreservesSuccessfulAndUnavailableSiblings()
+    {
+        using HttpResponseMessage response = BatchResponse("""
+            {
+              "responses": [
+                { "id": "work-hours", "status": 200, "body": {} },
+                {
+                  "id": "work-language",
+                  "status": 429,
+                  "headers": { "request-id": "work-language-request-id" },
+                  "body": { "error": { "message": "sensitive Graph error body" } }
+                },
+                { "id": "manager", "status": 404, "body": {} },
+                {
+                  "id": "profile",
+                  "status": 200,
+                  "body": { "displayName": "Avery Ng" }
+                },
+                { "id": "work-time-zone", "status": 200, "body": {} }
+              ]
+            }
+            """);
+        Microsoft365WorkContextClient client = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(response),
+            new Microsoft365WorkContextOptions
+            {
+                EnableUserProfile = true,
+                EnableManager = true,
+                EnableWorkSettings = true,
+                EnableCalendar = false,
+            });
+
+        WorkContextSnapshot snapshot = await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkContextFacetStatus.Available, snapshot.UserProfile.Status);
+        Assert.Equal("Avery Ng", snapshot.UserProfile.Value?.DisplayName);
+        Assert.Equal(WorkContextFacetStatus.Unavailable, snapshot.Manager.Status);
+        Assert.Null(snapshot.Manager.Value);
+        Assert.Null(snapshot.Manager.Failure);
+        AssertFailed(
+            snapshot.WorkSettings,
+            WorkContextFailureKind.Throttled,
+            HttpStatusCode.TooManyRequests,
+            "work-language-request-id");
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_WhenCalendarBatchOperationFails_PreservesSuccessfulAndUnavailableSiblings()
+    {
+        using HttpResponseMessage response = BatchResponse("""
+            {
+              "responses": [
+                {
+                  "id": "calendar",
+                  "status": 503,
+                  "headers": { "request-id": "calendar-request-id" },
+                  "body": { "error": { "message": "sensitive Graph error body" } }
+                },
+                { "id": "manager", "status": 404, "body": {} },
+                {
+                  "id": "profile",
+                  "status": 200,
+                  "body": { "displayName": "Avery Ng" }
+                }
+              ]
+            }
+            """);
+        Microsoft365WorkContextClient client = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(response),
+            new Microsoft365WorkContextOptions
+            {
+                EnableUserProfile = true,
+                EnableManager = true,
+                EnableWorkSettings = false,
+                EnableCalendar = true,
+            });
+
+        WorkContextSnapshot snapshot = await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkContextFacetStatus.Available, snapshot.UserProfile.Status);
+        Assert.Equal("Avery Ng", snapshot.UserProfile.Value?.DisplayName);
+        Assert.Equal(WorkContextFacetStatus.Unavailable, snapshot.Manager.Status);
+        Assert.Null(snapshot.Manager.Value);
+        Assert.Null(snapshot.Manager.Failure);
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.WorkSettings.Status);
+        AssertFailed(
+            snapshot.Calendar,
+            WorkContextFailureKind.Service,
+            HttpStatusCode.ServiceUnavailable,
+            "calendar-request-id");
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_WhenManagerBatchOperationFails_PreservesSuccessfulProfile()
+    {
+        using HttpResponseMessage response = BatchResponse("""
+            {
+              "responses": [
+                {
+                  "id": "manager",
+                  "status": 401,
+                  "headers": { "request-id": "manager-request-id" },
+                  "body": { "error": { "message": "sensitive Graph error body" } }
+                },
+                {
+                  "id": "profile",
+                  "status": 200,
+                  "body": { "displayName": "Avery Ng" }
+                }
+              ]
+            }
+            """);
+        Microsoft365WorkContextClient client = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(response),
+            ProfileAndManagerOptions());
+
+        WorkContextSnapshot snapshot = await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkContextFacetStatus.Available, snapshot.UserProfile.Status);
+        Assert.Equal("Avery Ng", snapshot.UserProfile.Value?.DisplayName);
+        AssertFailed(
+            snapshot.Manager,
+            WorkContextFailureKind.Authentication,
+            HttpStatusCode.Unauthorized,
+            "manager-request-id");
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.WorkSettings.Status);
+        Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_WhenCalendarOperationFails_DirectAndBatchFailuresAreEquivalent()
+    {
+        using HttpResponseMessage directResponse = new(HttpStatusCode.Forbidden)
+        {
+            Content = new StringContent("sensitive Graph error body"),
+        };
+        directResponse.Headers.Add("request-id", "calendar-request-id");
+        Microsoft365WorkContextClient directClient = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(directResponse),
+            new Microsoft365WorkContextOptions
+            {
+                EnableUserProfile = false,
+                EnableManager = false,
+                EnableWorkSettings = false,
+                EnableCalendar = true,
+            });
+
+        using HttpResponseMessage batchResponse = BatchResponse("""
+            {
+              "responses": [
+                {
+                  "id": "profile",
+                  "status": 200,
+                  "body": { "displayName": "Avery Ng" }
+                },
+                {
+                  "id": "calendar",
+                  "status": 403,
+                  "headers": { "request-id": "calendar-request-id" },
+                  "body": { "error": { "message": "sensitive Graph error body" } }
+                }
+              ]
+            }
+            """);
+        Microsoft365WorkContextClient batchClient = CreateClient(
+            new StaticTokenProvider("delegated-token"),
+            new StaticResponseHttpMessageHandler(batchResponse),
+            new Microsoft365WorkContextOptions
+            {
+                EnableUserProfile = true,
+                EnableManager = false,
+                EnableWorkSettings = false,
+                EnableCalendar = true,
+            });
+
+        WorkContextSnapshot direct = await directClient.GetSnapshotAsync(TestContext.Current.CancellationToken);
+        WorkContextSnapshot batch = await batchClient.GetSnapshotAsync(TestContext.Current.CancellationToken);
+
+        AssertFailed(
+            direct.Calendar,
+            WorkContextFailureKind.Authorization,
+            HttpStatusCode.Forbidden,
+            "calendar-request-id");
+        AssertFailed(
+            batch.Calendar,
+            WorkContextFailureKind.Authorization,
+            HttpStatusCode.Forbidden,
+            "calendar-request-id");
+        Assert.Equal(WorkContextFacetStatus.Disabled, direct.UserProfile.Status);
+        Assert.Equal(WorkContextFacetStatus.Available, batch.UserProfile.Status);
+    }
+
     private static Microsoft365WorkContextClient CreateClient(
         IMicrosoft365WorkContextTokenProvider tokenProvider,
         HttpMessageHandler handler,
@@ -196,6 +438,12 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             EnableManager = true,
             EnableWorkSettings = false,
             EnableCalendar = false,
+        };
+
+    private static HttpResponseMessage BatchResponse(string responseJson) =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseJson),
         };
 
     private static void AssertFailed<T>(

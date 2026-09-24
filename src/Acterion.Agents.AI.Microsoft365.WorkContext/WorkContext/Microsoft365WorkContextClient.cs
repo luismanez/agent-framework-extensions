@@ -75,7 +75,9 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 requestId: null);
         }
 
-        if (operations.Count == 1 && operations[0].Id is not ("profile" or "manager"))
+        if (this.options.ErrorBehavior != WorkContextErrorBehavior.BestEffort &&
+            operations.Count == 1 &&
+            operations[0].Id is not ("profile" or "manager"))
         {
             throw new InvalidOperationException("The requested work-context facets are not available.");
         }
@@ -86,6 +88,15 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
             {
                 return await this.SendBatchAsync(
                     operations,
+                    capturedAtUtc,
+                    accessToken,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            if (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+            {
+                return await this.SendBestEffortDirectAsync(
+                    operations[0],
                     capturedAtUtc,
                     accessToken,
                     cancellationToken).ConfigureAwait(false);
@@ -104,6 +115,46 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
                 WorkContextFailureKind.Transport,
                 exception.StatusCode);
         }
+    }
+
+    private async Task<WorkContextSnapshot> SendBestEffortDirectAsync(
+        MicrosoftGraphOperation operation,
+        DateTimeOffset capturedAtUtc,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, operation.DirectUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using HttpResponseMessage response = await this.httpClient
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+
+        JsonElement body = default;
+        if (response.IsSuccessStatusCode)
+        {
+            try
+            {
+                body = await response.Content
+                    .ReadFromJsonAsync<JsonElement>(cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (JsonException)
+            {
+                // The classifier converts the undefined payload into a sanitized InvalidResponse failure.
+            }
+        }
+
+        MicrosoftGraphOperationOutcome outcome = MicrosoftGraphOperationOutcomeClassifier.Classify(
+            operation,
+            (int)response.StatusCode,
+            GetOutcomeHeaders(response),
+            body);
+
+        return Microsoft365WorkContextBestEffortFacetReducer.Reduce(
+            capturedAtUtc,
+            this.options,
+            [outcome]);
     }
 
     private async Task<WorkContextSnapshot> SendBatchAsync(
@@ -149,6 +200,18 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
 
         IReadOnlyList<MicrosoftGraphCorrelatedResponse> correlated =
             MicrosoftGraphBatchResponseCorrelator.Correlate(operations, responses);
+
+        if (this.options.ErrorBehavior == WorkContextErrorBehavior.BestEffort)
+        {
+            IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes = correlated
+                .Select(MicrosoftGraphOperationOutcomeClassifier.Classify)
+                .ToArray();
+
+            return Microsoft365WorkContextBestEffortFacetReducer.Reduce(
+                capturedAtUtc,
+                this.options,
+                outcomes);
+        }
 
         if (correlated.Count == 2 &&
             correlated[0].Operation.Id == "profile" &&
@@ -312,6 +375,26 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
         response.Headers.TryGetValues(name, out IEnumerable<string>? values)
             ? values.FirstOrDefault()
             : null;
+
+    private static IReadOnlyDictionary<string, string>? GetOutcomeHeaders(HttpResponseMessage response)
+    {
+        Dictionary<string, string> headers = new(StringComparer.OrdinalIgnoreCase);
+        AddHeaderIfPresent(headers, response, "request-id");
+        AddHeaderIfPresent(headers, response, "client-request-id");
+        return headers.Count == 0 ? null : headers;
+    }
+
+    private static void AddHeaderIfPresent(
+        IDictionary<string, string> headers,
+        HttpResponseMessage response,
+        string name)
+    {
+        string? value = GetHeaderValue(response, name);
+        if (value is not null)
+        {
+            headers.Add(name, value);
+        }
+    }
 
     private static WorkContextFacetResult<T> Disabled<T>() where T : class =>
         new(WorkContextFacetStatus.Disabled, value: null, failure: null);
