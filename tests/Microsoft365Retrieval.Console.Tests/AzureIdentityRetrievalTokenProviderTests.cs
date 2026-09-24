@@ -127,6 +127,7 @@ public sealed class SampleConfigurationTests
 
         Assert.Null(configuration.AzureOpenAIEndpoint);
         Assert.Null(configuration.AzureOpenAIDeploymentName);
+        Assert.Null(configuration.AzureOpenAITenantId);
     }
 
     [Fact]
@@ -137,6 +138,7 @@ public sealed class SampleConfigurationTests
 
         Assert.Contains("MicrosoftEntra:TenantId", exception.Message, StringComparison.Ordinal);
         Assert.Contains("MicrosoftEntra:ClientId", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("AzureOpenAI:TenantId", exception.Message, StringComparison.Ordinal);
         Assert.Contains("AzureOpenAI:Endpoint", exception.Message, StringComparison.Ordinal);
         Assert.Contains("AzureOpenAI:DeploymentName", exception.Message, StringComparison.Ordinal);
     }
@@ -149,6 +151,7 @@ public sealed class SampleConfigurationTests
             {
                 ["MicrosoftEntra:TenantId"] = "tenant-id",
                 ["MicrosoftEntra:ClientId"] = "client-id",
+                ["AzureOpenAI:TenantId"] = "model-tenant-id",
                 ["AzureOpenAI:Endpoint"] = "https://example.openai.azure.com/",
                 ["AzureOpenAI:DeploymentName"] = "chat-deployment",
                 ["Microsoft365Retrieval:SharePointSiteUrl"] = "https://contoso.sharepoint.com/sites/test/",
@@ -160,6 +163,7 @@ public sealed class SampleConfigurationTests
 
         Assert.Equal("tenant-id", configuration.TenantId);
         Assert.Equal("client-id", configuration.ClientId);
+        Assert.Equal("model-tenant-id", configuration.AzureOpenAITenantId);
         Assert.Equal(new Uri("https://example.openai.azure.com/"), configuration.AzureOpenAIEndpoint);
         Assert.Equal("chat-deployment", configuration.AzureOpenAIDeploymentName);
         Assert.Equal(new Uri("https://contoso.sharepoint.com/sites/test/"), configuration.SharePointSiteUrl);
@@ -175,6 +179,7 @@ public sealed class SampleConfigurationTests
             {
                 ["MicrosoftEntra:TenantId"] = "base-tenant",
                 ["MicrosoftEntra:ClientId"] = "base-client",
+                ["AzureOpenAI:TenantId"] = "base-model-tenant",
                 ["AzureOpenAI:Endpoint"] = "https://base.openai.azure.com/",
                 ["AzureOpenAI:DeploymentName"] = "base-deployment",
             })

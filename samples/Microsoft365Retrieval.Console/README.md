@@ -42,6 +42,7 @@ Configure the local file with your tenant-specific values:
 		"ClientId": "<public client application ID>"
 	},
 	"AzureOpenAI": {
+		"TenantId": "<Azure OpenAI resource tenant ID>",
 		"Endpoint": "https://<resource-name>.openai.azure.com/",
 		"DeploymentName": "<chat-completions-deployment-name>"
 	},
@@ -57,21 +58,24 @@ Configure the local file with your tenant-specific values:
 ```text
 MicrosoftEntra__TenantId=<Microsoft Entra tenant ID>
 MicrosoftEntra__ClientId=<public client application ID>
+AzureOpenAI__TenantId=<Azure OpenAI resource tenant ID>
 AzureOpenAI__Endpoint=https://<resource-name>.openai.azure.com
 AzureOpenAI__DeploymentName=<chat-completions-deployment-name>
 Microsoft365Retrieval__SharePointSiteUrl=https://<tenant>.sharepoint.com/sites/<site>/
 Microsoft365Retrieval__MaximumNumberOfResults=8
 ```
 
-The previous flat environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`, and `MICROSOFT365_RETRIEVAL_FILTER`) remain supported for compatibility. `SharePointSiteUrl` is converted to a typed `Path` filter. Leave it empty to search all SharePoint content available to the signed-in user, or use the legacy raw-filter variable only for advanced KQL scenarios.
+The previous flat environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`, and `MICROSOFT365_RETRIEVAL_FILTER`) remain supported for compatibility. `AZURE_OPENAI_TENANT_ID` is also accepted for the Azure OpenAI tenant. `SharePointSiteUrl` is converted to a typed `Path` filter. Leave it empty to search all SharePoint content available to the signed-in user, or use the legacy raw-filter variable only for advanced KQL scenarios.
 
-The Retrieval package is independent of the model provider. This host uses Azure OpenAI and `DefaultAzureCredential` for the model service only; Graph retrieval always uses `DeviceCodeCredential`. For production, prefer a deliberately selected credential for the model service instead of `DefaultAzureCredential`.
+The Retrieval package is independent of the model provider. This host uses Azure OpenAI and `DefaultAzureCredential` for the model service only; Graph retrieval always uses `DeviceCodeCredential`. `AzureOpenAI:TenantId` must identify the tenant that owns the Azure OpenAI resource. It can have the same value as `MicrosoftEntra:TenantId`, but it is configured separately because the two resources can belong to different tenants. Developer credentials that cannot authenticate in the configured tenant are skipped, so the chain can continue from Visual Studio to Azure CLI or another developer credential. At least one credential in the chain must represent an identity in that tenant with access to the configured deployment. For production, prefer a deliberately selected credential for the model service instead of `DefaultAzureCredential`.
 
 Before running locally, authenticate Azure CLI with an identity that can invoke the configured Azure OpenAI deployment:
 
 ```sh
-az login
+az login --tenant <Azure OpenAI resource tenant ID>
 ```
+
+To use Azure CLI exclusively during local testing, set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` before starting the sample. This optional setting avoids probing the other credentials in the default chain.
 
 ## Run
 

@@ -76,7 +76,11 @@ if (retrievalOnly)
 	return;
 }
 
-AzureOpenAIClient openAIClient = new(configuration.AzureOpenAIEndpoint!, new DefaultAzureCredential());
+DefaultAzureCredential modelCredential = new(new DefaultAzureCredentialOptions
+{
+	TenantId = configuration.AzureOpenAITenantId,
+});
+AzureOpenAIClient openAIClient = new(configuration.AzureOpenAIEndpoint!, modelCredential);
 IChatClient chatClient = new ChatClientBuilder(openAIClient.GetChatClient(configuration.AzureOpenAIDeploymentName).AsIChatClient())
 	.UseMicrosoft365Retrieval(TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke)
 	.Build(serviceProvider);
@@ -169,6 +173,7 @@ static async Task RunRetrievalOnlyAsync(
 public sealed record SampleConfiguration(
 	string TenantId,
 	string ClientId,
+	string? AzureOpenAITenantId,
 	Uri? AzureOpenAIEndpoint,
 	string? AzureOpenAIDeploymentName,
 	Uri? SharePointSiteUrl,
@@ -188,6 +193,7 @@ public sealed record SampleConfiguration(
 		];
 		if (requireAzureOpenAI)
 		{
+			requiredSettings.Add(("AzureOpenAI:TenantId", "AZURE_OPENAI_TENANT_ID"));
 			requiredSettings.Add(("AzureOpenAI:Endpoint", "AZURE_OPENAI_ENDPOINT"));
 			requiredSettings.Add(("AzureOpenAI:DeploymentName", "AZURE_OPENAI_DEPLOYMENT_NAME"));
 		}
@@ -237,6 +243,7 @@ public sealed record SampleConfiguration(
 		return new SampleConfiguration(
 			values["MicrosoftEntra:TenantId"]!,
 			values["MicrosoftEntra:ClientId"]!,
+			requireAzureOpenAI ? values["AzureOpenAI:TenantId"] : null,
 			endpointUri,
 			GetOptionalValue(configuration, "AzureOpenAI:DeploymentName") ??
 				GetOptionalValue(configuration, "AZURE_OPENAI_DEPLOYMENT_NAME"),

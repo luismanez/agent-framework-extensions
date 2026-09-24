@@ -17,6 +17,20 @@ dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
 
 This mode does not require Azure OpenAI settings or `az login`. It does require the Microsoft Entra public-client configuration and a Retrieval API access path for the signed-in user.
 
+## Azure OpenAI tenant mismatch in the console sample
+
+If the complete console flow fails with `HTTP 400 (Tenant provided in token does not match resource token)` but `--retrieval-only` succeeds, the Retrieval API and its device-code cache are working. The rejected token belongs to the model call made through `DefaultAzureCredential`.
+
+Set `AzureOpenAI:TenantId` to the tenant that owns the Azure OpenAI resource. If a developer credential such as Visual Studio cannot authenticate in that tenant, `DefaultAzureCredential` continues to the remaining developer credentials. For Azure CLI, sign in explicitly to the configured tenant:
+
+```sh
+az login --tenant <Azure OpenAI resource tenant ID>
+```
+
+If local tests should always use Azure CLI, set `AZURE_TOKEN_CREDENTIALS=AzureCliCredential` before running the sample. Otherwise, leave the default chain enabled and ensure at least one developer credential represents an identity in the configured tenant with permission to invoke the deployment.
+
+The Microsoft 365 and Azure OpenAI tenant IDs can be equal, but they remain separate settings because the resources can belong to different tenants. Deleting the console sample's `authentication-record.json` only resets its Microsoft Graph account selection and does not change the Visual Studio, Azure CLI, or other developer credential used for Azure OpenAI.
+
 ## Capture safe diagnostics
 
 ```csharp
