@@ -524,13 +524,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Normalize success, expected absence, HTTP status, malformed body, and safe request id at the operation boundary.
 
+**Result (2026-09-24):** A policy-neutral internal outcome now distinguishes success, documented absence, and failure while retaining payloads only for successful operations. The classifier maps HTTP failures to the approved failure kinds, treats only Manager `404` as unavailable, rejects malformed success bodies and correlations, prefers `request-id` over `client-request-id`, rejects unsafe identifier values, and never retains Graph error bodies.
+
 **Acceptance criteria:**
-- [ ] `401`, `403`, `429`, `5xx`, other unexpected status, and approved `404` cases classify exactly.
-- [ ] Request-id preference is deterministic and raw Graph errors are not retained.
-- [ ] Classification itself does not choose best effort or fail fast.
+- [x] `401`, `403`, `429`, `5xx`, other unexpected status, and approved `404` cases classify exactly.
+- [x] Request-id preference is deterministic and raw Graph errors are not retained.
+- [x] Classification itself does not choose best effort or fail fast.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.WorkContextOperationOutcomeTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.WorkContextOperationOutcomeTests` (20 passed, 0 failed).
 
 **Dependencies:** Task 15
 **File cap:** 4: outcome type, classifier, test, response helper
