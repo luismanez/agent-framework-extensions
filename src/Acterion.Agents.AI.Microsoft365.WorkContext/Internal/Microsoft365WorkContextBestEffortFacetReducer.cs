@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net;
 using System.Text.Json;
 
 namespace Acterion.Agents.AI.Microsoft365.WorkContext;
@@ -51,13 +53,73 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
     private static WorkContextFacetResult<WorkContextWorkSettings> ReduceWorkSettings(
         IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes)
     {
-        MicrosoftGraphOperationOutcome? failure = outcomes.FirstOrDefault(
-            outcome => outcome.Operation.Facet == WorkContextFacet.WorkSettings &&
-                outcome.Status == MicrosoftGraphOperationOutcomeStatus.Failed);
+        MicrosoftGraphOperationOutcome timeZone = GetOutcome(outcomes, "work-time-zone");
+        MicrosoftGraphOperationOutcome language = GetOutcome(outcomes, "work-language");
+        MicrosoftGraphOperationOutcome workingHours = GetOutcome(outcomes, "work-hours");
 
-        return failure is not null
-            ? Failed<WorkContextWorkSettings>(failure.Failure!)
-            : throw new InvalidOperationException("Work Settings mapping is not available.");
+        WorkSettingsChildResult<string> timeZoneResult = ReduceWorkSettingsChild(timeZone, MapTimeZone);
+        WorkSettingsChildResult<WorkContextLocale> languageResult = ReduceWorkSettingsChild(language, MapLanguage);
+        WorkSettingsChildResult<WorkContextWorkingHours> workingHoursResult = ReduceWorkSettingsChild(workingHours, MapWorkingHours);
+
+        WorkContextFacetFailure? failure = timeZoneResult.Failure ??
+            languageResult.Failure ??
+            workingHoursResult.Failure;
+        bool hasSuccess = timeZoneResult.IsSuccessful ||
+            languageResult.IsSuccessful ||
+            workingHoursResult.IsSuccessful;
+
+        WorkContextWorkSettings? value = hasSuccess
+            ? new WorkContextWorkSettings(
+                timeZoneResult.Value,
+                languageResult.Value,
+                workingHoursResult.Value)
+            : null;
+
+        if (failure is not null)
+        {
+            return new WorkContextFacetResult<WorkContextWorkSettings>(
+                WorkContextFacetStatus.Failed,
+                value,
+                failure);
+        }
+
+        if (!hasSuccess)
+        {
+            return Unavailable<WorkContextWorkSettings>();
+        }
+
+        return Available(value!);
+    }
+
+    private static WorkSettingsChildResult<T> ReduceWorkSettingsChild<T>(
+        MicrosoftGraphOperationOutcome outcome,
+        Func<JsonElement, T> map)
+        where T : class
+    {
+        if (outcome.Status == MicrosoftGraphOperationOutcomeStatus.Failed)
+        {
+            return new WorkSettingsChildResult<T>(false, null, outcome.Failure!);
+        }
+
+        if (outcome.Status == MicrosoftGraphOperationOutcomeStatus.Unavailable)
+        {
+            return new WorkSettingsChildResult<T>(false, null, null);
+        }
+
+        try
+        {
+            return new WorkSettingsChildResult<T>(true, map(outcome.Payload!.Value), null);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
+        {
+            return new WorkSettingsChildResult<T>(
+                false,
+                null,
+                new WorkContextFacetFailure(
+                    WorkContextFailureKind.InvalidResponse,
+                    HttpStatusCode.OK,
+                    requestId: null));
+        }
     }
 
     private static WorkContextFacetResult<IReadOnlyList<WorkContextCalendarEvent>> ReduceCalendar(
@@ -70,6 +132,69 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
         IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes,
         WorkContextFacet facet) =>
         outcomes.Single(outcome => outcome.Operation.Facet == facet);
+
+    private static MicrosoftGraphOperationOutcome GetOutcome(
+        IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes,
+        string operationId) =>
+        outcomes.Single(outcome => string.Equals(
+            outcome.Operation.Id,
+            operationId,
+            StringComparison.Ordinal));
+
+    private static string MapTimeZone(JsonElement payload) =>
+        payload.GetString() ?? throw new InvalidDataException("The Work Settings time-zone response body is invalid.");
+
+    private static WorkContextLocale MapLanguage(JsonElement payload)
+    {
+        MicrosoftGraphLocaleInfoResponse response =
+            payload.Deserialize<MicrosoftGraphLocaleInfoResponse>()
+            ?? throw new InvalidDataException("The Work Settings language response body is invalid.");
+
+        return new WorkContextLocale(response.Locale, response.DisplayName);
+    }
+
+    private static WorkContextWorkingHours MapWorkingHours(JsonElement payload)
+    {
+        MicrosoftGraphWorkingHoursResponse response =
+            payload.Deserialize<MicrosoftGraphWorkingHoursResponse>()
+            ?? throw new InvalidDataException("The Work Settings working-hours response body is invalid.");
+
+        if (response.DaysOfWeek is null ||
+            !TryParseTime(response.StartTime, out TimeOnly startTime) ||
+            !TryParseTime(response.EndTime, out TimeOnly endTime))
+        {
+            throw new InvalidDataException("The Work Settings working-hours response body is invalid.");
+        }
+
+        DayOfWeek[] daysOfWeek = response.DaysOfWeek
+            .Select(ParseDayOfWeek)
+            .ToArray();
+
+        return new WorkContextWorkingHours(
+            daysOfWeek,
+            startTime,
+            endTime,
+            response.TimeZone?.Name);
+    }
+
+    private static DayOfWeek ParseDayOfWeek(string value)
+    {
+        if (!Enum.TryParse(value, ignoreCase: true, out DayOfWeek dayOfWeek) ||
+            !Enum.IsDefined(dayOfWeek))
+        {
+            throw new InvalidDataException("The Work Settings working-days response body is invalid.");
+        }
+
+        return dayOfWeek;
+    }
+
+    private static bool TryParseTime(string? value, out TimeOnly time) =>
+        TimeOnly.TryParseExact(
+            value,
+            ["HH:mm:ss", "HH:mm:ss.FFFFFFF"],
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out time);
 
     private static WorkContextUserProfile MapProfile(JsonElement payload)
     {
@@ -111,4 +236,10 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
 
     private static WorkContextFacetResult<T> Disabled<T>() where T : class =>
         new(WorkContextFacetStatus.Disabled, value: null, failure: null);
+
+    private readonly record struct WorkSettingsChildResult<T>(
+        bool IsSuccessful,
+        T? Value,
+        WorkContextFacetFailure? Failure)
+        where T : class;
 }

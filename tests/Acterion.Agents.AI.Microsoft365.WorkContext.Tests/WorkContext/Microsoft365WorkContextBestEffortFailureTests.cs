@@ -229,7 +229,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         using HttpResponseMessage response = BatchResponse("""
             {
               "responses": [
-                { "id": "work-hours", "status": 200, "body": {} },
+                { "id": "work-hours", "status": 204 },
                 {
                   "id": "work-language",
                   "status": 429,
@@ -242,7 +242,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                   "status": 200,
                   "body": { "displayName": "Avery Ng" }
                 },
-                { "id": "work-time-zone", "status": 200, "body": {} }
+                { "id": "work-time-zone", "status": 200, "body": "UTC" }
               ]
             }
             """);
@@ -264,11 +264,14 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         Assert.Equal(WorkContextFacetStatus.Unavailable, snapshot.Manager.Status);
         Assert.Null(snapshot.Manager.Value);
         Assert.Null(snapshot.Manager.Failure);
-        AssertFailed(
-            snapshot.WorkSettings,
-            WorkContextFailureKind.Throttled,
-            HttpStatusCode.TooManyRequests,
-            "work-language-request-id");
+        Assert.Equal(WorkContextFacetStatus.Failed, snapshot.WorkSettings.Status);
+        Assert.Equal("UTC", snapshot.WorkSettings.Value?.TimeZone);
+        Assert.Null(snapshot.WorkSettings.Value?.Language);
+        Assert.Null(snapshot.WorkSettings.Value?.WorkingHours);
+        WorkContextFacetFailure workSettingsFailure = Assert.IsType<WorkContextFacetFailure>(snapshot.WorkSettings.Failure);
+        Assert.Equal(WorkContextFailureKind.Throttled, workSettingsFailure.Kind);
+        Assert.Equal(HttpStatusCode.TooManyRequests, workSettingsFailure.StatusCode);
+        Assert.Equal("work-language-request-id", workSettingsFailure.RequestId);
         Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
     }
 

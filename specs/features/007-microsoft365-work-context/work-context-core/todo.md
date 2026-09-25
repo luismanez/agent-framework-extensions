@@ -586,13 +586,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Map the three narrow mailbox-setting responses and reduce all-success/all-absent outcomes.
 
+**Result (2026-09-25):** Work Settings now maps only the three approved mailbox-setting responses into immutable public models. Time-zone identifiers remain opaque, language and working-hours payloads use minimal DTOs, successful children combine into one value, and an all-absent result is `Unavailable`.
+
 **Acceptance criteria:**
-- [ ] Only time zone, language, and working-hours fields/endpoints are used.
-- [ ] Successful children combine immutably with opaque time-zone strings.
-- [ ] All approved absent children produce `Unavailable`.
+- [x] Only time zone, language, and working-hours fields/endpoints are used.
+- [x] Successful children combine immutably with opaque time-zone strings.
+- [x] All approved absent children produce `Unavailable`.
 
 **Verification:**
-- [ ] RED then GREEN: success/absence cases in `Microsoft365WorkContextWorkSettingsTests`.
+- [x] RED then GREEN: success/absence cases in `Microsoft365WorkContextWorkSettingsTests` (5 passed, 0 failed).
 
 **Dependencies:** Tasks 15-16
 **File cap:** 5: settings DTOs, mapper/reducer, test
@@ -602,13 +604,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Apply deterministic best-effort behavior when one or more Work Settings child operations fail.
 
+**Result (2026-09-25):** Work Settings reduction now selects failures in fixed child order, independently of batch response order, while retaining every successfully mapped sibling in a partial value. If no child succeeds the failed facet has a null value; malformed successful payloads become sanitized `InvalidResponse` failures instead of escaping as exceptions.
+
 **Acceptance criteria:**
-- [ ] Any failed child makes the facet `Failed` and selects failure by fixed child order.
-- [ ] Successfully mapped siblings remain in a partial value; no success yields null value.
-- [ ] Batch response order cannot change the result.
+- [x] Any failed child makes the facet `Failed` and selects failure by fixed child order.
+- [x] Successfully mapped siblings remain in a partial value; no success yields null value.
+- [x] Batch response order cannot change the result.
 
 **Verification:**
-- [ ] RED then GREEN: partial/failure cases in `Microsoft365WorkContextWorkSettingsTests`.
+- [x] RED then GREEN: partial/failure cases in `Microsoft365WorkContextWorkSettingsTests` (5 passed, 0 failed).
 
 **Dependencies:** Tasks 18-19
 **File cap:** 3: settings reducer, test, fixture helper

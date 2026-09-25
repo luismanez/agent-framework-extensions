@@ -53,9 +53,19 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
             return MicrosoftGraphOperationOutcome.Unavailable(operation);
         }
 
+        if (status == (int)HttpStatusCode.NoContent &&
+            operation.Facet == WorkContextFacet.WorkSettings)
+        {
+            return MicrosoftGraphOperationOutcome.Unavailable(operation);
+        }
+
         if (status is >= 200 and <= 299)
         {
-            return body.ValueKind == JsonValueKind.Object
+            bool hasValidPayloadShape = operation.Id == "work-time-zone"
+                ? body.ValueKind == JsonValueKind.String
+                : body.ValueKind == JsonValueKind.Object;
+
+            return hasValidPayloadShape
                 ? MicrosoftGraphOperationOutcome.Succeeded(operation, body)
                 : Failed(operation, WorkContextFailureKind.InvalidResponse, statusCode, requestId);
         }
