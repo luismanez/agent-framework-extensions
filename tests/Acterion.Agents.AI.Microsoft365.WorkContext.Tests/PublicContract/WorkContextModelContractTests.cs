@@ -234,6 +234,7 @@ public sealed class WorkContextModelContractTests
             typeof(IMicrosoft365WorkContextTokenProvider),
             typeof(Microsoft365WorkContextException),
             typeof(Microsoft365WorkContextOptions),
+            typeof(Microsoft365WorkContextServiceCollectionExtensions),
             typeof(WorkContextCalendarEvent),
             typeof(WorkContextErrorBehavior),
             typeof(WorkContextFacet),
@@ -253,7 +254,9 @@ public sealed class WorkContextModelContractTests
             expectedTypes.Select(type => type.FullName).Order(),
             typeof(WorkContextSnapshot).Assembly.GetExportedTypes().Select(type => type.FullName).Order());
 
-        foreach (Type type in expectedTypes.Where(type => type.IsClass && type != typeof(Microsoft365WorkContextException)))
+        foreach (Type type in expectedTypes.Where(type => type.IsClass &&
+            type != typeof(Microsoft365WorkContextException) &&
+            type != typeof(Microsoft365WorkContextServiceCollectionExtensions)))
         {
             Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly));
             Assert.Empty(type.GetEvents(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly));

@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Acterion.Agents.AI.Microsoft365.WorkContext;
 
@@ -11,17 +13,20 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
     private readonly Microsoft365WorkContextOptionsSnapshot options;
     private readonly TimeProvider timeProvider;
     private readonly IMicrosoft365WorkContextTokenProvider tokenProvider;
+    private readonly ILogger<Microsoft365WorkContextClient>? logger;
 
     internal Microsoft365WorkContextClient(
         HttpClient httpClient,
         IMicrosoft365WorkContextTokenProvider tokenProvider,
         Microsoft365WorkContextOptions options,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<Microsoft365WorkContextClient>? logger = null)
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         this.tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
         this.options = Microsoft365WorkContextOptionsValidator.ValidateAndSnapshot(options);
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        this.logger = logger;
     }
 
     public async Task<WorkContextSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
@@ -30,7 +35,42 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
         DateTimeOffset capturedAtUtc = this.timeProvider.GetUtcNow();
         IReadOnlyList<MicrosoftGraphOperation> operations =
             MicrosoftGraphOperations.Select(this.options, capturedAtUtc);
+        long startedTimestamp = Stopwatch.GetTimestamp();
+        this.TryLog(logger => Microsoft365WorkContextLogEvents.LogStarted(
+            logger, operations.Count, operations.Count > 1));
 
+        try
+        {
+            WorkContextSnapshot snapshot = await this.GetSnapshotCoreAsync(
+                capturedAtUtc, operations, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            this.TryLog(logger => Microsoft365WorkContextLogEvents.LogSnapshotFailures(
+                logger, Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds, snapshot));
+            cancellationToken.ThrowIfCancellationRequested();
+            this.TryLog(logger => Microsoft365WorkContextLogEvents.LogCompleted(
+                logger, Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds, snapshot));
+            cancellationToken.ThrowIfCancellationRequested();
+            return snapshot;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Microsoft365WorkContextException exception)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            this.TryLog(logger => Microsoft365WorkContextLogEvents.LogFailed(
+                logger, Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds, exception));
+            cancellationToken.ThrowIfCancellationRequested();
+            throw;
+        }
+    }
+
+    private async Task<WorkContextSnapshot> GetSnapshotCoreAsync(
+        DateTimeOffset capturedAtUtc,
+        IReadOnlyList<MicrosoftGraphOperation> operations,
+        CancellationToken cancellationToken)
+    {
         if (operations.Count == 0)
         {
             return new WorkContextSnapshot(
@@ -314,4 +354,21 @@ internal sealed class Microsoft365WorkContextClient : IMicrosoft365WorkContextCl
 
     private static WorkContextFacetResult<T> Disabled<T>() where T : class =>
         new(WorkContextFacetStatus.Disabled, value: null, failure: null);
+
+    private void TryLog(Action<ILogger<Microsoft365WorkContextClient>> write)
+    {
+        if (this.logger is null)
+        {
+            return;
+        }
+
+        try
+        {
+            write(this.logger);
+        }
+        catch (Exception)
+        {
+            // Diagnostics must never change retrieval behavior.
+        }
+    }
 }

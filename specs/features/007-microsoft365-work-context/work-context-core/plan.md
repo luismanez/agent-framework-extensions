@@ -10,7 +10,10 @@ The executable checklist is [`todo.md`](todo.md). This plan covers only `work-co
 
 - Every agent task has a hard 20-minute timebox, one observable outcome, and a maximum of five touched files.
 - Tasks run autonomously in batches of at most three. Progress is reported after every task; execution continues without another prompt.
-- Checkpoints are verification gates, not timed implementation tasks. They run focused tests, the full solution test command, a Release build, and diff hygiene when applicable.
+- Before editing a block, list its observable cases, public shape, lifetime rules, and failure paths. Resolve contradictions before creating fixtures or code.
+- Task loops use the exact focused test class for RED and GREEN. Group related assertions in one run; use the full solution test command and Release build once at the end of a settled block, repeating them only after a subsequent code change or a concrete failure.
+- Run the required independent review against the settled block before its final verification. Recheck findings with focused tests, then run the final full gate; do not add review rounds without a specific unresolved risk.
+- Checkpoints are verification gates, not timed implementation tasks. They record the focused results, one final full solution test run, one final Release build, dependency evidence when required, and diff hygiene.
 - At 20 minutes, the current task stops at the nearest green/buildable boundary. Remaining work becomes a numbered continuation task and is reported at the current checkpoint.
 - User input is required only for the coordinated live-tenant session, an approved-spec contradiction, an `Ask First` boundary, or a verification failure that cannot be repaired within the current timebox.
 - Fresh-context reviews occur at three risk boundaries: public API, Graph/privacy behavior, and final closure. The user is not expected to review code.

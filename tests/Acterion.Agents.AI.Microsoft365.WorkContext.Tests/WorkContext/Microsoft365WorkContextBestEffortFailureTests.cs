@@ -133,8 +133,8 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         {
             Content = new StringContent("sensitive Graph error body"),
         };
-        response.Headers.Add("client-request-id", "client-request-id");
-        response.Headers.Add("request-id", "graph-request-id");
+        response.Headers.Add("client-request-id", "00000000-0000-4000-8000-000000000016");
+        response.Headers.Add("request-id", "00000000-0000-4000-8000-000000000003");
         StaticResponseHttpMessageHandler handler = new(response);
         Microsoft365WorkContextClient client = CreateClient(
             new StaticTokenProvider("delegated-token"),
@@ -144,8 +144,8 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         WorkContextSnapshot snapshot = await client.GetSnapshotAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(1, handler.CallCount);
-        AssertFailed(snapshot.UserProfile, expectedKind, statusCode, "graph-request-id");
-        AssertFailed(snapshot.Manager, expectedKind, statusCode, "graph-request-id");
+        AssertFailed(snapshot.UserProfile, expectedKind, statusCode, "00000000-0000-4000-8000-000000000003");
+        AssertFailed(snapshot.Manager, expectedKind, statusCode, "00000000-0000-4000-8000-000000000003");
     }
 
     [Theory]
@@ -157,7 +157,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         {
             Content = new StringContent(responseJson),
         };
-        response.Headers.Add("request-id", "graph-request-id");
+        response.Headers.Add("request-id", "00000000-0000-4000-8000-000000000003");
         StaticResponseHttpMessageHandler handler = new(response);
         Microsoft365WorkContextClient client = CreateClient(
             new StaticTokenProvider("delegated-token"),
@@ -171,12 +171,12 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             snapshot.UserProfile,
             WorkContextFailureKind.InvalidResponse,
             HttpStatusCode.OK,
-            "graph-request-id");
+            "00000000-0000-4000-8000-000000000003");
         AssertFailed(
             snapshot.Manager,
             WorkContextFailureKind.InvalidResponse,
             HttpStatusCode.OK,
-            "graph-request-id");
+            "00000000-0000-4000-8000-000000000003");
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                 {
                   "id": "profile",
                   "status": 403,
-                  "headers": { "request-id": "profile-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000009" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 }
               ]
@@ -215,7 +215,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             snapshot.UserProfile,
             WorkContextFailureKind.Authorization,
             HttpStatusCode.Forbidden,
-            "profile-request-id");
+            "00000000-0000-4000-8000-000000000009");
         Assert.Equal(WorkContextFacetStatus.Available, snapshot.Manager.Status);
         Assert.Equal("Morgan Lee", snapshot.Manager.Value?.DisplayName);
         Assert.Null(snapshot.Manager.Failure);
@@ -233,7 +233,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                 {
                   "id": "work-language",
                   "status": 429,
-                  "headers": { "request-id": "work-language-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000012" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 },
                 { "id": "manager", "status": 404, "body": {} },
@@ -271,7 +271,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         WorkContextFacetFailure workSettingsFailure = Assert.IsType<WorkContextFacetFailure>(snapshot.WorkSettings.Failure);
         Assert.Equal(WorkContextFailureKind.Throttled, workSettingsFailure.Kind);
         Assert.Equal(HttpStatusCode.TooManyRequests, workSettingsFailure.StatusCode);
-        Assert.Equal("work-language-request-id", workSettingsFailure.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000012", workSettingsFailure.RequestId);
         Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
     }
 
@@ -284,7 +284,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                 {
                   "id": "calendar",
                   "status": 503,
-                  "headers": { "request-id": "calendar-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000002" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 },
                 { "id": "manager", "status": 404, "body": {} },
@@ -319,7 +319,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             snapshot.Calendar,
             WorkContextFailureKind.Service,
             HttpStatusCode.ServiceUnavailable,
-            "calendar-request-id");
+            "00000000-0000-4000-8000-000000000002");
     }
 
     [Fact]
@@ -331,7 +331,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                 {
                   "id": "manager",
                   "status": 401,
-                  "headers": { "request-id": "manager-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000007" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 },
                 {
@@ -355,7 +355,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             snapshot.Manager,
             WorkContextFailureKind.Authentication,
             HttpStatusCode.Unauthorized,
-            "manager-request-id");
+            "00000000-0000-4000-8000-000000000007");
         Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.WorkSettings.Status);
         Assert.Equal(WorkContextFacetStatus.Disabled, snapshot.Calendar.Status);
     }
@@ -367,7 +367,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
         {
             Content = new StringContent("sensitive Graph error body"),
         };
-        directResponse.Headers.Add("request-id", "calendar-request-id");
+        directResponse.Headers.Add("request-id", "00000000-0000-4000-8000-000000000002");
         Microsoft365WorkContextClient directClient = CreateClient(
             new StaticTokenProvider("delegated-token"),
             new StaticResponseHttpMessageHandler(directResponse),
@@ -390,7 +390,7 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
                 {
                   "id": "calendar",
                   "status": 403,
-                  "headers": { "request-id": "calendar-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000002" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 }
               ]
@@ -414,12 +414,12 @@ public sealed class Microsoft365WorkContextBestEffortFailureTests
             direct.Calendar,
             WorkContextFailureKind.Authorization,
             HttpStatusCode.Forbidden,
-            "calendar-request-id");
+            "00000000-0000-4000-8000-000000000002");
         AssertFailed(
             batch.Calendar,
             WorkContextFailureKind.Authorization,
             HttpStatusCode.Forbidden,
-            "calendar-request-id");
+            "00000000-0000-4000-8000-000000000002");
         Assert.Equal(WorkContextFacetStatus.Disabled, direct.UserProfile.Status);
         Assert.Equal(WorkContextFacetStatus.Available, batch.UserProfile.Status);
     }

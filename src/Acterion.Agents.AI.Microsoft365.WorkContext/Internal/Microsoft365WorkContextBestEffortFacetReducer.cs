@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Text.Json;
 
 namespace Acterion.Agents.AI.Microsoft365.WorkContext;
@@ -59,8 +58,7 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
         }
         catch (Exception exception) when (exception is JsonException or InvalidDataException)
         {
-            return Failed<T>(new WorkContextFacetFailure(
-                WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null));
+            return Failed<T>(InvalidResponse(outcome));
         }
     }
 
@@ -129,10 +127,7 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
             return new WorkSettingsChildResult<T>(
                 false,
                 null,
-                new WorkContextFacetFailure(
-                    WorkContextFailureKind.InvalidResponse,
-                    HttpStatusCode.OK,
-                    requestId: null));
+                InvalidResponse(outcome));
         }
     }
 
@@ -155,15 +150,18 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
                 ? new WorkContextFacetResult<IReadOnlyList<WorkContextCalendarEvent>>(
                     WorkContextFacetStatus.Failed,
                     result.Events,
-                    new WorkContextFacetFailure(WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null))
+                    InvalidResponse(outcome))
                 : Available(result.Events);
         }
         catch (Exception exception) when (exception is JsonException or InvalidDataException)
         {
             return Failed<IReadOnlyList<WorkContextCalendarEvent>>(
-                new WorkContextFacetFailure(WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null));
+                InvalidResponse(outcome));
         }
     }
+
+    private static WorkContextFacetFailure InvalidResponse(MicrosoftGraphOperationOutcome outcome) =>
+        new(WorkContextFailureKind.InvalidResponse, outcome.ResponseStatusCode, outcome.RequestId);
 
     private static MicrosoftGraphOperationOutcome GetOutcome(
         IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes,

@@ -135,15 +135,15 @@ public sealed class WorkContextOperationOutcomeTests
             """{ "error": { "code": "forbidden", "message": "private Graph detail" } }""",
             new Dictionary<string, string>
             {
-                ["client-request-id"] = "client-request-id",
-                ["request-id"] = "graph-request-id",
+                ["client-request-id"] = "00000000-0000-4000-8000-000000000016",
+                ["request-id"] = "00000000-0000-4000-8000-000000000003",
             });
 
         MicrosoftGraphOperationOutcome outcome = MicrosoftGraphOperationOutcomeClassifier.Classify(
             new MicrosoftGraphCorrelatedResponse(operation, response, IsValid: true));
 
         WorkContextFacetFailure failure = Assert.IsType<WorkContextFacetFailure>(outcome.Failure);
-        Assert.Equal("graph-request-id", failure.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000003", failure.RequestId);
         Assert.Null(outcome.Payload);
     }
 
@@ -155,12 +155,12 @@ public sealed class WorkContextOperationOutcomeTests
             operation.Id,
             503,
             "{}",
-            new Dictionary<string, string> { ["Client-Request-Id"] = "client-request-id" });
+            new Dictionary<string, string> { ["Client-Request-Id"] = "00000000-0000-4000-8000-000000000016" });
 
         MicrosoftGraphOperationOutcome outcome = MicrosoftGraphOperationOutcomeClassifier.Classify(
             new MicrosoftGraphCorrelatedResponse(operation, response, IsValid: true));
 
-        Assert.Equal("client-request-id", outcome.Failure?.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000016", outcome.Failure?.RequestId);
     }
 
     [Theory]
@@ -176,13 +176,13 @@ public sealed class WorkContextOperationOutcomeTests
             new Dictionary<string, string>
             {
                 ["request-id"] = unsafeRequestId,
-                ["client-request-id"] = "client-request-id",
+                ["client-request-id"] = "00000000-0000-4000-8000-000000000016",
             });
 
         MicrosoftGraphOperationOutcome outcome = MicrosoftGraphOperationOutcomeClassifier.Classify(
             new MicrosoftGraphCorrelatedResponse(operation, response, IsValid: true));
 
-        Assert.Equal("client-request-id", outcome.Failure?.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000016", outcome.Failure?.RequestId);
     }
 
     private static MicrosoftGraphOperation Operation(string id, WorkContextFacet facet) =>

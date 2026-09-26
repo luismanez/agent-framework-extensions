@@ -140,7 +140,7 @@ public sealed class Microsoft365WorkContextWorkSettingsTests
             Assert.IsType<WorkContextFacetFailure>(snapshot.WorkSettings.Failure);
         Assert.Equal(WorkContextFailureKind.Service, failure.Kind);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, failure.StatusCode);
-        Assert.Equal("time-zone-request-id", failure.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000011", failure.RequestId);
         WorkContextWorkSettings settings = Assert.IsType<WorkContextWorkSettings>(snapshot.WorkSettings.Value);
         Assert.Null(settings.TimeZone);
         WorkContextLocale language = Assert.IsType<WorkContextLocale>(settings.Language);
@@ -159,7 +159,7 @@ public sealed class Microsoft365WorkContextWorkSettingsTests
                 {
                   "id": "work-language",
                   "status": 403,
-                  "headers": { "request-id": "language-request-id" },
+                  "headers": { "request-id": "00000000-0000-4000-8000-000000000006" },
                   "body": { "error": { "message": "sensitive Graph error body" } }
                 },
                 { "id": "work-time-zone", "status": 204 }
@@ -176,7 +176,7 @@ public sealed class Microsoft365WorkContextWorkSettingsTests
             Assert.IsType<WorkContextFacetFailure>(snapshot.WorkSettings.Failure);
         Assert.Equal(WorkContextFailureKind.Authorization, failure.Kind);
         Assert.Equal(HttpStatusCode.Forbidden, failure.StatusCode);
-        Assert.Equal("language-request-id", failure.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000006", failure.RequestId);
     }
 
     [Theory]
@@ -228,7 +228,7 @@ public sealed class Microsoft365WorkContextWorkSettingsTests
             {
               "id": "work-time-zone",
               "status": 503,
-              "headers": { "request-id": "time-zone-request-id" },
+              "headers": { "request-id": "00000000-0000-4000-8000-000000000011" },
               "body": { "error": { "message": "sensitive Graph error body" } }
             }
             """,
@@ -243,7 +243,7 @@ public sealed class Microsoft365WorkContextWorkSettingsTests
             {
               "id": "work-hours",
               "status": 401,
-              "headers": { "request-id": "working-hours-request-id" },
+              "headers": { "request-id": "00000000-0000-4000-8000-000000000013" },
               "body": { "error": { "message": "sensitive Graph error body" } }
             }
             """,

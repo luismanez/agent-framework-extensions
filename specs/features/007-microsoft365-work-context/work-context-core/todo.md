@@ -729,13 +729,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Add stable start, completion, and failure events with only approved operational dimensions.
 
+**Result (2026-09-26):** The client emits structured start (`2000`), completion (`2001`), and failure (`2002`) events. Best-effort snapshots emit a failure event for every failed facet before completion; fail-fast emits a sanitized failure event without an exception object. Completion records elapsed milliseconds, all facet statuses, Calendar event count, and attendee truncation. Failure events include normalized kind, HTTP status, and a safe request id when available. A successful Graph response retains safe status and request id if later payload mapping fails.
+
 **Acceptance criteria:**
-- [ ] Events report operation count, batch use, duration, facet statuses, safe status/request id, and event counts where applicable.
-- [ ] Cancellation emits no misleading completion or failure event.
-- [ ] Logging does not alter HTTP, snapshot, or exception behavior.
+- [x] Events report operation count, batch use, duration, facet statuses, safe status/request id, and event counts where applicable.
+- [x] Cancellation emits no misleading completion or failure event.
+- [x] Logging does not alter HTTP, snapshot, or exception behavior.
 
 **Verification:**
-- [ ] RED then GREEN: behavior cases in `Microsoft365WorkContextLoggingTests`.
+- [x] RED then GREEN: behavior cases in `Microsoft365WorkContextLoggingTests` (18 passed, 0 failed).
 
 **Dependencies:** Task 25
 **File cap:** 4: client, log definitions, test, collecting logger
@@ -745,12 +747,14 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Test sensitive canaries across logs/exceptions and prove a throwing logger cannot change behavior.
 
+**Result (2026-09-26):** Logs contain only allowlisted operational fields. Request ids are accepted only as canonical GUIDs, preventing arbitrary header text from entering logs, facet failures, or exceptions. Sensitive payload and token canaries remain absent. A logger that throws cannot change successful, best-effort failure, fail-fast failure, or cancellation outcomes.
+
 **Acceptance criteria:**
-- [ ] No token, scope, personal value, raw URL/JSON, Graph message, address, or private description appears.
-- [ ] Throwing logger leaves success, failure, and cancellation outcomes unchanged.
+- [x] No token, scope, personal value, raw URL/JSON, Graph message, address, or private description appears.
+- [x] Throwing logger leaves success, failure, and cancellation outcomes unchanged.
 
 **Verification:**
-- [ ] RED then GREEN: privacy/resilience cases in `Microsoft365WorkContextLoggingTests`.
+- [x] RED then GREEN: privacy/resilience cases in `Microsoft365WorkContextLoggingTests` (included in 18 passed).
 
 **Dependencies:** Task 26
 **File cap:** 4: logging test, throwing logger, payload fixture, client only if required
@@ -758,8 +762,8 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint L: Cancellation and Logging
 
-- [ ] Tasks 25-27 focused tests, full solution tests, Release build, and diff hygiene pass.
-- [ ] State matrix has executable coverage and independent review approval.
+- [x] Tasks 25-27 focused tests, full solution tests (348 passed, 0 failed), Release build (0 warnings, 0 errors), and diff hygiene pass.
+- [x] State matrix has executable coverage; three independent review rounds found privacy, best-effort failure, mapping metadata, and cancellation gaps that were repaired and verified.
 
 ## Block 7: Dependency Injection and Public Contract
 
@@ -767,13 +771,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Add DI registration for options, typed HTTP client, transient client, required token provider, and TimeProvider fallback.
 
+**Result (2026-09-26):** The public registration extension validates arguments and options, creates a named Graph `HttpClient`, and resolves a transient work-context client. The host supplies the delegated token provider and may override the system `TimeProvider`; unrelated registrations are preserved.
+
 **Acceptance criteria:**
-- [ ] Null arguments fail synchronously and missing token provider fails clearly.
-- [ ] Graph base address, options validation, transient client, host time provider, and fallback are correct.
-- [ ] Registration does not replace host services or alter authentication/authorization.
+- [x] Null arguments fail synchronously and missing token provider fails clearly.
+- [x] Graph base address, options validation, transient client, host time provider, and fallback are correct.
+- [x] Registration does not replace host services or alter authentication/authorization.
 
 **Verification:**
-- [ ] RED then GREEN: registration cases in `Microsoft365WorkContextDependencyInjectionTests`.
+- [x] RED then GREEN: registration cases in `Microsoft365WorkContextDependencyInjectionTests` (5 passed).
 
 **Dependencies:** Tasks 8 and 27
 **File cap:** 4: service extension, source project, test, registration helper if needed
@@ -783,13 +789,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Resolve two scopes with distinct token providers and prove no token, response, or snapshot crosses scope/invocation boundaries.
 
+**Result (2026-09-26):** Two scopes use distinct delegated tokens and receive only their own synthetic profile values. A repeated call returns a fresh snapshot, and the client has only readonly dependency and option fields.
+
 **Acceptance criteria:**
-- [ ] Each scope sends only its own token and receives only its own synthetic payload.
-- [ ] Repeated calls are fresh and client fields contain no token/snapshot/response state.
-- [ ] Service-lifetime evidence agrees with G2.
+- [x] Each scope sends only its own token and receives only its own synthetic payload.
+- [x] Repeated calls are fresh and client fields contain no token/snapshot/response state.
+- [x] Service-lifetime evidence agrees with G2.
 
 **Verification:**
-- [ ] RED then GREEN: lifetime cases in `Microsoft365WorkContextDependencyInjectionTests`.
+- [x] Focused lifetime cases in `Microsoft365WorkContextDependencyInjectionTests` (2 passed).
 
 **Dependencies:** Task 28
 **File cap:** 3: DI test, scoped token fake, client only if required
@@ -799,13 +807,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Compile consumer-style usage of every public member after DI and all models exist, then reflection-test prohibited surface.
 
+**Result (2026-09-26):** Consumer-style tests compile and exercise registration, options, interfaces, snapshot access, all result and model properties, and sanitized fail-fast exception properties. Reflection locks the extension signature, exported namespace and type set, and XML documentation of public types and values.
+
 **Acceptance criteria:**
-- [ ] Registration, options, interfaces, snapshots, every model, failure, and exception compile as specified.
-- [ ] Defaults, sealed/read-only shape, internal construction, and XML docs are complete.
-- [ ] No Graph/identity/framework/wire/raw JSON type leaks publicly.
+- [x] Registration, options, interfaces, snapshots, every model, failure, and exception compile as specified.
+- [x] Defaults, sealed/read-only shape, internal construction, and XML docs are complete.
+- [x] No Graph/identity/framework/wire/raw JSON type leaks publicly.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextPublicContractTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.PublicContract.WorkContextPublicContractTests` (4 passed; 21 focused block tests passed together).
 
 **Dependencies:** Tasks 7 and 28
 **File cap:** 2: public-contract test and source member only if a defect is found
@@ -813,7 +823,8 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint M: DI and Public Contract
 
-- [ ] Tasks 28-30 focused tests, full solution tests, Release build, dependency report, and diff hygiene pass.
+- [x] Tasks 28-30 focused tests (21 passed), full solution tests (359 passed, 0 failed), Release build (0 warnings, 0 errors), dependency report, and diff hygiene pass.
+- [x] Independent review found no concrete DI, lifetime, security, or public-contract defect. The named HTTP client is explicitly allowed by the specification (Dependency Injection section).
 
 ## Block 8: Documentation and Release Closure
 

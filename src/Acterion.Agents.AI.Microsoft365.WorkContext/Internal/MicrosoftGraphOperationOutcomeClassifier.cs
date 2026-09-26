@@ -66,7 +66,7 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
                 : body.ValueKind == JsonValueKind.Object;
 
             return hasValidPayloadShape
-                ? MicrosoftGraphOperationOutcome.Succeeded(operation, body)
+                ? MicrosoftGraphOperationOutcome.Succeeded(operation, body, statusCode, requestId)
                 : Failed(operation, WorkContextFailureKind.InvalidResponse, statusCode, requestId);
         }
 
@@ -119,11 +119,11 @@ internal static class MicrosoftGraphOperationOutcomeClassifier
 
     private static string? NormalizeRequestId(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl))
+        if (value is null || !Guid.TryParseExact(value.Trim(), "D", out Guid requestId))
         {
             return null;
         }
 
-        return value.Trim();
+        return requestId.ToString("D");
     }
 }

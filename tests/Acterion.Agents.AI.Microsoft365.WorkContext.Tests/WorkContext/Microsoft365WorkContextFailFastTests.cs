@@ -13,9 +13,9 @@ public sealed class Microsoft365WorkContextFailFastTests
     {
         string[] responses =
         [
-            """{ "id": "calendar", "status": 429, "headers": { "request-id": "calendar-id" } }""",
+            """{ "id": "calendar", "status": 429, "headers": { "request-id": "00000000-0000-4000-8000-000000000001" } }""",
             """{ "id": "manager", "status": 404 }""",
-            """{ "id": "profile", "status": 403, "headers": { "request-id": "profile-id" }, "body": { "error": { "message": "secret-graph-message" } } }""",
+            """{ "id": "profile", "status": 403, "headers": { "request-id": "00000000-0000-4000-8000-000000000008" }, "body": { "error": { "message": "secret-graph-message" } } }""",
         ];
         if (reverse)
         {
@@ -33,7 +33,7 @@ public sealed class Microsoft365WorkContextFailFastTests
         Assert.Equal(WorkContextFacet.UserProfile, exception.Facet);
         Assert.Equal(WorkContextFailureKind.Authorization, exception.Kind);
         Assert.Equal(HttpStatusCode.Forbidden, exception.StatusCode);
-        Assert.Equal("profile-id", exception.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000008", exception.RequestId);
         Assert.Null(exception.InnerException);
         Assert.DoesNotContain("secret-graph-message", exception.ToString());
         Assert.Equal(1, handler.CallCount);
@@ -44,9 +44,9 @@ public sealed class Microsoft365WorkContextFailFastTests
     {
         RecordingHandler handler = new("""
             { "responses": [
-              { "id": "work-hours", "status": 401, "headers": { "request-id": "hours-id" } },
-              { "id": "work-language", "status": 429, "headers": { "request-id": "language-id" } },
-              { "id": "work-time-zone", "status": 503, "headers": { "request-id": "time-zone-id" } }
+              { "id": "work-hours", "status": 401, "headers": { "request-id": "00000000-0000-4000-8000-000000000004" } },
+              { "id": "work-language", "status": 429, "headers": { "request-id": "00000000-0000-4000-8000-000000000005" } },
+              { "id": "work-time-zone", "status": 503, "headers": { "request-id": "00000000-0000-4000-8000-000000000010" } }
             ] }
             """);
         Microsoft365WorkContextClient client = CreateClient(
@@ -59,7 +59,7 @@ public sealed class Microsoft365WorkContextFailFastTests
         Assert.Equal(WorkContextFacet.WorkSettings, exception.Facet);
         Assert.Equal(WorkContextFailureKind.Service, exception.Kind);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, exception.StatusCode);
-        Assert.Equal("time-zone-id", exception.RequestId);
+        Assert.Equal("00000000-0000-4000-8000-000000000010", exception.RequestId);
     }
 
     [Fact]
