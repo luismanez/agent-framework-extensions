@@ -32,23 +32,37 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
 
     private static WorkContextFacetResult<WorkContextUserProfile> ReduceProfile(
         MicrosoftGraphOperationOutcome outcome) =>
-        outcome.Status switch
-        {
-            MicrosoftGraphOperationOutcomeStatus.Succeeded => Available(MapProfile(outcome.Payload!.Value)),
-            MicrosoftGraphOperationOutcomeStatus.Unavailable => Unavailable<WorkContextUserProfile>(),
-            MicrosoftGraphOperationOutcomeStatus.Failed => Failed<WorkContextUserProfile>(outcome.Failure!),
-            _ => throw new InvalidOperationException("The Profile operation outcome is invalid."),
-        };
+        ReduceSingle(outcome, MapProfile);
 
     private static WorkContextFacetResult<WorkContextManager> ReduceManager(
         MicrosoftGraphOperationOutcome outcome) =>
-        outcome.Status switch
+        ReduceSingle(outcome, MapManager);
+
+    private static WorkContextFacetResult<T> ReduceSingle<T>(
+        MicrosoftGraphOperationOutcome outcome,
+        Func<JsonElement, T> map)
+        where T : class
+    {
+        if (outcome.Status == MicrosoftGraphOperationOutcomeStatus.Failed)
         {
-            MicrosoftGraphOperationOutcomeStatus.Succeeded => Available(MapManager(outcome.Payload!.Value)),
-            MicrosoftGraphOperationOutcomeStatus.Unavailable => Unavailable<WorkContextManager>(),
-            MicrosoftGraphOperationOutcomeStatus.Failed => Failed<WorkContextManager>(outcome.Failure!),
-            _ => throw new InvalidOperationException("The Manager operation outcome is invalid."),
-        };
+            return Failed<T>(outcome.Failure!);
+        }
+
+        if (outcome.Status == MicrosoftGraphOperationOutcomeStatus.Unavailable)
+        {
+            return Unavailable<T>();
+        }
+
+        try
+        {
+            return Available(map(outcome.Payload!.Value));
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
+        {
+            return Failed<T>(new WorkContextFacetFailure(
+                WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null));
+        }
+    }
 
     private static WorkContextFacetResult<WorkContextWorkSettings> ReduceWorkSettings(
         IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes)

@@ -16,7 +16,7 @@ internal static class MicrosoftGraphBatchResponseParser
             .DeserializeAsync<MicrosoftGraphBatchResponse>(stream, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        if (response?.Responses is null)
+        if (response?.Responses is null || response.Responses.Any(item => item is null))
         {
             throw new InvalidDataException("The Microsoft Graph batch response envelope is invalid.");
         }

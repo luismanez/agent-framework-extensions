@@ -686,13 +686,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Convert the first real failure in fixed operation order into one sanitized package exception.
 
+**Result (2026-09-26):** Direct and batch operations now use the same classified facet outcomes. Fail fast selects the first failed facet in fixed operation order, including the first failed Work Settings child, and throws a sanitized package exception. Global token, transport, outer HTTP, and malformed batch failures have no owning facet. Expected manager and Work Settings absence returns normally. A null batch subresponse and malformed Profile or invalid direct-response data become sanitized `InvalidResponse` failures. Response-stream and send I/O failures become sanitized `Transport` failures. HTTP timeouts without caller cancellation are also classified as transport failures.
+
 **Acceptance criteria:**
-- [ ] Selection ignores batch response order and covers global and facet failures.
-- [ ] Expected absence returns normally; malformed Calendar entries and real child failures throw.
-- [ ] Exception exposes only approved safe fields and no unsafe inner exception.
+- [x] Selection ignores batch response order and covers global and facet failures.
+- [x] Expected absence returns normally; malformed Calendar entries and real child failures throw.
+- [x] Exception exposes only approved safe fields and no unsafe inner exception.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextFailFastTests`.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextFailFastTests` (25 passed, 0 failed).
 
 **Dependencies:** Tasks 20 and 23
 **File cap:** 4: client, fail-fast reducer, test, fixture helper
@@ -700,20 +702,22 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint K: Calendar Privacy and Strict Mode
 
-- [ ] Tasks 22-24 focused tests and all facet tests pass.
-- [ ] Full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 22-24 focused tests and all facet tests pass.
+- [x] Full solution tests pass (330 passed, 0 failed); Release build passes with 0 warnings and 0 errors; diff hygiene passes.
 
 ### Task 25: Preserve Cancellation
 
 **Description:** Prove cancellation passes unchanged through token acquisition, send, direct response read, and batch response read.
 
+**Result (2026-09-26):** Cancellation propagates in best-effort and fail-fast modes before token acquisition, during token acquisition, during direct or batch send, and during either response read. A token provider that cancels but returns a blank token no longer produces a token failure; cancellation takes precedence. No retry or completed snapshot follows a canceled operation.
+
 **Acceptance criteria:**
-- [ ] Every cancellation point throws `OperationCanceledException` without wrapping or facet conversion.
-- [ ] No completion/failure behavior or retry follows cancellation.
+- [x] Every cancellation point throws `OperationCanceledException` without wrapping or facet conversion.
+- [x] No completion/failure behavior or retry follows cancellation.
 
 **Verification:**
-- [ ] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextCancellationTests`.
-- [ ] Fresh-context Graph/privacy/error review has no blocking finding.
+- [x] RED then GREEN: `Acterion.Agents.AI.Microsoft365.WorkContext.Tests.WorkContext.Microsoft365WorkContextCancellationTests` (14 passed, 0 failed; one cancellation-precedence test failed before the fix).
+- [x] Fresh-context Graph/privacy/error review findings on I/O stream errors and HTTP timeouts were repaired and verified.
 
 **Dependencies:** Task 24
 **File cap:** 4: client if required, cancellation test, HTTP fake, token fake
