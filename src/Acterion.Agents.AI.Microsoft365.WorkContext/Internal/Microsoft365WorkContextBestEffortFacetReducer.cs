@@ -26,7 +26,7 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
                 ? ReduceWorkSettings(outcomes)
                 : Disabled<WorkContextWorkSettings>(),
             options.EnableCalendar
-                ? ReduceCalendar(GetOutcome(outcomes, WorkContextFacet.Calendar))
+                ? ReduceCalendar(GetOutcome(outcomes, WorkContextFacet.Calendar), options.MaximumCalendarEvents)
                 : Disabled<IReadOnlyList<WorkContextCalendarEvent>>());
     }
 
@@ -123,10 +123,33 @@ internal static class Microsoft365WorkContextBestEffortFacetReducer
     }
 
     private static WorkContextFacetResult<IReadOnlyList<WorkContextCalendarEvent>> ReduceCalendar(
-        MicrosoftGraphOperationOutcome outcome) =>
-        outcome.Status == MicrosoftGraphOperationOutcomeStatus.Failed
-            ? Failed<IReadOnlyList<WorkContextCalendarEvent>>(outcome.Failure!)
-            : throw new InvalidOperationException("Calendar mapping is not available.");
+        MicrosoftGraphOperationOutcome outcome,
+        int maximumEvents)
+    {
+        if (outcome.Status == MicrosoftGraphOperationOutcomeStatus.Failed)
+        {
+            return Failed<IReadOnlyList<WorkContextCalendarEvent>>(outcome.Failure!);
+        }
+
+        try
+        {
+            MicrosoftGraphCalendarResponse response = outcome.Payload!.Value
+                .Deserialize<MicrosoftGraphCalendarResponse>()
+                ?? throw new InvalidDataException("The Calendar response body is invalid.");
+            MicrosoftGraphCalendarMappingResult result = MicrosoftGraphCalendarMapper.Map(response, maximumEvents);
+            return result.HasInvalidEvents
+                ? new WorkContextFacetResult<IReadOnlyList<WorkContextCalendarEvent>>(
+                    WorkContextFacetStatus.Failed,
+                    result.Events,
+                    new WorkContextFacetFailure(WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null))
+                : Available(result.Events);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
+        {
+            return Failed<IReadOnlyList<WorkContextCalendarEvent>>(
+                new WorkContextFacetFailure(WorkContextFailureKind.InvalidResponse, HttpStatusCode.OK, requestId: null));
+        }
+    }
 
     private static MicrosoftGraphOperationOutcome GetOutcome(
         IReadOnlyList<MicrosoftGraphOperationOutcome> outcomes,

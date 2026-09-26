@@ -624,13 +624,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Map valid public events and apply cancellation, declined-response, all-day/free, sorting, and maximum rules.
 
+**Result (2026-09-26):** Calendar now maps the bounded first page into immutable events, filters cancelled and declined entries, sorts by UTC start and end, and retains all-day/free metadata. Empty eligible output remains an available empty list. A direct-response test keeps prompt-like, control-character, and long subject text as inert data.
+
 **Acceptance criteria:**
-- [ ] Cancelled/declined events are omitted; all-day/free events remain.
-- [ ] Valid output sorts by start then end and never exceeds the configured maximum; prompt-like, control-character, or long strings remain inert data.
-- [ ] Empty eligible output is `Available` with an immutable empty list.
+- [x] Cancelled/declined events are omitted; all-day/free events remain.
+- [x] Valid output sorts by start then end and never exceeds the configured maximum; prompt-like, control-character, or long strings remain inert data.
+- [x] Empty eligible output is `Available` with an immutable empty list.
 
 **Verification:**
-- [ ] RED then GREEN: eligibility cases in `Microsoft365WorkContextCalendarMappingTests`.
+- [x] RED then GREEN: `Microsoft365WorkContextCalendarMappingTests` (3 passed, 0 failed).
 
 **Dependencies:** Tasks 11 and 16
 **File cap:** 4: Calendar DTO, mapper, test, fixture helper
@@ -638,19 +640,22 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint J: Settings and Calendar Mapping
 
-- [ ] Tasks 19-21 focused tests, full solution tests, Release build, and diff hygiene pass.
+- [x] Tasks 19-21 focused tests pass; full solution tests pass (291 passed, 0 failed).
+- [x] Full Release build passes with 0 warnings and 0 errors; diff hygiene passes.
 
 ### Task 22: Enforce Calendar Privacy
 
 **Description:** Redact private-event descriptions and map bounded public-event names without retaining nested contact data.
 
+**Result (2026-09-26):** Private events retain time, time zones, all-day state, and availability while suppressing descriptions and attendee names. Public events expose only display names, omit blank names, preserve response order, and cap names at ten. Nested address and non-allowlisted field canaries do not appear in serialized snapshots.
+
 **Acceptance criteria:**
-- [ ] Private subject/location/organizer/attendees are absent and truncation is false.
-- [ ] Public attendee names preserve order, omit blanks, cap at 10, and set truncation correctly.
-- [ ] Address/location/id/body/link canaries never reach public results.
+- [x] Private subject/location/organizer/attendees are absent and truncation is false.
+- [x] Public attendee names preserve order, omit blanks, cap at 10, and set truncation correctly.
+- [x] Address/location/id/body/link canaries never reach public results.
 
 **Verification:**
-- [ ] RED then GREEN: privacy cases in `Microsoft365WorkContextCalendarPrivacyTests`.
+- [x] RED then GREEN: privacy cases in `Microsoft365WorkContextCalendarPrivacyTests` (2 passed, 0 failed).
 
 **Dependencies:** Task 21
 **File cap:** 4: Calendar DTO, mapper, privacy test, fixture helper
@@ -660,13 +665,16 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Apply fail-closed sensitivity and best-effort partial-list semantics to malformed individual events.
 
+**Result (2026-09-26):** Calendar validates each event independently. Missing, null, malformed, or unknown sensitivity; invalid dates or structure; and unrecognized availability omit that entry. Any invalid entry marks the facet `Failed` while preserving a read-only list of valid events. Direct HTTP and outer Calendar-response failures retain a null value.
+
 **Acceptance criteria:**
-- [ ] Invalid/missing sensitivity or malformed required event structure omits that event.
-- [ ] Facet is `Failed` with all valid events, including an empty list when none remain.
-- [ ] HTTP/facet-level Calendar failure keeps null value.
+- [x] Invalid/missing sensitivity or malformed required event structure omits that event.
+- [x] Facet is `Failed` with all valid events, including an empty list when none remain.
+- [x] HTTP/facet-level Calendar failure keeps null value.
 
 **Verification:**
-- [ ] RED then GREEN: malformed cases in `Microsoft365WorkContextCalendarPrivacyTests`.
+- [x] RED then GREEN: malformed cases in `Microsoft365WorkContextCalendarPrivacyTests` (7 passed, 0 failed).
+- [x] Full solution tests pass (291 passed, 0 failed); Release build passes with 0 warnings and 0 errors.
 
 **Dependencies:** Tasks 18 and 22
 **File cap:** 3: Calendar mapper/reducer, test
