@@ -1,6 +1,13 @@
-# Microsoft 365 Retrieval for .NET agents
+# Microsoft 365 extensions for .NET agents
 
-Bring permission-trimmed SharePoint knowledge into .NET applications and Microsoft Agent Framework agents with one focused package.
+This repository provides focused .NET packages for Microsoft 365 retrieval and signed-in user work context.
+
+| Package | Purpose | Guidance |
+| --- | --- | --- |
+| `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint retrieval and Agent Framework integration | This README |
+| `Acterion.Agents.AI.Microsoft365.WorkContext` | Fresh, bounded Microsoft Graph user-profile, manager, work-settings, and calendar snapshots | [Work Context package guide](src/Acterion.Agents.AI.Microsoft365.WorkContext/README.md) |
+
+## Retrieval package
 
 `Acterion.Agents.AI.Microsoft365.Retrieval` calls the Microsoft 365 Copilot Retrieval API directly and adapts its results to Agent Framework's native `TextSearchProvider`. Use the retrieval client by itself, or add grounded context to an existing agent without provisioning a separate search index.
 

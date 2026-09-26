@@ -832,16 +832,18 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Document direct-client setup, the approved delegated-permission baseline, Graph behavior constraints, data minimization, fresh/no-cache semantics, and host security ownership.
 
+**Result (2026-09-26):** A package-specific README now covers DI, all four facets, delegated permissions, error modes, bounded Calendar semantics, data minimization, and host security ownership. The Work Context package packs this README instead of the Retrieval README, and the root README links both packages. Current operation-specific Microsoft Graph v1.0 references still support the approved permission baseline.
+
 **Completed prerequisite:**
 - [x] The approved baseline is Profile `User.Read`, Manager `User.Read.All`, Work Settings `MailboxSettings.Read`, and Calendar `Calendars.ReadBasic`.
 
 **Acceptance criteria:**
-- [ ] Guidance covers Profile, Manager, Work Settings, Calendar, best effort/fail fast, DI, and token-provider ownership.
-- [ ] Published guidance reproduces the approved baseline and recorded behavior evidence without overstatement.
-- [ ] Work context is explicitly untrusted enrichment, never authorization; no secret or tenant value is present.
+- [x] Guidance covers Profile, Manager, Work Settings, Calendar, best effort/fail fast, DI, and token-provider ownership.
+- [x] Published guidance reproduces the approved baseline and recorded behavior evidence without overstatement.
+- [x] Work context is explicitly untrusted enrichment, never authorization; no secret or tenant value is present.
 
 **Verification:**
-- [ ] Documentation checklist, link check, secret-pattern scan, and `git diff --check` pass.
+- [x] Documentation checklist, local link check, secret-pattern scan, and `git diff --check` pass.
 
 **Dependencies:** Tasks 29-30
 **File cap:** 3: package README, root package table/links, configuration or security doc
@@ -851,13 +853,15 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 **Description:** Create the evidence document with one pending row for every Plan Gate item and success criterion before running the final commands.
 
+**Result (2026-09-26):** `implementation-evidence.md` contains seven Plan Gate and fourteen success-criterion rows, each with an exact test or command and pending observed-result/worktree fields. A coverage script matched all 21 rows to the specification before Checkpoint N execution.
+
 **Acceptance criteria:**
-- [ ] Every requirement maps to an exact focused test or final command.
-- [ ] Rows include placeholders for observed result and worktree/commit reference without claiming unrun evidence.
-- [ ] No requirement is duplicated or omitted.
+- [x] Every requirement maps to an exact focused test or final command.
+- [x] Rows include placeholders for observed result and worktree/commit reference without claiming unrun evidence.
+- [x] No requirement is duplicated or omitted.
 
 **Verification:**
-- [ ] Evidence coverage review finds no unmapped Plan Gate or success criterion.
+- [x] Evidence coverage review finds no unmapped Plan Gate or success criterion (7/7 and 14/14).
 
 **Dependencies:** Task 31
 **File cap:** 2: `implementation-evidence.md`, this checklist
@@ -865,23 +869,25 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint N: Release and Package Gate
 
-- [ ] Full Work Context tests and full solution tests pass.
-- [ ] Release build and Work Context pack succeed.
-- [ ] Package contents and dependency graph match the specification.
-- [ ] Editor diagnostics, secret scan, links, and `git diff --check` are clean.
-- [ ] Complete API and service-lifetime gates pass.
+- [x] Full Work Context tests (206 passed) and full solution tests (360 passed) pass.
+- [x] Release build (0 warnings, 0 errors) and Work Context pack (`1.0.0` nupkg and snupkg) succeed.
+- [x] Package contains the Work Context README, DLL, and XML documentation; declared and resolved dependencies are limited to the approved `Microsoft.Extensions.*` packages at `10.0.11`.
+- [x] Changed-file/source diagnostics, secret scan, local links, and `git diff --check` are clean. A whole-test-project format check reports only pre-existing whitespace in unchanged `Microsoft365WorkContextBatchResponseTests.cs`; the changed Calendar test file passes.
+- [x] Complete API and service-lifetime gates pass in the Work Context suite.
 
 ### Task 33: Record Closure Evidence
 
 **Description:** Map every Plan Gate and specification success criterion to the observed Checkpoint N release results and complete an independent final review.
 
+**Result (2026-09-26):** [`implementation-evidence.md`](implementation-evidence.md) records observed results for every one of the seven Plan Gate items and fourteen success criteria against the current worktree based on `e41f07d`. An additional Calendar test proved that a filtered first page does not trigger pagination or backfill. Independent review found an outdated S7 count during that addition; S7 now cites the new test and final 206/360 totals. No critical or important finding remains.
+
 **Acceptance criteria:**
-- [ ] Evidence records every requirement with command/test, observed result, and worktree/commit reference.
-- [ ] Evidence contains no token, tenant/user/event value, raw response, or secret.
-- [ ] Fresh-context review reports no unresolved critical or important finding.
+- [x] Evidence records every requirement with command/test, observed result, and worktree/commit reference.
+- [x] Evidence contains no token, tenant/user/event value, raw response, or secret.
+- [x] Fresh-context review reports no unresolved critical or important finding.
 
 **Verification:**
-- [ ] Evidence coverage check, editor diagnostics, link check, and `git diff --check` pass.
+- [x] Evidence coverage check (7/7 and 14/14), changed-file/source diagnostics, link check, secret scan, and `git diff --check` pass.
 
 **Dependencies:** Task 32 and completed Checkpoint N
 **File cap:** 2: `implementation-evidence.md`, this checklist
@@ -889,11 +895,11 @@ Tasks 14-33 are grouped into eight prompt-sized implementation blocks. Each task
 
 ### Checkpoint O: Module Complete
 
-- [ ] Task 33 evidence and review pass.
-- [ ] Every Plan Gate item and success criterion has evidence.
-- [ ] Normal verification is tenant-, credential-, license-, wall-clock-, and network-independent.
-- [ ] Public API exactly matches the approved specification.
-- [ ] No prohibited dependency, field, cache, retry, paging, identity behavior, or Agent Framework integration exists.
+- [x] Task 33 evidence and review pass.
+- [x] Every Plan Gate item and success criterion has evidence.
+- [x] Normal verification is tenant-, credential-, license-, wall-clock-, and network-independent.
+- [x] Public API exactly matches the approved specification.
+- [x] No prohibited dependency, field, cache, retry, paging, identity behavior, or Agent Framework integration exists.
 - [ ] Human approves `work-context-core` before `agent-framework-provider` implementation begins.
 
 ## Plan Approval
