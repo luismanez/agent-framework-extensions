@@ -6,7 +6,7 @@
     <PackageId>Acterion.Agents.AI.Microsoft365.WorkContext</PackageId>
     <Title>Microsoft 365 Work Context for Microsoft Agent Framework</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Delegated Microsoft Graph work-context retrieval and Microsoft Agent Framework integration.</PackageReleaseNotes>
+    <PackageReleaseNotes>First release: delegated Microsoft Graph work-context retrieval and Microsoft Agent Framework integration.</PackageReleaseNotes>
     <PackageTags>microsoft365;microsoft-graph;work-context;agent-framework;agents;ai;dotnet</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>

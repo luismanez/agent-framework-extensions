@@ -35,12 +35,21 @@ jobs:
         run: dotnet test --solution Acterion.Agents.AI.slnx --configuration Release --no-build
 
       - name: Pack
-        run: >-
-          dotnet pack
-          src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj
-          --configuration Release
-          --no-build
-          --output artifacts/packages
+        run: |
+          dotnet pack src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj \
+            --configuration Release --no-build --no-restore --output artifacts/packages
+          dotnet pack src/Acterion.Agents.AI.Microsoft365.WorkContext/Acterion.Agents.AI.Microsoft365.WorkContext.csproj \
+            --configuration Release --no-build --no-restore --output artifacts/packages
+
+      - name: Validate package artifacts
+        shell: bash
+        run: |
+          version="$(dotnet msbuild src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj -getProperty:Version)"
+          for package_id in Acterion.Agents.AI.Microsoft365.Retrieval Acterion.Agents.AI.Microsoft365.WorkContext; do
+            for extension in nupkg snupkg; do
+              test -s "artifacts/packages/$package_id.$version.$extension"
+            done
+          done
 
       - name: Upload package
         uses: actions/upload-artifact@v4

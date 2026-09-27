@@ -47,6 +47,18 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify package versions match the tag
+        shell: bash
+        run: |
+          for package_id in Acterion.Agents.AI.Microsoft365.Retrieval Acterion.Agents.AI.Microsoft365.WorkContext; do
+            project="src/$package_id/$package_id.csproj"
+            declared_version="$(dotnet msbuild "$project" -getProperty:Version)"
+            if [[ "$declared_version" != "${{ steps.version.outputs.version }}" ]]; then
+              echo "$project declares $declared_version, but the tag specifies ${{ steps.version.outputs.version }}." >&2
+              exit 1
+            fi
+          done
+
       - name: Restore
         run: dotnet restore Acterion.Agents.AI.slnx
 
@@ -66,20 +78,22 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
 
       - name: Pack
-        run: >-
-          dotnet pack
-          src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj
-          --configuration Release
-          --no-build
-          --output artifacts/packages
-          -p:Version=${{ steps.version.outputs.version }}
+        run: |
+          dotnet pack src/Acterion.Agents.AI.Microsoft365.Retrieval/Acterion.Agents.AI.Microsoft365.Retrieval.csproj \
+            --configuration Release --no-build --no-restore --output artifacts/packages \
+            -p:Version=${{ steps.version.outputs.version }}
+          dotnet pack src/Acterion.Agents.AI.Microsoft365.WorkContext/Acterion.Agents.AI.Microsoft365.WorkContext.csproj \
+            --configuration Release --no-build --no-restore --output artifacts/packages \
+            -p:Version=${{ steps.version.outputs.version }}
 
       - name: Validate release artifacts
         shell: bash
         run: |
-          package="artifacts/packages/Acterion.Agents.AI.Microsoft365.Retrieval.${{ steps.version.outputs.version }}"
-          test -f "$package.nupkg"
-          test -f "$package.snupkg"
+          for package_id in Acterion.Agents.AI.Microsoft365.Retrieval Acterion.Agents.AI.Microsoft365.WorkContext; do
+            package="artifacts/packages/$package_id.${{ steps.version.outputs.version }}"
+            test -s "$package.nupkg"
+            test -s "$package.snupkg"
+          done
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
@@ -95,27 +109,31 @@ jobs:
           user: luismanez
 
       - name: Publish to NuGet.org
-        run: >-
-          dotnet nuget push
-          artifacts/packages/Acterion.Agents.AI.Microsoft365.Retrieval.${{ steps.version.outputs.version }}.nupkg
-          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
-          --source https://api.nuget.org/v3/index.json
-          --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          for package_id in Acterion.Agents.AI.Microsoft365.Retrieval Acterion.Agents.AI.Microsoft365.WorkContext; do
+            dotnet nuget push "artifacts/packages/$package_id.${{ steps.version.outputs.version }}.nupkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
 
       - name: Create GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          package="artifacts/packages/Acterion.Agents.AI.Microsoft365.Retrieval.${{ steps.version.outputs.version }}"
           release_args=(
             "$GITHUB_REF_NAME"
-            "$package.nupkg"
-            "$package.snupkg"
-            --verify-tag
-            --generate-notes
-            --title "$GITHUB_REF_NAME"
           )
+
+          for package_id in Acterion.Agents.AI.Microsoft365.Retrieval Acterion.Agents.AI.Microsoft365.WorkContext; do
+            package="artifacts/packages/$package_id.${{ steps.version.outputs.version }}"
+            release_args+=("$package.nupkg" "$package.snupkg")
+          done
+
+          release_args+=(--verify-tag --generate-notes --title "$GITHUB_REF_NAME")
 
           if [[ "${{ steps.version.outputs.prerelease }}" == "true" ]]; then
             release_args+=(--prerelease --latest=false)

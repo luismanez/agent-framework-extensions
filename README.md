@@ -9,6 +9,8 @@ This repository provides focused .NET packages for Microsoft 365 retrieval and s
 
 The [WorkContext console sample](samples/Microsoft365WorkContext.Console/README.md) demonstrates delegated sign-in, a direct snapshot, and an Agent Framework agent.
 
+Maintainers: [release both NuGet packages together](docs/releasing.md).
+
 ## Retrieval package
 
 `Acterion.Agents.AI.Microsoft365.Retrieval` calls the Microsoft 365 Copilot Retrieval API directly and adapts its results to Agent Framework's native `TextSearchProvider`. Use the retrieval client by itself, or add grounded context to an existing agent without provisioning a separate search index.
