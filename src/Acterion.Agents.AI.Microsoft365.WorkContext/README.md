@@ -1,6 +1,10 @@
 # Microsoft 365 Work Context
 
-`Acterion.Agents.AI.Microsoft365.WorkContext` retrieves a fresh, bounded snapshot of the signed-in user's Microsoft 365 work context. It is a standalone .NET 10 client; it does not require Microsoft Agent Framework or an identity SDK.
+`Acterion.Agents.AI.Microsoft365.WorkContext` retrieves a fresh, bounded snapshot of the signed-in user's Microsoft 365 work context and adds it to Microsoft Agent Framework. The .NET 10 package also exposes the client directly. It does not require an identity SDK.
+
+```sh
+dotnet add package Acterion.Agents.AI.Microsoft365.WorkContext
+```
 
 ## Use the client
 
@@ -30,6 +34,30 @@ if (snapshot.UserProfile.Status == WorkContextFacetStatus.Available)
 ```
 
 `HostGraphTokenProvider` stands for your implementation of `IMicrosoft365WorkContextTokenProvider`. Its `GetAccessTokenAsync(CancellationToken)` method must return a delegated Graph access token. The package neither acquires tokens nor provides a default token provider. An optional host `TimeProvider` is used for the capture time and calendar window; otherwise `TimeProvider.System` is used.
+
+## Agent Framework
+
+The same package adds a fresh snapshot to every agent invocation. Register the work-context client as above and decorate your model client:
+
+```csharp
+using Acterion.Agents.AI.Microsoft365.WorkContext;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
+
+IChatClient chatClient = new ChatClientBuilder(modelClient)
+    .UseMicrosoft365WorkContext()
+    .Build(currentUserScope.ServiceProvider);
+
+AIAgent agent = chatClient.AsAIAgent(
+    new ChatClientAgentOptions(),
+    services: currentUserScope.ServiceProvider);
+```
+
+`modelClient` and `currentUserScope` are supplied by your host. Build and use a separate pipeline within each user's service scope. `AddMicrosoft365WorkContext(...)` registers the provider automatically. It adds a bounded, quoted subset to the invocation's instructions, omitting addresses and private calendar descriptions. In `BestEffort` mode, unavailable facets add no content; in `FailFast` mode, snapshot errors propagate before the model call.
+
+Set `MaximumCalendarEvents` in `AddMicrosoft365WorkContext(...)` to control both the Graph `$top` limit and the maximum number of calendar events considered for the agent's context. The provider applies a separate 6000-character limit to the full context, so long values or many events can still cause individual fields to be omitted. The option defaults to 10; the console sample sets it to 5.
+
+For a runnable device-code host with both snapshot-only and agent modes, see the [WorkContext console sample](../../samples/Microsoft365WorkContext.Console/README.md).
 
 ## Facets and permissions
 

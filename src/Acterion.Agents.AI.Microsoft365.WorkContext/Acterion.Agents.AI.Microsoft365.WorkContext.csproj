@@ -2,17 +2,18 @@
   <Import Project="$(RepoRoot)/nuget/nuget-package.props" />
 
   <PropertyGroup>
-    <Description>Host-independent Microsoft 365 work context client for .NET.</Description>
+    <Description>Microsoft 365 work context client and Microsoft Agent Framework integration for .NET.</Description>
     <PackageId>Acterion.Agents.AI.Microsoft365.WorkContext</PackageId>
-    <Title>Microsoft 365 Work Context</Title>
+    <Title>Microsoft 365 Work Context for Microsoft Agent Framework</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Initial release with delegated Microsoft Graph work-context retrieval.</PackageReleaseNotes>
-    <PackageTags>microsoft365;microsoft-graph;work-context;agents;ai;dotnet</PackageTags>
+    <PackageReleaseNotes>Delegated Microsoft Graph work-context retrieval and Microsoft Agent Framework integration.</PackageReleaseNotes>
+    <PackageTags>microsoft365;microsoft-graph;work-context;agent-framework;agents;ai;dotnet</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />

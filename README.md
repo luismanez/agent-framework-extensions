@@ -5,7 +5,9 @@ This repository provides focused .NET packages for Microsoft 365 retrieval and s
 | Package | Purpose | Guidance |
 | --- | --- | --- |
 | `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint retrieval and Agent Framework integration | This README |
-| `Acterion.Agents.AI.Microsoft365.WorkContext` | Fresh, bounded Microsoft Graph user-profile, manager, work-settings, and calendar snapshots | [Work Context package guide](src/Acterion.Agents.AI.Microsoft365.WorkContext/README.md) |
+| `Acterion.Agents.AI.Microsoft365.WorkContext` | Microsoft Graph work-context snapshots and Agent Framework integration | [Work Context package guide](src/Acterion.Agents.AI.Microsoft365.WorkContext/README.md) |
+
+The [WorkContext console sample](samples/Microsoft365WorkContext.Console/README.md) demonstrates delegated sign-in, a direct snapshot, and an Agent Framework agent.
 
 ## Retrieval package
 

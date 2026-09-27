@@ -8,9 +8,11 @@
     <Project Path="tests/Acterion.Agents.AI.Microsoft365.WorkContext.Tests/Acterion.Agents.AI.Microsoft365.WorkContext.Tests.csproj" />
     <Project Path="tests/Microsoft365Retrieval.AspNetCore.Tests/Microsoft365Retrieval.AspNetCore.Tests.csproj" />
     <Project Path="tests/Microsoft365Retrieval.Console.Tests/Microsoft365Retrieval.Console.Tests.csproj" />
+    <Project Path="tests/Microsoft365WorkContext.Console.Tests/Microsoft365WorkContext.Console.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Microsoft365Retrieval.AspNetCore/Microsoft365Retrieval.AspNetCore.csproj" />
     <Project Path="samples/Microsoft365Retrieval.Console/Microsoft365Retrieval.Console.csproj" />
+    <Project Path="samples/Microsoft365WorkContext.Console/Microsoft365WorkContext.Console.csproj" />
   </Folder>
 </Solution>

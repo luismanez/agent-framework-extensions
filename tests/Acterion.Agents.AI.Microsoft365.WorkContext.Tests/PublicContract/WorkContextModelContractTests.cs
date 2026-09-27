@@ -232,8 +232,10 @@ public sealed class WorkContextModelContractTests
         [
             typeof(IMicrosoft365WorkContextClient),
             typeof(IMicrosoft365WorkContextTokenProvider),
+            typeof(Microsoft365WorkContextChatClientBuilderExtensions),
             typeof(Microsoft365WorkContextException),
             typeof(Microsoft365WorkContextOptions),
+            typeof(Microsoft365WorkContextProvider),
             typeof(Microsoft365WorkContextServiceCollectionExtensions),
             typeof(WorkContextCalendarEvent),
             typeof(WorkContextErrorBehavior),
@@ -256,6 +258,7 @@ public sealed class WorkContextModelContractTests
 
         foreach (Type type in expectedTypes.Where(type => type.IsClass &&
             type != typeof(Microsoft365WorkContextException) &&
+            type != typeof(Microsoft365WorkContextChatClientBuilderExtensions) &&
             type != typeof(Microsoft365WorkContextServiceCollectionExtensions)))
         {
             Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly));

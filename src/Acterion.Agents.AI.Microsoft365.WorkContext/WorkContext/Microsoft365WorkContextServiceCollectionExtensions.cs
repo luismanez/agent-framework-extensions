@@ -35,6 +35,7 @@ public static class Microsoft365WorkContextServiceCollectionExtensions
                 provider.GetRequiredService<IOptions<Microsoft365WorkContextOptions>>().Value,
                 provider.GetRequiredService<TimeProvider>(),
                 provider.GetService<ILogger<Microsoft365WorkContextClient>>()));
+        services.AddTransient<Microsoft365WorkContextProvider>();
 
         return services;
     }
