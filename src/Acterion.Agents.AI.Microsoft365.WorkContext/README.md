@@ -80,6 +80,7 @@ Work Settings calls only the `timeZone`, `language`, and `workingHours` child en
 - Invalid options fail when the client resolves. `CalendarLookAhead` must be greater than zero and at most seven days; `MaximumCalendarEvents` must be 1–25. Disabling all facets returns a disabled snapshot without acquiring a token or calling Graph.
 - Calendar defaults to a 24-hour window and a maximum of 10 events. The client reads one bounded page, sorts that page locally, and does not follow pagination or backfill filtered events. Graph does not document a chronological default order for this operation, so the page is **not guaranteed to contain the nearest events** in the window.
 - Cancelled and declined events are omitted. All-day and free events remain. Private events retain time and availability but suppress subject, location, organizer, and attendee names. Non-private events expose at most 10 attendee display names; attendee addresses are not returned in the snapshot.
+- The Agent Framework provider includes UTC times and, for non-private events with a recognized original time zone, a converted local time labeled with that event zone. The event zone can differ from the mailbox Work Settings zone or the user's current zone. Private events receive UTC times only in the agent context.
 - Every call retrieves a new snapshot. The package does not cache Graph data, retry requests, or store user tokens or snapshots in the client. Cancellation propagates to the caller.
 
 ## Security boundary

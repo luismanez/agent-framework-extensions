@@ -56,6 +56,8 @@ public sealed class WorkContextAgentFrameworkTests
               "subject": "Confidential title",
               "start": { "dateTime": "2026-09-26T09:00:00", "timeZone": "UTC" },
               "end": { "dateTime": "2026-09-26T10:00:00", "timeZone": "UTC" },
+              "originalStartTimeZone": "Tokyo Standard Time",
+              "originalEndTimeZone": "Tokyo Standard Time",
               "sensitivity": "private", "showAs": "busy",
               "location": { "displayName": "Hidden location" },
               "organizer": { "emailAddress": { "name": "Hidden organizer" } },
@@ -84,6 +86,49 @@ public sealed class WorkContextAgentFrameworkTests
         Assert.DoesNotContain("Hidden organizer", context);
         Assert.DoesNotContain("Hidden attendee", context);
         Assert.DoesNotContain("secret@example.invalid", context);
+        Assert.DoesNotContain("Tokyo Standard Time", context);
+        Assert.DoesNotContain("InOriginalTimeZone =", context);
+    }
+
+    [Fact]
+    public async Task CalendarEvent_ProvidesCorrectTimeInItsOriginalTimeZone()
+    {
+        RecordingHandler handler = new(_ => """
+            { "responses": [
+              { "id": "work-time-zone", "status": 200, "body": "Pacific Standard Time" },
+              { "id": "work-language", "status": 204 },
+              { "id": "work-hours", "status": 204 },
+              { "id": "calendar", "status": 200, "body": { "value": [{
+                "subject": "Project Pegasus - sprint 3 retro",
+                "start": { "dateTime": "2026-09-28T07:00:00.0000000", "timeZone": "UTC" },
+                "end": { "dateTime": "2026-09-28T07:30:00.0000000", "timeZone": "UTC" },
+                "originalStartTimeZone": "Romance Standard Time",
+                "originalEndTimeZone": "Romance Standard Time",
+                "sensitivity": "normal", "showAs": "busy"
+              }] } }
+            ] }
+            """);
+        using ServiceProvider services = CreateServices(handler, options =>
+        {
+            options.EnableUserProfile = false;
+            options.EnableWorkSettings = true;
+            options.EnableCalendar = true;
+        });
+        using IServiceScope scope = services.CreateScope();
+        RecordingChatClient model = new();
+        IChatClient chatClient = new ChatClientBuilder(_ => model)
+            .UseMicrosoft365WorkContext()
+            .Build(scope.ServiceProvider);
+        AIAgent agent = chatClient.AsAIAgent(new ChatClientAgentOptions(), services: scope.ServiceProvider);
+
+        await agent.RunAsync("At what time is Project Pegasus?", cancellationToken: TestContext.Current.CancellationToken);
+
+        string context = model.LastOptions?.Instructions ?? string.Empty;
+        Assert.Contains("workSettings.mailboxTimeZone = \"Pacific Standard Time\"", context);
+        Assert.Contains("calendar[0].startUtc = \"2026-09-28T07:00:00", context);
+        Assert.Contains("calendar[0].startInOriginalTimeZone = \"2026-09-28 09:00 (Romance Standard Time)\"", context);
+        Assert.Contains("calendar[0].endInOriginalTimeZone = \"2026-09-28 09:30 (Romance Standard Time)\"", context);
+        Assert.Contains("not necessarily the user's current time zone", context);
     }
 
     [Fact]
