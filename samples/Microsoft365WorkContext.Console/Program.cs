@@ -91,10 +91,12 @@ if (snapshotOnly)
     return;
 }
 
-DefaultAzureCredential modelCredential = new(new DefaultAzureCredentialOptions
-{
-    TenantId = configuration.AzureOpenAITenantId,
-});
+AzureCliCredential modelCredential = configuration.AzureOpenAITenantId is null
+    ? new AzureCliCredential()
+    : new AzureCliCredential(new AzureCliCredentialOptions
+    {
+        TenantId = configuration.AzureOpenAITenantId,
+    });
 AzureOpenAIClient openAIClient = new(configuration.AzureOpenAIEndpoint!, modelCredential);
 IChatClient chatClient = new ChatClientBuilder(
         openAIClient.GetChatClient(configuration.AzureOpenAIDeploymentName).AsIChatClient())

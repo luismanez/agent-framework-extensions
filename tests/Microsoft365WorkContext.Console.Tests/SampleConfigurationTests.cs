@@ -20,6 +20,7 @@ public sealed class SampleConfigurationTests
 
         Assert.Null(result.AzureOpenAIEndpoint);
         Assert.Null(result.AzureOpenAIDeploymentName);
+        Assert.Null(result.AzureOpenAITenantId);
         Assert.True(result.EnableUserProfile);
         Assert.True(result.EnableManager);
         Assert.True(result.EnableWorkSettings);
@@ -35,9 +36,46 @@ public sealed class SampleConfigurationTests
 
         Assert.Contains("MicrosoftEntra:TenantId", exception.Message);
         Assert.Contains("MicrosoftEntra:ClientId", exception.Message);
-        Assert.Contains("AzureOpenAI:TenantId", exception.Message);
         Assert.Contains("AzureOpenAI:Endpoint", exception.Message);
         Assert.Contains("AzureOpenAI:DeploymentName", exception.Message);
+    }
+
+    [Fact]
+    public void AgentMode_AcceptsModelSettingsWithoutTenantId()
+    {
+        IConfiguration configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["MicrosoftEntra:TenantId"] = "graph-tenant-id",
+            ["MicrosoftEntra:ClientId"] = "client-id",
+            ["AzureOpenAI:Endpoint"] = "https://example.openai.azure.com/",
+            ["AzureOpenAI:DeploymentName"] = "chat",
+        });
+
+        SampleConfiguration result = SampleConfiguration.FromConfiguration(configuration);
+
+        Assert.Equal(new Uri("https://example.openai.azure.com/"), result.AzureOpenAIEndpoint);
+        Assert.Equal("chat", result.AzureOpenAIDeploymentName);
+        Assert.Null(result.AzureOpenAITenantId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("model-tenant-id")]
+    public void AgentMode_UsesTenantIdOnlyWhenConfigured(string tenantId)
+    {
+        IConfiguration configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["MicrosoftEntra:TenantId"] = "graph-tenant-id",
+            ["MicrosoftEntra:ClientId"] = "client-id",
+            ["AzureOpenAI:TenantId"] = tenantId,
+            ["AzureOpenAI:Endpoint"] = "https://example.openai.azure.com/",
+            ["AzureOpenAI:DeploymentName"] = "chat",
+        });
+
+        SampleConfiguration result = SampleConfiguration.FromConfiguration(configuration);
+
+        Assert.Equal(string.IsNullOrWhiteSpace(tenantId) ? null : tenantId, result.AzureOpenAITenantId);
     }
 
     [Fact]
@@ -47,7 +85,6 @@ public sealed class SampleConfigurationTests
         {
             ["MicrosoftEntra:TenantId"] = "tenant-id",
             ["MicrosoftEntra:ClientId"] = "client-id",
-            ["AzureOpenAI:TenantId"] = "model-tenant-id",
             ["AzureOpenAI:Endpoint"] = "http://example.invalid/",
             ["AzureOpenAI:DeploymentName"] = "chat",
         });

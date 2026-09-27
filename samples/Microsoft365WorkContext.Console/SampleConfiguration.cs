@@ -19,7 +19,7 @@ public sealed record SampleConfiguration(
         ArgumentNullException.ThrowIfNull(configuration);
 
         string[] required = requireAzureOpenAI
-            ? ["MicrosoftEntra:TenantId", "MicrosoftEntra:ClientId", "AzureOpenAI:TenantId",
+            ? ["MicrosoftEntra:TenantId", "MicrosoftEntra:ClientId",
                 "AzureOpenAI:Endpoint", "AzureOpenAI:DeploymentName"]
             : ["MicrosoftEntra:TenantId", "MicrosoftEntra:ClientId"];
         string[] missing = required.Where(key => string.IsNullOrWhiteSpace(configuration[key])).ToArray();
@@ -46,7 +46,9 @@ public sealed record SampleConfiguration(
         return new SampleConfiguration(
             configuration["MicrosoftEntra:TenantId"]!,
             configuration["MicrosoftEntra:ClientId"]!,
-            configuration["AzureOpenAI:TenantId"],
+            string.IsNullOrWhiteSpace(configuration["AzureOpenAI:TenantId"])
+                ? null
+                : configuration["AzureOpenAI:TenantId"],
             endpoint,
             configuration["AzureOpenAI:DeploymentName"],
             configuration.GetValue("Microsoft365WorkContext:EnableUserProfile", true),
