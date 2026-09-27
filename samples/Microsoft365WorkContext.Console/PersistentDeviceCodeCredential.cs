@@ -4,7 +4,6 @@ using Azure.Identity;
 internal static class PersistentDeviceCodeCredential
 {
 	private const string TokenCacheName = "Acterion.Microsoft365WorkContext.Console";
-	private static readonly TokenRequestContext GraphTokenRequest = new(["https://graph.microsoft.com/.default"]);
 
 	internal static string AuthenticationRecordPath => Path.Combine(
 		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -15,6 +14,7 @@ internal static class PersistentDeviceCodeCredential
 	internal static async Task<DeviceCodeCredential> CreateAsync(
 		string tenantId,
 		string clientId,
+		TokenRequestContext graphTokenRequest,
 		Func<DeviceCodeInfo, CancellationToken, Task> deviceCodeCallback,
 		CancellationToken cancellationToken)
 	{
@@ -36,7 +36,7 @@ internal static class PersistentDeviceCodeCredential
 
 		if (authenticationRecord is null)
 		{
-			authenticationRecord = await credential.AuthenticateAsync(GraphTokenRequest, cancellationToken);
+			authenticationRecord = await credential.AuthenticateAsync(graphTokenRequest, cancellationToken);
 			await recordStore.SaveAsync(authenticationRecord, cancellationToken);
 		}
 

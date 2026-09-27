@@ -8,7 +8,7 @@ This sample signs a user in with Microsoft Entra device code, retrieves their Mi
 - A public-client app registration with device-code authentication enabled. Add the delegated Microsoft Graph permissions for the facets enabled in `appsettings.json`: `User.Read` for profile, `User.Read.All` for manager, `MailboxSettings.Read` for work settings, and `Calendars.ReadBasic` for calendar. Complete consent according to your tenant policy.
 - For agent mode, an Azure OpenAI chat deployment, Azure CLI installed, and an Azure CLI login with access to it. Snapshot-only mode does not require Azure OpenAI or Azure CLI.
 
-The sample requests `https://graph.microsoft.com/.default`, using the Graph permissions configured and consented for the app. It does not use application permissions.
+The sample requests the explicit delegated Graph scopes for the enabled facets. It does not use application permissions. `User.Read.All` for Manager normally requires tenant admin consent.
 
 ## Configure
 
@@ -42,6 +42,10 @@ dotnet run --project samples/Microsoft365WorkContext.Console
 ```
 
 The first run displays a device-code sign-in instruction. The agent fetches new work context for each question through `UseMicrosoft365WorkContext()`. Enter an empty line to exit or press `Ctrl+C` to cancel. The default `BestEffort` mode allows an available facet to contribute even if another fails; snapshot-only output includes each facet's status and sanitized failure metadata.
+
+Before accepting questions, agent mode checks Graph once and prints each facet's status without printing personal values. For example, `Manager: Failed (Authorization, HTTP 403)` means Graph rejected access; verify that this app registration has the delegated `User.Read.All` permission and that consent has been granted. `Manager: Unavailable` means Graph returned `404`, which normally means no manager is assigned to the signed-in account. The provider fetches a fresh snapshot again for each question, so this startup check is diagnostic, not the context sent to the model.
+
+A `200 OK` from the Graph batch endpoint does not mean its individual operations succeeded: check each operation's status. If all enabled facets fail, the sample stops before calling the model. Check **App registrations → your app → API permissions** in the Microsoft Entra admin center. Add the Microsoft Graph **delegated** permissions for the enabled facets and grant tenant admin consent where required. If you reuse the Retrieval sample's app registration, its existing `Files.Read.All` and `Sites.Read.All` grants do not authorize WorkContext. The sample now requests the WorkContext scopes explicitly, so missing consent is surfaced during token acquisition or the startup check instead of silently continuing with Retrieval-only scopes. Do not paste access tokens into issues or chat.
 
 ## Example prompts
 

@@ -26,6 +26,14 @@ public sealed class SampleConfigurationTests
         Assert.True(result.EnableWorkSettings);
         Assert.True(result.EnableCalendar);
         Assert.Equal(5, result.MaximumCalendarEvents);
+        Assert.Equal(
+            [
+                "https://graph.microsoft.com/User.Read",
+                "https://graph.microsoft.com/User.Read.All",
+                "https://graph.microsoft.com/MailboxSettings.Read",
+                "https://graph.microsoft.com/Calendars.ReadBasic",
+            ],
+            result.GetGraphScopes());
     }
 
     [Fact]
@@ -114,6 +122,28 @@ public sealed class SampleConfigurationTests
         Assert.True(result.EnableUserProfile);
         Assert.True(result.EnableWorkSettings);
         Assert.Equal(8, result.MaximumCalendarEvents);
+        Assert.Equal(
+            ["https://graph.microsoft.com/User.Read", "https://graph.microsoft.com/MailboxSettings.Read"],
+            result.GetGraphScopes());
+    }
+
+    [Fact]
+    public void Configuration_RejectsAllFacetsDisabled()
+    {
+        IConfiguration configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["MicrosoftEntra:TenantId"] = "tenant-id",
+            ["MicrosoftEntra:ClientId"] = "client-id",
+            ["Microsoft365WorkContext:EnableUserProfile"] = "false",
+            ["Microsoft365WorkContext:EnableManager"] = "false",
+            ["Microsoft365WorkContext:EnableWorkSettings"] = "false",
+            ["Microsoft365WorkContext:EnableCalendar"] = "false",
+        });
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(configuration, requireAzureOpenAI: false));
+
+        Assert.Contains("Enable at least one", exception.Message);
     }
 
     [Theory]
@@ -151,14 +181,18 @@ public sealed class AzureIdentityWorkContextTokenProviderTests
     public async Task Provider_RequestsGraphDelegatedTokenAndForwardsCancellation()
     {
         RecordingCredential credential = new();
-        AzureIdentityWorkContextTokenProvider provider = new(credential);
+        TokenRequestContext request = new(
+            ["https://graph.microsoft.com/User.Read.All", "https://graph.microsoft.com/MailboxSettings.Read"]);
+        AzureIdentityWorkContextTokenProvider provider = new(credential, request);
         using CancellationTokenSource cancellation = new();
 
         string token = await provider.GetAccessTokenAsync(cancellation.Token);
 
         Assert.Equal("delegated-token", token);
         Assert.NotNull(credential.Scopes);
-        Assert.Equal(["https://graph.microsoft.com/.default"], credential.Scopes);
+        Assert.Equal(
+            ["https://graph.microsoft.com/User.Read.All", "https://graph.microsoft.com/MailboxSettings.Read"],
+            credential.Scopes);
         Assert.Equal(cancellation.Token, credential.CancellationToken);
     }
 

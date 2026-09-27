@@ -12,6 +12,32 @@ public sealed record SampleConfiguration(
     bool EnableCalendar,
     int MaximumCalendarEvents)
 {
+    public string[] GetGraphScopes()
+    {
+        List<string> scopes = [];
+        if (EnableUserProfile)
+        {
+            scopes.Add("https://graph.microsoft.com/User.Read");
+        }
+
+        if (EnableManager)
+        {
+            scopes.Add("https://graph.microsoft.com/User.Read.All");
+        }
+
+        if (EnableWorkSettings)
+        {
+            scopes.Add("https://graph.microsoft.com/MailboxSettings.Read");
+        }
+
+        if (EnableCalendar)
+        {
+            scopes.Add("https://graph.microsoft.com/Calendars.ReadBasic");
+        }
+
+        return scopes.ToArray();
+    }
+
     public static SampleConfiguration FromConfiguration(
         IConfiguration configuration,
         bool requireAzureOpenAI = true)
@@ -43,7 +69,7 @@ public sealed record SampleConfiguration(
             throw new InvalidOperationException("Microsoft365WorkContext:MaximumCalendarEvents must be between 1 and 25.");
         }
 
-        return new SampleConfiguration(
+        SampleConfiguration result = new(
             configuration["MicrosoftEntra:TenantId"]!,
             configuration["MicrosoftEntra:ClientId"]!,
             string.IsNullOrWhiteSpace(configuration["AzureOpenAI:TenantId"])
@@ -56,6 +82,13 @@ public sealed record SampleConfiguration(
             configuration.GetValue("Microsoft365WorkContext:EnableWorkSettings", true),
             configuration.GetValue("Microsoft365WorkContext:EnableCalendar", true),
             maximumCalendarEvents);
+
+        if (result.GetGraphScopes().Length == 0)
+        {
+            throw new InvalidOperationException("Enable at least one Microsoft365WorkContext facet.");
+        }
+
+        return result;
     }
 }
 

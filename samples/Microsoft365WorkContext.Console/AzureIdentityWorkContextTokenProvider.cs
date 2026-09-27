@@ -1,14 +1,14 @@
 using Acterion.Agents.AI.Microsoft365.WorkContext;
 using Azure.Core;
 
-internal sealed class AzureIdentityWorkContextTokenProvider(TokenCredential credential)
+internal sealed class AzureIdentityWorkContextTokenProvider(
+    TokenCredential credential,
+    TokenRequestContext graphTokenRequest)
     : IMicrosoft365WorkContextTokenProvider
 {
-    private static readonly TokenRequestContext GraphTokenRequest = new(["https://graph.microsoft.com/.default"]);
-
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        AccessToken accessToken = await credential.GetTokenAsync(GraphTokenRequest, cancellationToken);
+        AccessToken accessToken = await credential.GetTokenAsync(graphTokenRequest, cancellationToken);
         return accessToken.Token;
     }
 }
