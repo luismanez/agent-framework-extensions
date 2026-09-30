@@ -8,7 +8,7 @@ For package installation and integration choices, start with [getting started](.
 
 ## Prerequisites
 
-- A work or school Microsoft Entra tenant and Retrieval API access through a Microsoft 365 Copilot license for the caller or tenant-enabled pay-as-you-go consumption.
+- A work or school Microsoft Entra tenant and Retrieval API access. OneDrive requires a Microsoft 365 Copilot license for the caller; SharePoint can also use tenant-enabled pay-as-you-go consumption.
 - An Azure OpenAI Chat Completions deployment accessible to the host's Azure credential.
 - A Microsoft Entra app registration for this protected API and a confidential-client credential for OBO.
 - Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`, granted with the appropriate tenant consent.
@@ -34,7 +34,7 @@ dotnet user-secrets set --project samples/Microsoft365Retrieval.AspNetCore \
 
 The sample uses `DefaultAzureCredential` for Azure OpenAI only. For production, use a deliberately selected managed or workload identity credential for the model service. The Graph retrieval path always uses the incoming user through OBO; it has no app-only, managed-identity, or API-key fallback.
 
-`Microsoft365Retrieval` binds the maximum result count, requested metadata, and optional `FilterExpression`. Configure a filter only from trusted application configuration. A SharePoint path filter scopes retrieval but is not authorization, and endpoint messages never become KQL.
+`Microsoft365Retrieval` binds the source, maximum result count, requested metadata, and optional `FilterExpression`. It uses SharePoint by default. Set `Microsoft365Retrieval:DataSource` to `OneDriveBusiness` to query organizational OneDrive; the caller then needs a Microsoft 365 Copilot license because pay-as-you-go does not cover OneDrive. Configure a filter only from trusted application configuration. A path filter scopes retrieval but is not authorization, and endpoint messages never become KQL.
 
 ## Run and call
 
@@ -85,11 +85,11 @@ The extension composes native function invocation after `TextSearchProvider` exp
 
 ## Security considerations
 
-Retrieval uses the authenticated caller's delegated permissions. `Files.Read.All` and `Sites.Read.All` are broad delegated permissions and require appropriate tenant review and consent. Microsoft 365 and SharePoint perform permission trimming for that current user; this sample does not bypass, emulate, or expand those ACLs.
+Retrieval uses the authenticated caller's delegated permissions. `Files.Read.All` and `Sites.Read.All` are broad delegated permissions and require appropriate tenant review and consent. Microsoft 365 and the selected source perform permission trimming for that current user; this sample does not bypass, emulate, or expand those ACLs.
 
 `FilterExpression` only scopes the retrieval query. It is not an authorization boundary, and the host must not build it from an endpoint message. Application authentication, endpoint authorization, business authorization, and tool authorization remain host responsibilities.
 
-Retrieved SharePoint content is untrusted LLM context and can contain indirect prompt injection. The prompt requests that the model resist instructions embedded in retrieved documents, but application-level guardrails may still be required. The sample treats retrieval results as context data, never as system instructions.
+Retrieved SharePoint or OneDrive content is untrusted LLM context and can contain indirect prompt injection. The prompt requests that the model resist instructions embedded in retrieved documents, but application-level guardrails may still be required. The sample treats retrieval results as context data, never as system instructions.
 
 Do not log access tokens, authorization headers, full user queries at Information level, raw Graph responses, or retrieved document content by default. On token acquisition failures, do not retry with application credentials. This package does not implement fallback application permissions, interactive consent, or Conditional Access challenges; the host decides how to present those experiences.
 

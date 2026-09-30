@@ -7,6 +7,40 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 public sealed class Microsoft365RetrievalClientResponseTests
 {
     [Fact]
+    public async Task RetrieveAsync_MapsOneDriveHitWithoutOptionalMetadata()
+    {
+        Microsoft365RetrievalClient client = CreateClient(
+            """
+            {
+              "retrievalHits": [
+                {
+                  "webUrl": "https://contoso-my.sharepoint.com/personal/alex/Documents/Plan.docx",
+                  "resourceType": "driveItem",
+                  "extracts": [
+                    { "text": "First extract", "relevanceScore": 0.8 },
+                    { "text": "Second extract" }
+                  ],
+                  "futureField": "ignored"
+                }
+              ]
+            }
+            """,
+            Microsoft365RetrievalDataSource.OneDriveBusiness);
+
+        Microsoft365RetrievalHit hit = Assert.Single(await client.RetrieveAsync(
+            "quarterly plan",
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("driveItem", hit.ResourceType);
+        Assert.Equal("https://contoso-my.sharepoint.com/personal/alex/Documents/Plan.docx", hit.WebUrl);
+        Assert.Equal(["First extract", "Second extract"], hit.Extracts.Select(extract => extract.Text));
+        Assert.Equal(0.8d, hit.Extracts[0].RelevanceScore);
+        Assert.Null(hit.Extracts[1].RelevanceScore);
+        Assert.Empty(hit.ResourceMetadata);
+        Assert.Null(hit.SensitivityLabel);
+    }
+
+    [Fact]
     public async Task RetrieveAsync_MapsHitsExtractsAndScalarMetadataInResponseOrder()
     {
         using HttpResponseMessage response = new(HttpStatusCode.OK)
@@ -157,7 +191,9 @@ public sealed class Microsoft365RetrievalClientResponseTests
         Assert.IsType<System.Text.Json.JsonException>(exception.InnerException);
       }
 
-      private static Microsoft365RetrievalClient CreateClient(string responseBody)
+      private static Microsoft365RetrievalClient CreateClient(
+          string responseBody,
+          Microsoft365RetrievalDataSource dataSource = Microsoft365RetrievalDataSource.SharePoint)
       {
         HttpResponseMessage response = new(HttpStatusCode.OK)
         {
@@ -169,6 +205,6 @@ public sealed class Microsoft365RetrievalClientResponseTests
         return new Microsoft365RetrievalClient(
           httpClient,
           new StubTokenProvider(),
-          new Microsoft365RetrievalOptions());
+          new Microsoft365RetrievalOptions { DataSource = dataSource });
       }
 }

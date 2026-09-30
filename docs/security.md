@@ -9,11 +9,11 @@ Authenticated user
     -> host authentication and authorization
     -> delegated Microsoft Graph token
     -> Microsoft 365 Retrieval API
-    -> permission-trimmed SharePoint extracts
+    -> permission-trimmed SharePoint or OneDrive extracts
     -> host policy and model guardrails
 ```
 
-Microsoft 365 and SharePoint decide which content the delegated user can access. The package does not expand, emulate, or replace those permissions. The host still decides whether that user may access an endpoint, perform a business operation, invoke retrieval, or send the resulting content to a model.
+Microsoft 365 and the selected source decide which content the delegated user can access. The package does not expand, emulate, or replace those permissions. The host still decides whether that user may access an endpoint, perform a business operation, invoke retrieval, or send the resulting content to a model.
 
 ## Primary threats and controls
 
@@ -46,7 +46,7 @@ For registration and flow details, see [Microsoft Entra ID setup](entra-id-setup
 
 ## Authorization and retrieval scope
 
-Authentication answers who the caller is. SharePoint permission trimming answers which documents that identity may retrieve. Your application must separately answer whether the caller may use a feature or perform an operation.
+Authentication answers who the caller is. Microsoft 365 permission trimming answers which SharePoint or OneDrive documents that identity may retrieve. Your application must separately answer whether the caller may use a feature or perform an operation.
 
 Apply authorization before invoking retrieval:
 
@@ -66,9 +66,11 @@ Use the typed `SharePointRetrievalFilter` for trusted SharePoint properties and 
 
 The package rejects a non-null filter containing only whitespace, but it does not parse or certify arbitrary KQL syntax. Test every raw expression against representative tenant content and keep authorization independent of retrieval scope.
 
+OneDrive uses the same delegated `Files.Read.All` and `Sites.Read.All` permissions. Retrieval API pay-as-you-go does not cover OneDrive; the calling user needs a Microsoft 365 Copilot license. A OneDrive failure must not trigger a fallback request to SharePoint.
+
 ## Treat retrieved content as untrusted
 
-SharePoint documents can contain malicious, obsolete, or irrelevant instructions. A model can mistake those instructions for application intent.
+SharePoint and OneDrive documents can contain malicious, obsolete, or irrelevant instructions. A model can mistake those instructions for application intent.
 
 Recommended controls:
 
@@ -135,7 +137,7 @@ Microsoft's current platform limits include up to 200 Retrieval API requests per
 - Avoid duplicate retrieval in the same workflow.
 - Retry only transient failures with capped exponential backoff and jitter.
 - Never automatically retry authentication or authorization failures.
-- Monitor throttling, latency, result counts, and pay-as-you-go meter usage.
+- Monitor throttling, latency, result counts, and pay-as-you-go meter usage where applicable.
 
 The package does not implement retries. This avoids hidden duplicate calls and lets the host align retry behavior with its latency and billing requirements.
 
@@ -148,7 +150,7 @@ The package does not implement retries. This avoids hidden duplicate calls and l
 - [ ] Production confidential credentials do not rely on committed secrets.
 - [ ] Queries, document text, tokens, and raw Graph responses are excluded from routine logs.
 - [ ] Retrieved content and model-generated search queries are treated as untrusted.
-- [ ] Rate limits, cancellation, retries, and pay-as-you-go costs are monitored.
+- [ ] Rate limits, cancellation, retries, and applicable pay-as-you-go costs are monitored.
 - [ ] Error responses to clients are generic and do not expose downstream details.
 - [ ] Prompt-injection, cross-user isolation, and authorization failure cases are tested.
 

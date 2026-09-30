@@ -9,6 +9,25 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 public sealed class Microsoft365RetrievalSearchTests
 {
     [Fact]
+    public async Task SearchAsync_MapsOneDriveHitWithoutTitle()
+    {
+        Microsoft365RetrievalHit hit = CreateHit(
+            "https://contoso-my.sharepoint.com/personal/alex/Documents/Plan%20A.docx",
+            [CreateExtract("Plan extract")],
+            []);
+        Microsoft365RetrievalSearch search = new(new StubRetrievalClient([hit]));
+
+        TextSearchProvider.TextSearchResult result = Assert.Single(await search.SearchAsync(
+            "quarterly plan",
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("Plan A.docx", result.SourceName);
+        Assert.Equal(hit.WebUrl, result.SourceLink);
+        Assert.Equal("Plan extract", result.Text);
+        Assert.Same(hit, result.RawRepresentation);
+    }
+
+    [Fact]
     public async Task SearchAsync_ForwardsInputsAndMapsHitsInReceivedOrder()
     {
         Microsoft365RetrievalHit firstHit = CreateHit(

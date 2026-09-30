@@ -2,6 +2,8 @@
 
 This sample demonstrates automatic Microsoft 365 retrieval for an Agent Framework agent. The console host obtains a delegated Microsoft Graph token through Azure Identity device-code authentication and supplies it to the Retrieval package through a sample-local `IMicrosoft365RetrievalTokenProvider` implementation.
 
+This host currently configures the package's default SharePoint source through `SharePointSiteUrl`. The package also supports organizational OneDrive when a host sets `Microsoft365RetrievalOptions.DataSource` to `OneDriveBusiness`; this sample does not expose that setting.
+
 For package installation and integration choices, start with [getting started](../../docs/getting-started.md). See [Microsoft Entra ID setup](../../docs/entra-id-setup.md) for the complete public-client registration flow and [troubleshooting](../../docs/troubleshooting.md) for live-request diagnostics.
 
 ## Prerequisites

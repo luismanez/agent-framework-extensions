@@ -4,9 +4,9 @@ Diagnose Microsoft 365 Retrieval one layer at a time. First prove the delegated 
 
 ## Fast isolation path
 
-1. Confirm the user can open the target SharePoint content in the browser.
+1. Confirm the user can open the target content in the selected SharePoint or OneDrive source.
 2. Confirm the app registration has delegated `Files.Read.All` and `Sites.Read.All` with effective consent.
-3. Run the console sample in retrieval-only mode.
+3. For SharePoint, run the console sample in retrieval-only mode. For OneDrive, use a direct client configured with `DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness`.
 4. Remove optional filters and test one context-rich query.
 5. Inspect the safe HTTP status and Graph request ID on `Microsoft365RetrievalException`.
 6. Add the model and Agent Framework only after direct retrieval succeeds.
@@ -16,6 +16,7 @@ dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
 ```
 
 This mode does not require Azure OpenAI settings or `az login`. It does require the Microsoft Entra public-client configuration and a Retrieval API access path for the signed-in user.
+The console sample itself is configured for SharePoint; it does not prove OneDrive availability.
 
 ## Azure OpenAI tenant mismatch in the console sample
 
@@ -56,7 +57,7 @@ Do not add the access token, authorization header, full query, filter value, res
 | --- | --- | --- |
 | `400` | The retrieval request was rejected. | Query length, metadata names, raw KQL, and current API contract |
 | `401` | The delegated access token was rejected. | Token audience, expiry, tenant, delegated scopes, and token acquisition flow |
-| `403` | The delegated user is not authorized to retrieve this content. | SharePoint access, effective consent, license or pay-as-you-go enablement, and tenant policy |
+| `403` | The delegated user is not authorized to retrieve this content. | Selected-source access, effective consent, source-specific licensing, and tenant policy |
 | `429` | Microsoft Graph throttled the retrieval request. | Per-user request volume, duplicate calls, concurrency, and retry policy |
 | `5xx` | Microsoft Graph is temporarily unavailable. | Service health, transient retry policy, and Graph request ID |
 
@@ -105,10 +106,10 @@ The package requests no scopes itself. Fix the host token provider or app regist
 
 Test these independently:
 
-1. The signed-in user can open the target document or site in SharePoint.
+1. The signed-in user can open the target document in the selected SharePoint or OneDrive source.
 2. The app has effective delegated consent for `Files.Read.All` and `Sites.Read.All`.
-3. The user has a Microsoft 365 Copilot license, or Retrieval API pay-as-you-go is enabled for that user and tenant.
-4. Pay-as-you-go enablement has had time to propagate; Microsoft currently advises that this can take approximately two hours.
+3. For OneDrive, the user has a Microsoft 365 Copilot license. Pay-as-you-go does not cover OneDrive.
+4. For SharePoint, the user has a Copilot license or pay-as-you-go access. If using pay-as-you-go, allow for its documented propagation time of approximately two hours.
 5. Tenant policy and Conditional Access requirements have been satisfied.
 
 The first pay-as-you-go request after propagation can fail while billing policy state updates. Follow the current [pay-as-you-go documentation](https://learn.microsoft.com/microsoft-365-copilot/extensibility/api/ai-services/retrieval/paygo-retrieval) and retry only after validating configuration.
@@ -138,14 +139,14 @@ The package does not retry. Implement capped exponential backoff with jitter at 
 
 An empty result is not necessarily an error. Check:
 
-- The user has access to relevant SharePoint content.
+- The user has access to relevant content in the configured source.
 - The query is one specific, context-rich sentence.
 - The content has been indexed by Microsoft 365.
 - A trusted path or site filter points to the intended location.
 - The file type and size are supported by the current Retrieval API.
-- The query targets SharePoint, which is the data source this package currently sends.
+- `DataSource` selects the intended source. Its default is `SharePoint`; select `OneDriveBusiness` for organizational OneDrive.
 
-Run once without `FilterExpression`. If results appear, verify the canonical SharePoint path from the item's **Details** pane rather than using a sharing link or browser address.
+Run once without `FilterExpression`. If results appear, verify the canonical SharePoint or OneDrive path from the item's **Details** pane rather than using a sharing link or browser address.
 
 ## Sensitivity label is missing
 
@@ -158,6 +159,7 @@ Confirm the source item has a Microsoft Purview sensitivity label and inspect th
 `AddMicrosoft365Retrieval` validates options when services resolve, and direct `Microsoft365RetrievalClient` construction applies the same rules. Check that:
 
 - `MaximumNumberOfResults` is between 1 and 25.
+- `DataSource` is `SharePoint` or `OneDriveBusiness`.
 - `FilterExpression` is null or contains a non-whitespace KQL expression.
 - `ResourceMetadata` is not null.
 - Every metadata field is nonempty and not whitespace.
@@ -203,8 +205,8 @@ Collect the following without including sensitive content:
 - Host type and authentication flow.
 - Retrieval mode: direct, automatic, or on demand.
 - HTTP status and Graph request ID.
-- Whether the same user can access the target content in SharePoint.
+- The configured source and whether the same user can access the target content there.
 - Whether the issue reproduces with defaults and no filter.
-- Whether the user uses a Copilot license or pay-as-you-go.
+- Whether the user has a Copilot license or, for SharePoint, pay-as-you-go access.
 
 Use the Graph request ID and timestamp when engaging Microsoft support for a platform-side failure.

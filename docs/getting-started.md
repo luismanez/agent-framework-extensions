@@ -1,6 +1,6 @@
 # Getting started
 
-This guide takes a .NET host from prerequisites to its first permission-trimmed SharePoint retrieval call. You can stop after direct retrieval or continue by adding the same retrieval service to a Microsoft Agent Framework agent.
+This guide takes a .NET host from prerequisites to its first permission-trimmed SharePoint or OneDrive retrieval call. You can stop after direct retrieval or continue by adding the same retrieval service to a Microsoft Agent Framework agent.
 
 ## 1. Check the prerequisites
 
@@ -8,10 +8,10 @@ You need:
 
 - .NET 10 SDK.
 - A Microsoft Entra work or school tenant.
-- SharePoint Online content accessible to the test user.
+- SharePoint Online or organizational OneDrive content accessible to the test user.
 - A Microsoft Entra app registration configured for a delegated host flow.
 - Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
-- Retrieval API access for the calling user through a Microsoft 365 Copilot license or tenant-enabled pay-as-you-go consumption.
+- A Microsoft 365 Copilot license for OneDrive retrieval. SharePoint also supports tenant-enabled Retrieval API pay-as-you-go consumption.
 
 Direct retrieval does not require Azure OpenAI, another model deployment, Azure AI Search, or a separate content index.
 
@@ -78,6 +78,19 @@ services.AddMicrosoft365Retrieval(options =>
         .Expression;
 });
 ```
+
+To retrieve OneDrive content, configure the source before resolving the client:
+
+```csharp
+services.AddMicrosoft365Retrieval(options =>
+{
+    options.DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness;
+    options.FilterExpression =
+        "Path:\"https://contoso-my.sharepoint.com/personal/alex_contoso_com/Documents/\"";
+});
+```
+
+Use a canonical OneDrive path from the item's **Details** pane. The URL above is illustrative. Each client and request uses one source; the existing direct client and Agent Framework integration work with either configured source.
 
 A filter is query scope, not authorization. Microsoft 365 permission trimming remains the content-access boundary, and the host remains responsible for application authorization.
 
@@ -160,10 +173,12 @@ In on-demand mode, the model controls the search query. Treat that query and all
 
 ## Licensing and billing
 
-The calling user needs one of these access paths:
+For SharePoint, the calling user needs one of these access paths:
 
 - A Microsoft 365 Copilot add-on license.
 - Retrieval API pay-as-you-go consumption enabled for the tenant.
+
+For OneDrive, the calling user needs a Microsoft 365 Copilot add-on license. [Microsoft's pay-as-you-go documentation](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/paygo-retrieval) excludes user-level sources such as OneDrive.
 
 Pay-as-you-go is currently preview and requires:
 
@@ -188,7 +203,7 @@ cp samples/Microsoft365Retrieval.Console/appsettings.json \
 dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
 ```
 
-Configure the tenant and public-client application first by following the [console sample guide](../samples/Microsoft365Retrieval.Console/README.md).
+The console sample currently configures SharePoint. Configure the tenant and public-client application by following its [sample guide](../samples/Microsoft365Retrieval.Console/README.md). For OneDrive, use the direct registration example above or the configurable ASP.NET Core sample.
 
 ## Next steps
 

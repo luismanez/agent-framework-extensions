@@ -8,6 +8,28 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 
 public sealed class Microsoft365RetrievalClientRequestTests
 {
+    [Fact]
+    public void Constructor_RejectsUnsupportedDataSourceBeforeTokenOrHttp()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK);
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions
+                {
+                    DataSource = (Microsoft365RetrievalDataSource)123,
+                }));
+
+        Assert.Contains("DataSource", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(25)]
@@ -130,12 +152,14 @@ public sealed class Microsoft365RetrievalClientRequestTests
         StubTokenProvider tokenProvider = new();
         Microsoft365RetrievalOptions options = new()
         {
+            DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness,
             MaximumNumberOfResults = 12,
             FilterExpression = "FileType:\"docx\"",
             ResourceMetadata = ["title"],
         };
         Microsoft365RetrievalClient client = new(httpClient, tokenProvider, options);
 
+        options.DataSource = Microsoft365RetrievalDataSource.SharePoint;
         options.MaximumNumberOfResults = 26;
         options.FilterExpression = " ";
         options.ResourceMetadata = ["author"];
@@ -143,6 +167,7 @@ public sealed class Microsoft365RetrievalClientRequestTests
         await client.RetrieveAsync("quarterly plan", TestContext.Current.CancellationToken);
 
         using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        Assert.Equal("oneDriveBusiness", request.RootElement.GetProperty("dataSource").GetString());
         Assert.Equal(12, request.RootElement.GetProperty("maximumNumberOfResults").GetInt32());
         Assert.Equal("FileType:\"docx\"", request.RootElement.GetProperty("filterExpression").GetString());
         Assert.Equal(
@@ -202,6 +227,49 @@ public sealed class Microsoft365RetrievalClientRequestTests
                 .EnumerateArray()
                 .Select(element => element.GetString()));
         Assert.False(root.TryGetProperty("filterExpression", out _));
+    }
+
+    [Fact]
+    public async Task RetrieveAsync_SendsConfiguredOneDriveRequest()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        Microsoft365RetrievalClient client = new(
+            httpClient,
+            tokenProvider,
+            new Microsoft365RetrievalOptions
+            {
+                DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness,
+                FilterExpression = "Path:\"https://contoso-my.sharepoint.com/personal/alex/Documents/\"",
+                ResourceMetadata = ["title", "author"],
+                MaximumNumberOfResults = 7,
+            });
+
+        Assert.Empty(await client.RetrieveAsync("quarterly plan", TestContext.Current.CancellationToken));
+
+        Assert.Equal(1, tokenProvider.CallCount);
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(HttpMethod.Post, handler.Method);
+        Assert.Equal(new Uri("https://graph.microsoft.com/v1.0/copilot/retrieval"), handler.RequestUri);
+        Assert.Equal("Bearer", handler.Authorization?.Scheme);
+        Assert.Equal("delegated-token", handler.Authorization?.Parameter);
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        JsonElement root = request.RootElement;
+        Assert.Equal(5, root.EnumerateObject().Count());
+        Assert.Equal("quarterly plan", root.GetProperty("queryString").GetString());
+        Assert.Equal("oneDriveBusiness", root.GetProperty("dataSource").GetString());
+        Assert.Equal(
+            "Path:\"https://contoso-my.sharepoint.com/personal/alex/Documents/\"",
+            root.GetProperty("filterExpression").GetString());
+        Assert.Equal(["title", "author"], root.GetProperty("resourceMetadata")
+            .EnumerateArray().Select(element => element.GetString()));
+        Assert.Equal(7, root.GetProperty("maximumNumberOfResults").GetInt32());
+        Assert.False(root.TryGetProperty("dataSourceConfiguration", out _));
     }
 
     [Fact]

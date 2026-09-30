@@ -20,6 +20,7 @@ public sealed class PublicContractTests
             await client.RetrieveAsync("quarterly report", cancellation.Token);
 
         Assert.Equal(8, options.MaximumNumberOfResults);
+        Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, options.DataSource);
         Assert.Null(options.FilterExpression);
         Assert.Equal(["title", "author"], options.ResourceMetadata);
         Assert.Equal("token", token);
@@ -43,11 +44,14 @@ public sealed class PublicContractTests
     {
         Assert.True(typeof(Microsoft365RetrievalOptions).IsSealed);
         Assert.Equal(
-            ["FilterExpression", "MaximumNumberOfResults", "ResourceMetadata"],
+            ["DataSource", "FilterExpression", "MaximumNumberOfResults", "ResourceMetadata"],
             typeof(Microsoft365RetrievalOptions)
                 .GetProperties()
                 .Select(property => property.Name)
                 .Order());
+        Assert.Equal(
+            ["SharePoint", "OneDriveBusiness"],
+            Enum.GetNames<Microsoft365RetrievalDataSource>());
 
         AssertSingleMethod(
             typeof(IMicrosoft365RetrievalTokenProvider),

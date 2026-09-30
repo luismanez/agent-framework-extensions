@@ -6,6 +6,26 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 
 public sealed class Microsoft365RetrievalOptionsTests
 {
+    [Fact]
+    public void DataSource_DefaultsToSharePoint()
+    {
+        Microsoft365RetrievalOptions options = new();
+
+        Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, options.DataSource);
+    }
+
+    [Fact]
+    public void AddMicrosoft365Retrieval_RejectsUnsupportedDataSourceWhenClientIsResolved()
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+            options.DataSource = (Microsoft365RetrievalDataSource)123);
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+
+        Assert.Contains("DataSource", exception.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(26)]

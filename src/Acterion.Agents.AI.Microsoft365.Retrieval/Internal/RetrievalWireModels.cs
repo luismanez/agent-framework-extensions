@@ -9,7 +9,7 @@ internal sealed class RetrievalApiRequest
     public required string QueryString { get; init; }
 
     [JsonPropertyName("dataSource")]
-    public string DataSource { get; init; } = "sharePoint";
+    public required string DataSource { get; init; }
 
     [JsonPropertyName("filterExpression")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

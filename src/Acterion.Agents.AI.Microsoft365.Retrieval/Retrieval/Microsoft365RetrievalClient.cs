@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Acterion.Agents.AI.Microsoft365.Retrieval;
 
 /// <summary>
-/// Retrieves permission-trimmed SharePoint content through the Microsoft 365 Copilot Retrieval API.
+/// Retrieves permission-trimmed Microsoft 365 content through the Copilot Retrieval API.
 /// </summary>
 public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
 {
@@ -91,6 +91,12 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
         RetrievalApiRequest payload = new()
         {
             QueryString = query,
+            DataSource = this.options.DataSource switch
+            {
+                Microsoft365RetrievalDataSource.SharePoint => "sharePoint",
+                Microsoft365RetrievalDataSource.OneDriveBusiness => "oneDriveBusiness",
+                _ => throw new InvalidOperationException("The validated retrieval data source is unsupported."),
+            },
             FilterExpression = this.options.FilterExpression,
             ResourceMetadata = this.options.ResourceMetadata,
             MaximumNumberOfResults = this.options.MaximumNumberOfResults,

@@ -52,7 +52,7 @@ The sample uses `DeviceCodeCredential`, requests `https://graph.microsoft.com/.d
 
 ## Protected web API registration
 
-Use this pattern when an authenticated client calls your ASP.NET Core API and the API must retrieve SharePoint content for that same user. The API validates its own bearer token and exchanges it for a delegated Microsoft Graph token through OAuth 2.0 On-Behalf-Of (OBO).
+Use this pattern when an authenticated client calls your ASP.NET Core API and the API must retrieve SharePoint or OneDrive content for that same user. The API validates its own bearer token and exchanges it for a delegated Microsoft Graph token through OAuth 2.0 On-Behalf-Of (OBO).
 
 ### Create and configure the registration
 
@@ -129,8 +129,8 @@ When a request returns `401` or `403`, inspect a test token securely and verify:
 - The token audience is Microsoft Graph when it reaches the package.
 - The token represents the expected user and tenant.
 - Delegated scope claims include the required consented permissions.
-- The user can open the target SharePoint content directly.
-- The user has Retrieval API access through licensing or pay-as-you-go.
+- The user can open the target content in the configured SharePoint or OneDrive source directly.
+- The user has a Microsoft 365 Copilot license for OneDrive, or a Copilot license or pay-as-you-go access for SharePoint.
 - Conditional Access requirements have been satisfied by the host.
 
 Do not paste production tokens into public token-inspection tools or logs.

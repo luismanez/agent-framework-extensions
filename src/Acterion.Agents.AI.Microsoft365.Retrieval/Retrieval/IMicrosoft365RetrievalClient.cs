@@ -1,12 +1,12 @@
 namespace Acterion.Agents.AI.Microsoft365.Retrieval;
 
 /// <summary>
-/// Retrieves permission-trimmed SharePoint content through Microsoft Graph.
+/// Retrieves permission-trimmed Microsoft 365 content through Microsoft Graph.
 /// </summary>
 public interface IMicrosoft365RetrievalClient
 {
     /// <summary>
-    /// Retrieves SharePoint content relevant to a query.
+    /// Retrieves content from the configured data source relevant to a query.
     /// </summary>
     /// <param name="query">The query submitted to the retrieval API.</param>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>

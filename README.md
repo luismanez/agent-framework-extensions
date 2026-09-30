@@ -4,7 +4,7 @@ This repository provides focused .NET packages for Microsoft 365 retrieval and s
 
 | Package | Purpose | Guidance |
 | --- | --- | --- |
-| `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint retrieval and Agent Framework integration | This README |
+| `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint and OneDrive retrieval with Agent Framework integration | This README |
 | `Acterion.Agents.AI.Microsoft365.WorkContext` | Microsoft Graph work-context snapshots and Agent Framework integration | [Work Context package guide](src/Acterion.Agents.AI.Microsoft365.WorkContext/README.md) |
 
 The [WorkContext console sample](samples/Microsoft365WorkContext.Console/README.md) demonstrates delegated sign-in, a direct snapshot, and an Agent Framework agent.
@@ -19,18 +19,18 @@ Maintainers: [release both NuGet packages together](docs/releasing.md).
 
 ## Why use it?
 
-- **No duplicate index**: retrieve from SharePoint content already indexed by Microsoft 365.
-- **Permission trimmed**: results are evaluated for the signed-in user by Microsoft 365 and SharePoint.
+- **No duplicate index**: retrieve from SharePoint or OneDrive content already indexed by Microsoft 365.
+- **Permission trimmed**: results are evaluated for the signed-in user by Microsoft 365 and the selected source.
 - **Host-owned identity**: choose device code, interactive browser, On-Behalf-Of, or another delegated flow in your application.
 - **Two integration levels**: call `IMicrosoft365RetrievalClient` directly or compose retrieval into an Agent Framework pipeline.
 - **Typed SharePoint filters**: filter by location, document properties, people, labels, and modification time without assembling KQL by hand.
-- **Typed sensitivity labels**: inspect Microsoft Purview label metadata returned with SharePoint hits without adding it to model-visible text.
+- **Typed sensitivity labels**: inspect Microsoft Purview label metadata returned with retrieval hits without adding it to model-visible text.
 
 ## Supported today
 
 | Capability | Support |
 | --- | --- |
-| Data source | SharePoint Online |
+| Data source | SharePoint Online (default) or OneDrive for Business |
 | Identity | Delegated work or school identity |
 | Runtime | .NET 10 |
 | Direct retrieval | `IMicrosoft365RetrievalClient` |
@@ -38,7 +38,7 @@ Maintainers: [release both NuGet packages together](docs/releasing.md).
 | Retrieval timing | Before every model call or on demand |
 | Sensitivity labels | Optional typed metadata on retrieval hits |
 
-Application permissions, app-only retrieval, OneDrive retrieval, and Microsoft 365 Copilot connector retrieval are not exposed by this package.
+Application permissions, app-only retrieval, personal OneDrive accounts, and Microsoft 365 Copilot connector retrieval are not exposed by this package.
 
 ## Prerequisites
 
@@ -46,9 +46,7 @@ You need:
 
 1. A Microsoft Entra app registration with delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
 2. A host authentication flow that obtains a delegated Graph token for the current user.
-3. Access to the Microsoft 365 Copilot Retrieval API through either:
-   - a Microsoft 365 Copilot license for the calling user; or
-   - Retrieval API pay-as-you-go consumption enabled for the tenant.
+3. Access to the Microsoft 365 Copilot Retrieval API through a Microsoft 365 Copilot license for the calling user. For SharePoint, tenant-enabled Retrieval API pay-as-you-go consumption is another supported path; it does not cover OneDrive.
 
 The delegated Graph permissions do not require admin consent by definition, but tenant consent policies can still require administrator approval. Pay-as-you-go is a preview feature and requires an Azure subscription, an Azure resource group, Microsoft 365 administrator access, and at least one Microsoft 365 Copilot license in the tenant. A model deployment is optional for direct retrieval and required only when your application also invokes a model.
 
@@ -86,6 +84,8 @@ IReadOnlyList<Microsoft365RetrievalHit> hits = await retrieval.RetrieveAsync(
 ```
 
 Retrieval options are validated before token acquisition or HTTP. `MaximumNumberOfResults` must be from 1 through 25, raw filter expressions must be null or non-whitespace, and metadata field names must be nonempty.
+
+To query organizational OneDrive instead, set `options.DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness` and provide a trusted OneDrive `FilterExpression` only if needed. The client queries one source per request; see the [configuration reference](docs/configuration.md#data-source).
 
 `MyGraphTokenProvider` implements one method and returns a delegated token for Microsoft Graph:
 

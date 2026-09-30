@@ -17,13 +17,31 @@ services.AddMicrosoft365Retrieval(options =>
 
 | Property | Type | Default | Rules |
 | --- | --- | --- | --- |
+| `DataSource` | `Microsoft365RetrievalDataSource` | `SharePoint` | `SharePoint` or `OneDriveBusiness` |
 | `MaximumNumberOfResults` | `int` | `8` | Must be from 1 through 25 |
-| `FilterExpression` | `string?` | `null` | Must be null or contain a non-whitespace SharePoint KQL expression |
+| `FilterExpression` | `string?` | `null` | Must be null or contain a non-whitespace KQL expression for the selected source |
 | `ResourceMetadata` | `IReadOnlyCollection<string>` | `title`, `author` | Must be non-null and contain only nonempty values |
 
 Options registered with `AddMicrosoft365Retrieval` are validated when resolved. The public `Microsoft365RetrievalClient` constructors apply the same validation, so direct construction cannot bypass these rules. Invalid options fail before token acquisition or a Retrieval request.
 
 The client snapshots validated option values and the metadata collection during construction. Later mutations to the source `Microsoft365RetrievalOptions` instance do not change an existing client; construct or resolve a new client to apply new configuration.
+
+## Data source
+
+The default `SharePoint` source preserves existing behavior. To retrieve organizational OneDrive content, configure the client with `OneDriveBusiness`:
+
+```csharp
+services.AddMicrosoft365Retrieval(options =>
+{
+    options.DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness;
+    options.FilterExpression =
+        "Path:\"https://contoso-my.sharepoint.com/personal/alex_contoso_com/Documents/\"";
+});
+```
+
+The URL is illustrative. For a real filter, copy the canonical file or folder path from OneDrive's **Details** pane, not a sharing link or browser address. The package validates that the expression is nonblank but does not parse KQL. A malformed expression can execute without the intended scope; keep authorization independent of filtering.
+
+Each client uses one configured source, and each Retrieval API request queries one source. This package does not merge SharePoint and OneDrive results or register named clients for both sources. OneDrive retrieval requires a Microsoft 365 Copilot license for the calling user; Retrieval API pay-as-you-go does not enable OneDrive. Both sources use delegated `Files.Read.All` and `Sites.Read.All` permissions. See the [Retrieval API overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/overview).
 
 ## Query requirements
 
@@ -54,7 +72,7 @@ Metadata values are exposed on each `Microsoft365RetrievalHit` as JSON elements 
 
 ## Sensitivity labels
 
-When Microsoft Graph returns Microsoft Purview label information for a SharePoint result, the package exposes it as `Microsoft365RetrievalHit.SensitivityLabel`. The immutable `Microsoft365RetrievalSensitivityLabel` contains nullable `SensitivityLabelId`, `DisplayName`, `ToolTip`, `Priority`, and `Color` properties.
+When Microsoft Graph returns Microsoft Purview label information for a result, the package exposes it as `Microsoft365RetrievalHit.SensitivityLabel`. The immutable `Microsoft365RetrievalSensitivityLabel` contains nullable `SensitivityLabelId`, `DisplayName`, `ToolTip`, `Priority`, and `Color` properties.
 
 Sensitivity labels are response metadata and are independent of the configured `ResourceMetadata` collection. `SensitivityLabel` is `null` when Graph omits the object, and individual properties can also be `null` in a partial response. The package does not infer a label from requested metadata or require the identifier to have a particular format.
 
@@ -62,7 +80,7 @@ The Agent Framework adapter retains the complete hit in `TextSearchResult.RawRep
 
 ## Typed SharePoint filters
 
-`SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. Values must come from trusted application configuration.
+`SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. It remains a SharePoint-specific helper; this feature does not add a typed OneDrive filter. Use trusted application configuration for either source.
 
 | Retrieval property | Typed factory |
 | --- | --- |
@@ -134,7 +152,7 @@ Microsoft documents that an incorrectly formed Retrieval API filter can execute 
 
 - A filter must never be treated as an authorization boundary.
 - Test raw filters against representative tenant content before release.
-- Prefer typed filters whenever their supported properties and operators are sufficient.
+- For SharePoint, prefer typed filters whenever their supported properties and operators are sufficient.
 - Enforce endpoint and business authorization independently of retrieval scope.
 
 ## Configuration binding
@@ -144,6 +162,7 @@ ASP.NET Core applications can bind a section directly:
 ```json
 {
   "Microsoft365Retrieval": {
+    "DataSource": "OneDriveBusiness",
     "MaximumNumberOfResults": 8,
     "ResourceMetadata": ["title", "author"],
     "FilterExpression": null
@@ -162,6 +181,8 @@ services.AddMicrosoft365Retrieval(options =>
 ```
 
 The normalization above intentionally treats an empty configuration value as an omitted filter. Without that normalization, a blank configured value fails options validation.
+
+Use `"SharePoint"` or omit `DataSource` for the existing default. Undefined enum values fail options validation when the client is resolved.
 
 Use environment-variable double underscores for hierarchical keys, for example `Microsoft365Retrieval__MaximumNumberOfResults=8`.
 

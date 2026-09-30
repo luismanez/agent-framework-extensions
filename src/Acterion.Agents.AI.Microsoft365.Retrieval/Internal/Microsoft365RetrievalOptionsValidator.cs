@@ -10,6 +10,13 @@ internal sealed class Microsoft365RetrievalOptionsValidator : IValidateOptions<M
     {
         List<string> failures = [];
 
+        if (options.DataSource is not (
+            Microsoft365RetrievalDataSource.SharePoint or
+            Microsoft365RetrievalDataSource.OneDriveBusiness))
+        {
+            failures.Add("DataSource must be SharePoint or OneDriveBusiness.");
+        }
+
         if (options.MaximumNumberOfResults is < 1 or > 25)
         {
             failures.Add("MaximumNumberOfResults must be between 1 and 25.");
@@ -48,6 +55,7 @@ internal sealed class Microsoft365RetrievalOptionsValidator : IValidateOptions<M
 
         return new Microsoft365RetrievalOptions
         {
+            DataSource = options.DataSource,
             MaximumNumberOfResults = options.MaximumNumberOfResults,
             FilterExpression = options.FilterExpression,
             ResourceMetadata = options.ResourceMetadata.ToArray(),

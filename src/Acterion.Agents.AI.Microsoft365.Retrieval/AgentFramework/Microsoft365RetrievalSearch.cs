@@ -12,14 +12,14 @@ public sealed class Microsoft365RetrievalSearch
     /// <summary>
     /// Initializes a new instance of the <see cref="Microsoft365RetrievalSearch"/> class.
     /// </summary>
-    /// <param name="retrievalClient">The client used to retrieve SharePoint content.</param>
+    /// <param name="retrievalClient">The configured Microsoft 365 retrieval client.</param>
     public Microsoft365RetrievalSearch(IMicrosoft365RetrievalClient retrievalClient)
     {
         this.retrievalClient = retrievalClient ?? throw new ArgumentNullException(nameof(retrievalClient));
     }
 
     /// <summary>
-    /// Retrieves and maps SharePoint content to Agent Framework search results.
+    /// Retrieves and maps Microsoft 365 content to Agent Framework search results.
     /// </summary>
     /// <param name="query">The search query.</param>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
