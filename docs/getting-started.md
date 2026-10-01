@@ -1,6 +1,6 @@
 # Getting started
 
-This guide takes a .NET host from prerequisites to its first permission-trimmed SharePoint or OneDrive retrieval call. You can stop after direct retrieval or continue by adding the same retrieval service to a Microsoft Agent Framework agent.
+This guide takes a .NET host from prerequisites to its first permission-trimmed SharePoint, OneDrive, or indexed Copilot connector retrieval call. You can stop after direct retrieval or continue by adding the same retrieval service to a Microsoft Agent Framework agent.
 
 ## 1. Check the prerequisites
 
@@ -8,9 +8,9 @@ You need:
 
 - .NET 10 SDK.
 - A Microsoft Entra work or school tenant.
-- SharePoint Online or organizational OneDrive content accessible to the test user.
+- SharePoint Online, organizational OneDrive, or indexed Copilot connector content accessible to the test user.
 - A Microsoft Entra app registration configured for a delegated host flow.
-- Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
+- Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All` for SharePoint or OneDrive; `ExternalItem.Read.All` for Copilot connectors.
 - A Microsoft 365 Copilot license for OneDrive retrieval. SharePoint also supports tenant-enabled Retrieval API pay-as-you-go consumption.
 
 Direct retrieval does not require Azure OpenAI, another model deployment, Azure AI Search, or a separate content index.
@@ -90,7 +90,18 @@ services.AddMicrosoft365Retrieval(options =>
 });
 ```
 
-Use a canonical OneDrive path from the item's **Details** pane. The URL above is illustrative. Each client and request uses one source; the existing direct client and Agent Framework integration work with either configured source.
+Use a canonical OneDrive path from the item's **Details** pane. The URL above is illustrative. To query indexed Copilot connector content, configure:
+
+```csharp
+services.AddMicrosoft365Retrieval(options =>
+{
+    options.DataSource = Microsoft365RetrievalDataSource.ExternalItem;
+    options.ExternalItemConnectionIds = ["ContosoIT"];
+    options.ResourceMetadata = [];
+});
+```
+
+Omit `ExternalItemConnectionIds` to search accessible connector items across connections. Configure one or more IDs to narrow the query. An empty list is invalid. Connector schemas vary: use only metadata fields retrievable in every selected connection and KQL properties queryable in every selected connection. With unknown schemas, request no metadata and omit the filter as shown. Each client and request uses one source; the same direct client and Agent Framework integration work with all three configured sources.
 
 A filter is query scope, not authorization. Microsoft 365 permission trimming remains the content-access boundary, and the host remains responsible for application authorization.
 
@@ -180,6 +191,8 @@ For SharePoint, the calling user needs one of these access paths:
 
 For OneDrive, the calling user needs a Microsoft 365 Copilot add-on license. [Microsoft's pay-as-you-go documentation](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/paygo-retrieval) excludes user-level sources such as OneDrive.
 
+For indexed Copilot connectors, the calling user needs a Microsoft 365 Copilot add-on license or tenant-enabled Retrieval API pay-as-you-go consumption. The app also needs delegated `ExternalItem.Read.All`; connection IDs and KQL do not replace item permission trimming.
+
 Pay-as-you-go is currently preview and requires:
 
 - An Azure subscription in good standing.
@@ -203,7 +216,7 @@ cp samples/Microsoft365Retrieval.Console/appsettings.json \
 dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
 ```
 
-The console sample currently configures SharePoint. Configure the tenant and public-client application by following its [sample guide](../samples/Microsoft365Retrieval.Console/README.md). For OneDrive, use the direct registration example above or the configurable ASP.NET Core sample.
+The console sample defaults to SharePoint but can select OneDrive or `ExternalItem` through configuration. Configure the tenant and public-client application by following its [sample guide](../samples/Microsoft365Retrieval.Console/README.md).
 
 ## Next steps
 

@@ -12,6 +12,87 @@ public sealed class Microsoft365RetrievalOptionsTests
         Microsoft365RetrievalOptions options = new();
 
         Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, options.DataSource);
+        Assert.Null(options.ExternalItemConnectionIds);
+    }
+
+    [Fact]
+    public void AddMicrosoft365Retrieval_AcceptsExternalItemWithoutConnectionIds()
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+            options.DataSource = Microsoft365RetrievalDataSource.ExternalItem);
+
+        Assert.NotNull(serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+    }
+
+    [Theory]
+    [InlineData(Microsoft365RetrievalDataSource.SharePoint)]
+    [InlineData(Microsoft365RetrievalDataSource.OneDriveBusiness)]
+    public void AddMicrosoft365Retrieval_RejectsConnectionIdsForOtherSources(
+        Microsoft365RetrievalDataSource dataSource)
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+        {
+            options.DataSource = dataSource;
+            options.ExternalItemConnectionIds = ["ContosoIT"];
+        });
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddMicrosoft365Retrieval_RejectsEmptyConnectionIds()
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+        {
+            options.DataSource = Microsoft365RetrievalDataSource.ExternalItem;
+            options.ExternalItemConnectionIds = [];
+        });
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void AddMicrosoft365Retrieval_RejectsBlankConnectionId(string? connectionId)
+    {
+        using ServiceProvider serviceProvider = CreateServiceProvider(options =>
+        {
+            options.DataSource = Microsoft365RetrievalDataSource.ExternalItem;
+            options.ExternalItemConnectionIds = [connectionId!];
+        });
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IMicrosoft365RetrievalClient>());
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Constructor_RejectsDuplicateConnectionIdsBeforeTokenAcquisition()
+    {
+        using HttpClient httpClient = new();
+        StubTokenProvider tokenProvider = new();
+
+        OptionsValidationException exception = Assert.Throws<OptionsValidationException>(() =>
+            new Microsoft365RetrievalClient(
+                httpClient,
+                tokenProvider,
+                new Microsoft365RetrievalOptions
+                {
+                    DataSource = Microsoft365RetrievalDataSource.ExternalItem,
+                    ExternalItemConnectionIds = ["ContosoIT", "ContosoIT"],
+                }));
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, tokenProvider.CallCount);
     }
 
     [Fact]

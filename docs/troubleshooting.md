@@ -4,9 +4,9 @@ Diagnose Microsoft 365 Retrieval one layer at a time. First prove the delegated 
 
 ## Fast isolation path
 
-1. Confirm the user can open the target content in the selected SharePoint or OneDrive source.
-2. Confirm the app registration has delegated `Files.Read.All` and `Sites.Read.All` with effective consent.
-3. For SharePoint, run the console sample in retrieval-only mode. For OneDrive, use a direct client configured with `DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness`.
+1. Confirm the user can open the target content in the selected SharePoint, OneDrive, or indexed connector source.
+2. Confirm effective delegated consent for `Files.Read.All` and `Sites.Read.All` with SharePoint or OneDrive, or `ExternalItem.Read.All` with connectors.
+3. Select the source in the console sample and run it in retrieval-only mode.
 4. Remove optional filters and test one context-rich query.
 5. Inspect the safe HTTP status and Graph request ID on `Microsoft365RetrievalException`.
 6. Add the model and Agent Framework only after direct retrieval succeeds.
@@ -16,7 +16,7 @@ dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only
 ```
 
 This mode does not require Azure OpenAI settings or `az login`. It does require the Microsoft Entra public-client configuration and a Retrieval API access path for the signed-in user.
-The console sample itself is configured for SharePoint; it does not prove OneDrive availability.
+The console sample defaults to SharePoint. Set `Microsoft365Retrieval:DataSource` to `OneDriveBusiness` or `ExternalItem` to test those sources.
 
 ## Azure OpenAI tenant mismatch in the console sample
 
@@ -106,11 +106,12 @@ The package requests no scopes itself. Fix the host token provider or app regist
 
 Test these independently:
 
-1. The signed-in user can open the target document in the selected SharePoint or OneDrive source.
-2. The app has effective delegated consent for `Files.Read.All` and `Sites.Read.All`.
+1. The signed-in user can open the target content in the selected source.
+2. The app has effective delegated consent for `Files.Read.All` and `Sites.Read.All` with SharePoint or OneDrive, or `ExternalItem.Read.All` with connector items.
 3. For OneDrive, the user has a Microsoft 365 Copilot license. Pay-as-you-go does not cover OneDrive.
 4. For SharePoint, the user has a Copilot license or pay-as-you-go access. If using pay-as-you-go, allow for its documented propagation time of approximately two hours.
-5. Tenant policy and Conditional Access requirements have been satisfied.
+5. For connector items, the user has a Copilot license or tenant-enabled pay-as-you-go access, and the item ACL allows the user.
+6. Tenant policy and Conditional Access requirements have been satisfied.
 
 The first pay-as-you-go request after propagation can fail while billing policy state updates. Follow the current [pay-as-you-go documentation](https://learn.microsoft.com/microsoft-365-copilot/extensibility/api/ai-services/retrieval/paygo-retrieval) and retry only after validating configuration.
 
@@ -119,10 +120,11 @@ The first pay-as-you-go request after propagation can fail while billing policy 
 The client rejects empty queries and queries longer than 1,500 characters locally. For a Graph `400`, check:
 
 - Whether requested metadata fields are supported by the current API.
+- For `ExternalItem`, whether every selected connection schema marks requested metadata retrievable and KQL properties queryable.
 - Whether a raw filter uses supported KQL properties and syntax.
 - Whether platform behavior or the preview API contract changed.
 
-Temporarily test with the defaults and no filter. If that succeeds, reintroduce one option at a time. Keep in mind that Microsoft documents some invalid filter syntax as executing without the intended scope rather than returning an error, so a successful request does not prove a raw filter is correct.
+Temporarily test without a filter. For `ExternalItem`, set `ResourceMetadata = []` and omit connection IDs if an unrestricted query is acceptable for diagnosis; reintroduce options one at a time. Microsoft documents some invalid filter syntax as executing without the intended scope, so a successful request does not prove a raw filter is correct.
 
 ## `429 Too Many Requests`
 
@@ -144,7 +146,8 @@ An empty result is not necessarily an error. Check:
 - The content has been indexed by Microsoft 365.
 - A trusted path or site filter points to the intended location.
 - The file type and size are supported by the current Retrieval API.
-- `DataSource` selects the intended source. Its default is `SharePoint`; select `OneDriveBusiness` for organizational OneDrive.
+- `DataSource` selects the intended source. Its default is `SharePoint`; select `OneDriveBusiness` for organizational OneDrive or `ExternalItem` for indexed connectors.
+- For connector content, configured connection IDs refer to the intended connections; requested metadata and KQL properties are shared by all selected schemas.
 
 Run once without `FilterExpression`. If results appear, verify the canonical SharePoint or OneDrive path from the item's **Details** pane rather than using a sharing link or browser address.
 
@@ -159,7 +162,8 @@ Confirm the source item has a Microsoft Purview sensitivity label and inspect th
 `AddMicrosoft365Retrieval` validates options when services resolve, and direct `Microsoft365RetrievalClient` construction applies the same rules. Check that:
 
 - `MaximumNumberOfResults` is between 1 and 25.
-- `DataSource` is `SharePoint` or `OneDriveBusiness`.
+- `DataSource` is `SharePoint`, `OneDriveBusiness`, or `ExternalItem`.
+- `ExternalItemConnectionIds` is set only for `ExternalItem`; when set it contains at least one distinct, nonblank ID. Use `null`, not an empty collection, for no connection restriction.
 - `FilterExpression` is null or contains a non-whitespace KQL expression.
 - `ResourceMetadata` is not null.
 - Every metadata field is nonempty and not whitespace.
@@ -207,6 +211,6 @@ Collect the following without including sensitive content:
 - HTTP status and Graph request ID.
 - The configured source and whether the same user can access the target content there.
 - Whether the issue reproduces with defaults and no filter.
-- Whether the user has a Copilot license or, for SharePoint, pay-as-you-go access.
+- Whether the user has a Copilot license or, for SharePoint and indexed connectors, tenant-enabled pay-as-you-go access.
 
 Use the Graph request ID and timestamp when engaging Microsoft support for a platform-side failure.

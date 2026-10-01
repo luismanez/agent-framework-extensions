@@ -14,4 +14,9 @@ public enum Microsoft365RetrievalDataSource
     /// Retrieves content from organizational OneDrive.
     /// </summary>
     OneDriveBusiness = 1,
+
+    /// <summary>
+    /// Retrieves indexed content from Microsoft 365 Copilot connectors.
+    /// </summary>
+    ExternalItem = 2,
 }

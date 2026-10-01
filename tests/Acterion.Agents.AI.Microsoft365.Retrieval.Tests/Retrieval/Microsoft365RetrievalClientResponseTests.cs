@@ -7,6 +7,49 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 public sealed class Microsoft365RetrievalClientResponseTests
 {
     [Fact]
+    public async Task RetrieveAsync_MapsExternalItemHitsWithMissingOptionalFields()
+    {
+        Microsoft365RetrievalClient client = CreateClient(
+            """
+            {
+              "retrievalHits": [
+                {
+                  "webUrl": "https://crm.contoso.com/tickets/42",
+                  "resourceType": "externalItem",
+                  "extracts": [
+                    { "text": "First extract" },
+                    { "text": "Second extract", "relevanceScore": 0.75 }
+                  ],
+                  "resourceMetadata": { "title": "VPN ticket", "priority": 2, "active": true },
+                  "futureField": "ignored"
+                },
+                {
+                  "webUrl": "https://crm.contoso.com/tickets/43",
+                  "resourceType": "externalItem",
+                  "extracts": [{ "text": "Third extract" }]
+                }
+              ]
+            }
+            """,
+            Microsoft365RetrievalDataSource.ExternalItem);
+
+        IReadOnlyList<Microsoft365RetrievalHit> hits = await client.RetrieveAsync(
+            "corporate VPN", TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, hits.Count);
+        Assert.Equal("externalItem", hits[0].ResourceType);
+        Assert.Equal(["First extract", "Second extract"], hits[0].Extracts.Select(extract => extract.Text));
+        Assert.Null(hits[0].Extracts[0].RelevanceScore);
+        Assert.Equal(0.75d, hits[0].Extracts[1].RelevanceScore);
+        Assert.Equal("VPN ticket", hits[0].ResourceMetadata["title"].GetString());
+        Assert.Equal(2, hits[0].ResourceMetadata["priority"].GetInt32());
+        Assert.True(hits[0].ResourceMetadata["active"].GetBoolean());
+        Assert.Equal("https://crm.contoso.com/tickets/43", hits[1].WebUrl);
+        Assert.Empty(hits[1].ResourceMetadata);
+        Assert.Null(hits[1].Extracts[0].RelevanceScore);
+    }
+
+    [Fact]
     public async Task RetrieveAsync_MapsOneDriveHitWithoutOptionalMetadata()
     {
         Microsoft365RetrievalClient client = CreateClient(

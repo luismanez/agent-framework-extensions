@@ -12,9 +12,28 @@ internal sealed class Microsoft365RetrievalOptionsValidator : IValidateOptions<M
 
         if (options.DataSource is not (
             Microsoft365RetrievalDataSource.SharePoint or
-            Microsoft365RetrievalDataSource.OneDriveBusiness))
+            Microsoft365RetrievalDataSource.OneDriveBusiness or
+            Microsoft365RetrievalDataSource.ExternalItem))
         {
-            failures.Add("DataSource must be SharePoint or OneDriveBusiness.");
+            failures.Add("DataSource must be SharePoint, OneDriveBusiness, or ExternalItem.");
+        }
+
+        if (options.ExternalItemConnectionIds is { } connectionIds)
+        {
+            if (options.DataSource != Microsoft365RetrievalDataSource.ExternalItem)
+            {
+                failures.Add("ExternalItemConnectionIds requires the ExternalItem data source.");
+            }
+
+            if (connectionIds.Count == 0 || connectionIds.Any(string.IsNullOrWhiteSpace))
+            {
+                failures.Add("ExternalItemConnectionIds must contain nonempty connection IDs.");
+            }
+
+            if (connectionIds.Distinct(StringComparer.Ordinal).Count() != connectionIds.Count)
+            {
+                failures.Add("ExternalItemConnectionIds cannot contain duplicates.");
+            }
         }
 
         if (options.MaximumNumberOfResults is < 1 or > 25)
@@ -56,6 +75,7 @@ internal sealed class Microsoft365RetrievalOptionsValidator : IValidateOptions<M
         return new Microsoft365RetrievalOptions
         {
             DataSource = options.DataSource,
+            ExternalItemConnectionIds = options.ExternalItemConnectionIds?.ToArray(),
             MaximumNumberOfResults = options.MaximumNumberOfResults,
             FilterExpression = options.FilterExpression,
             ResourceMetadata = options.ResourceMetadata.ToArray(),

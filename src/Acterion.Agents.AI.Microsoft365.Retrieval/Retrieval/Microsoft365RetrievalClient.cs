@@ -95,10 +95,25 @@ public sealed class Microsoft365RetrievalClient : IMicrosoft365RetrievalClient
             {
                 Microsoft365RetrievalDataSource.SharePoint => "sharePoint",
                 Microsoft365RetrievalDataSource.OneDriveBusiness => "oneDriveBusiness",
+                Microsoft365RetrievalDataSource.ExternalItem => "externalItem",
                 _ => throw new InvalidOperationException("The validated retrieval data source is unsupported."),
             },
+            DataSourceConfiguration = this.options.ExternalItemConnectionIds is { } connectionIds
+                ? new RetrievalApiDataSourceConfiguration
+                {
+                    ExternalItem = new RetrievalApiExternalItemConfiguration
+                    {
+                        Connections = connectionIds
+                            .Select(connectionId => new RetrievalApiConnectionItem { ConnectionId = connectionId })
+                            .ToArray(),
+                    },
+                }
+                : null,
             FilterExpression = this.options.FilterExpression,
-            ResourceMetadata = this.options.ResourceMetadata,
+            ResourceMetadata = this.options.DataSource == Microsoft365RetrievalDataSource.ExternalItem &&
+                this.options.ResourceMetadata.Count == 0
+                ? null
+                : this.options.ResourceMetadata,
             MaximumNumberOfResults = this.options.MaximumNumberOfResults,
         };
         byte[] requestBytes = JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions);

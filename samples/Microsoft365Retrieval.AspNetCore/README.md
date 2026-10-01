@@ -8,10 +8,10 @@ For package installation and integration choices, start with [getting started](.
 
 ## Prerequisites
 
-- A work or school Microsoft Entra tenant and Retrieval API access. OneDrive requires a Microsoft 365 Copilot license for the caller; SharePoint can also use tenant-enabled pay-as-you-go consumption.
+- A work or school Microsoft Entra tenant and Retrieval API access. OneDrive requires a Microsoft 365 Copilot license for the caller; SharePoint and indexed Copilot connectors can also use tenant-enabled pay-as-you-go consumption.
 - An Azure OpenAI Chat Completions deployment accessible to the host's Azure credential.
 - A Microsoft Entra app registration for this protected API and a confidential-client credential for OBO.
-- Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`, granted with the appropriate tenant consent.
+- Delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All` for SharePoint/OneDrive, or `ExternalItem.Read.All` for indexed connectors, granted with the appropriate tenant consent.
 
 Configure the app registration's exposed API scope, such as `api://<application-client-id>/access_as_user`. Clients call this API using a bearer token for that scope. The app registration must also hold the delegated Graph permissions above; the host acquires `https://graph.microsoft.com/.default` for the authenticated caller after consent.
 
@@ -35,6 +35,21 @@ dotnet user-secrets set --project samples/Microsoft365Retrieval.AspNetCore \
 The sample uses `DefaultAzureCredential` for Azure OpenAI only. For production, use a deliberately selected managed or workload identity credential for the model service. The Graph retrieval path always uses the incoming user through OBO; it has no app-only, managed-identity, or API-key fallback.
 
 `Microsoft365Retrieval` binds the source, maximum result count, requested metadata, and optional `FilterExpression`. It uses SharePoint by default. Set `Microsoft365Retrieval:DataSource` to `OneDriveBusiness` to query organizational OneDrive; the caller then needs a Microsoft 365 Copilot license because pay-as-you-go does not cover OneDrive. Configure a filter only from trusted application configuration. A path filter scopes retrieval but is not authorization, and endpoint messages never become KQL.
+
+The existing options binding also accepts indexed connector content without a host code change. For example, put this section in environment-specific configuration:
+
+```json
+{
+  "Microsoft365Retrieval": {
+    "DataSource": "ExternalItem",
+    "ExternalItemConnectionIds": ["ContosoIT"],
+    "ResourceMetadata": [],
+    "MaximumNumberOfResults": 8
+  }
+}
+```
+
+Omit `ExternalItemConnectionIds` for an unrestricted connector query; an empty array is invalid. Only request metadata fields retrievable in every selected connector schema and KQL properties queryable in each. With unknown schemas, request no metadata and omit `FilterExpression` as above. The API registration needs delegated `ExternalItem.Read.All` with administrator consent, and the caller needs a Copilot license or tenant-enabled connector pay-as-you-go access. Connection IDs and KQL are query scope, not authorization; Graph applies the caller's item permissions.
 
 ## Run and call
 
@@ -89,7 +104,7 @@ Retrieval uses the authenticated caller's delegated permissions. `Files.Read.All
 
 `FilterExpression` only scopes the retrieval query. It is not an authorization boundary, and the host must not build it from an endpoint message. Application authentication, endpoint authorization, business authorization, and tool authorization remain host responsibilities.
 
-Retrieved SharePoint or OneDrive content is untrusted LLM context and can contain indirect prompt injection. The prompt requests that the model resist instructions embedded in retrieved documents, but application-level guardrails may still be required. The sample treats retrieval results as context data, never as system instructions.
+Retrieved SharePoint, OneDrive, or connector content is untrusted LLM context and can contain indirect prompt injection. The prompt requests that the model resist instructions embedded in retrieved documents, but application-level guardrails may still be required. The sample treats retrieval results as context data, never as system instructions.
 
 Do not log access tokens, authorization headers, full user queries at Information level, raw Graph responses, or retrieved document content by default. On token acquisition failures, do not retry with application credentials. This package does not implement fallback application permissions, interactive consent, or Conditional Access challenges; the host decides how to present those experiences.
 

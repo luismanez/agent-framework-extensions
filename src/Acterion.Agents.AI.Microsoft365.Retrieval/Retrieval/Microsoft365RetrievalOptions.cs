@@ -12,6 +12,11 @@ public sealed class Microsoft365RetrievalOptions
         Microsoft365RetrievalDataSource.SharePoint;
 
     /// <summary>
+    /// Gets or sets the optional external connection IDs used when the source is ExternalItem.
+    /// </summary>
+    public IReadOnlyCollection<string>? ExternalItemConnectionIds { get; set; }
+
+    /// <summary>
     /// Gets or sets the maximum number of retrieval results, from 1 through 25.
     /// </summary>
     public int MaximumNumberOfResults { get; set; } = 8;
@@ -22,7 +27,7 @@ public sealed class Microsoft365RetrievalOptions
     public string? FilterExpression { get; set; }
 
     /// <summary>
-    /// Gets or sets the nonempty metadata field names requested for each result.
+    /// Gets or sets the metadata field names requested for each result. An empty collection requests none.
     /// </summary>
     public IReadOnlyCollection<string> ResourceMetadata { get; set; } = ["title", "author"];
 }

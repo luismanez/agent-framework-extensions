@@ -11,15 +11,38 @@ internal sealed class RetrievalApiRequest
     [JsonPropertyName("dataSource")]
     public required string DataSource { get; init; }
 
+    [JsonPropertyName("dataSourceConfiguration")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RetrievalApiDataSourceConfiguration? DataSourceConfiguration { get; init; }
+
     [JsonPropertyName("filterExpression")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? FilterExpression { get; init; }
 
     [JsonPropertyName("resourceMetadata")]
-    public required IReadOnlyCollection<string> ResourceMetadata { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyCollection<string>? ResourceMetadata { get; init; }
 
     [JsonPropertyName("maximumNumberOfResults")]
     public required int MaximumNumberOfResults { get; init; }
+}
+
+internal sealed class RetrievalApiDataSourceConfiguration
+{
+    [JsonPropertyName("externalItem")]
+    public required RetrievalApiExternalItemConfiguration ExternalItem { get; init; }
+}
+
+internal sealed class RetrievalApiExternalItemConfiguration
+{
+    [JsonPropertyName("connections")]
+    public required IReadOnlyCollection<RetrievalApiConnectionItem> Connections { get; init; }
+}
+
+internal sealed class RetrievalApiConnectionItem
+{
+    [JsonPropertyName("connectionId")]
+    public required string ConnectionId { get; init; }
 }
 
 internal sealed class RetrievalApiResponse

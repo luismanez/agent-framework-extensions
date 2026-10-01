@@ -3,6 +3,7 @@ using Azure.Core;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Text;
+using System.Text.Json;
 using Xunit;
 
 namespace Microsoft365Retrieval.Console.Tests;
@@ -130,6 +131,7 @@ public sealed class SampleConfigurationTests
         Assert.Null(configuration.AzureOpenAIDeploymentName);
         Assert.Null(configuration.AzureOpenAITenantId);
         Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, configuration.DataSource);
+        Assert.Equal(["title", "author"], configuration.ResourceMetadata);
     }
 
     [Fact]
@@ -244,6 +246,149 @@ public sealed class SampleConfigurationTests
     }
 
     [Fact]
+    public void FromConfiguration_SelectsExternalItemWithoutConnectionOrMetadataScope()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "ExternalItem",
+            })
+            .Build();
+
+        SampleConfiguration configuration = SampleConfiguration.FromConfiguration(
+            source, requireAzureOpenAI: false);
+
+        Assert.Equal(Microsoft365RetrievalDataSource.ExternalItem, configuration.DataSource);
+        Assert.Null(configuration.ExternalItemConnectionIds);
+        Assert.Empty(configuration.ResourceMetadata);
+        Assert.Null(configuration.FilterExpression);
+    }
+
+    [Fact]
+    public void FromConfiguration_LoadsExternalItemIdsAndMetadataInOrder()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "ExternalItem",
+                ["Microsoft365Retrieval:ExternalItemConnectionIds:0"] = "ContosoIT",
+                ["Microsoft365Retrieval:ExternalItemConnectionIds:1"] = "ContosoHR",
+                ["Microsoft365Retrieval:ResourceMetadata:0"] = "title",
+            })
+            .Build();
+
+        SampleConfiguration configuration = SampleConfiguration.FromConfiguration(
+            source, requireAzureOpenAI: false);
+
+        Assert.Equal(["ContosoIT", "ContosoHR"], configuration.ExternalItemConnectionIds);
+        Assert.Equal(["title"], configuration.ResourceMetadata);
+    }
+
+    [Theory]
+    [InlineData("SharePoint")]
+    [InlineData("OneDriveBusiness")]
+    public void FromConfiguration_RejectsConnectionIdsForOtherSources(string dataSource)
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = dataSource,
+                ["Microsoft365Retrieval:ExternalItemConnectionIds:0"] = "ContosoIT",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FromConfiguration_RejectsEmptyConnectionIds()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "ExternalItem",
+                ["Microsoft365Retrieval:ExternalItemConnectionIds"] = "",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FromConfiguration_RejectsDuplicateConnectionIds()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "ExternalItem",
+                ["Microsoft365Retrieval:ExternalItemConnectionIds:0"] = "ContosoIT",
+                ["Microsoft365Retrieval:ExternalItemConnectionIds:1"] = "ContosoIT",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("ExternalItemConnectionIds", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FromConfiguration_RespectsEmptyMetadataArrayInJson()
+    {
+        const string json = """
+            {
+              "MicrosoftEntra": { "TenantId": "tenant-id", "ClientId": "client-id" },
+              "Microsoft365Retrieval": {
+                "DataSource": "ExternalItem",
+                "ResourceMetadata": []
+              }
+            }
+            """;
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+        IConfiguration source = new ConfigurationBuilder().AddJsonStream(stream).Build();
+
+        SampleConfiguration configuration = SampleConfiguration.FromConfiguration(
+            source, requireAzureOpenAI: false);
+
+        Assert.Empty(configuration.ResourceMetadata);
+    }
+
+    [Fact]
+    public void FromConfiguration_RejectsSharePointSiteUrlForExternalItem()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "ExternalItem",
+                ["Microsoft365Retrieval:SharePointSiteUrl"] = "https://contoso.sharepoint.com/sites/test/",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("SharePointSiteUrl", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void FromConfiguration_RejectsSharePointSiteUrlForOneDrive()
     {
         IConfiguration source = new ConfigurationBuilder()
@@ -291,5 +436,29 @@ public sealed class SampleCommandLineTests
     public void IsRetrievalOnly_RecognizesTheExactOption(string argument, bool expected)
     {
         Assert.Equal(expected, SampleCommandLine.IsRetrievalOnly([argument]));
+    }
+}
+
+public sealed class SampleResultFormattingTests
+{
+    [Fact]
+    public void GetTitle_UsesUrlWhenTitleIsAbsent()
+    {
+        Assert.Equal(
+            "https://contoso.example/item/42",
+            SampleResultFormatting.GetTitle(
+                new Dictionary<string, JsonElement>(),
+                "https://contoso.example/item/42"));
+    }
+
+    [Fact]
+    public void GetTitle_UsesConnectorTitleWhenPresent()
+    {
+        Dictionary<string, JsonElement> metadata = new()
+        {
+            ["title"] = JsonSerializer.SerializeToElement("Corporate VPN"),
+        };
+
+        Assert.Equal("Corporate VPN", SampleResultFormatting.GetTitle(metadata, "https://contoso.example/item/42"));
     }
 }

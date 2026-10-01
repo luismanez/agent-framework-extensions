@@ -2,7 +2,7 @@
 
 **Specification:** [`009-externalitem-retrieval.md`](009-externalitem-retrieval.md)  
 **Plan:** [`plan.md`](plan.md)  
-**Status:** Ready for implementation
+**Status:** Implemented; verification evidence recorded
 
 Complete these tasks in order in one implementation prompt. Check boxes only after the stated verification; continue through the final checkpoint without requesting approval between tasks.
 
@@ -16,9 +16,9 @@ Complete these tasks in order in one implementation prompt. Check boxes only aft
 
 **Likely files:** `Microsoft365RetrievalDataSource.cs`; `Microsoft365RetrievalOptions.cs`; `Microsoft365RetrievalOptionsValidator.cs`; `Microsoft365RetrievalOptionsTests.cs`; `PublicContractTests.cs`.
 
-- [ ] Add the enum value and nullable option with XML documentation.
-- [ ] Validate the source/ID combination and snapshot IDs.
-- [ ] Prove public API, default, invalid-input, and mutation behavior offline.
+- [x] Add the enum value and nullable option with XML documentation.
+- [x] Validate the source/ID combination and snapshot IDs.
+- [x] Prove public API, default, invalid-input, and mutation behavior offline.
 
 ## Task 2: Send connector requests and reuse results
 
@@ -30,15 +30,15 @@ Complete these tasks in order in one implementation prompt. Check boxes only aft
 
 **Likely files:** `RetrievalWireModels.cs`; `Microsoft365RetrievalClient.cs`; `Microsoft365RetrievalClientRequestTests.cs`; `Microsoft365RetrievalClientResponseTests.cs`; `Microsoft365RetrievalSearchTests.cs`. Update `Microsoft365RetrievalHit.cs` XML summary if it still names only SharePoint.
 
-- [ ] Serialize the source and optional nested connection configuration.
-- [ ] Cover zero, one, and multiple IDs plus SharePoint/OneDrive regressions.
-- [ ] Cover connector response and adapter behavior; run the package tests.
+- [x] Serialize the source and optional nested connection configuration.
+- [x] Cover zero, one, and multiple IDs plus SharePoint/OneDrive regressions.
+- [x] Cover connector response and adapter behavior; run the package tests.
 
 ## Checkpoint: Package behavior
 
-- [ ] Invalid ID configuration fails before token acquisition or HTTP.
-- [ ] Existing sources retain their request contract; connector request JSON matches the spec.
-- [ ] Connector results reach the existing adapter without new result types.
+- [x] Invalid ID configuration fails before token acquisition or HTTP.
+- [x] Existing sources retain their request contract; connector request JSON matches the spec.
+- [x] Connector results reach the existing adapter without new result types.
 
 ## Task 3: Extend the existing Console sample
 
@@ -50,9 +50,9 @@ Complete these tasks in order in one implementation prompt. Check boxes only aft
 
 **Likely files:** `samples/Microsoft365Retrieval.Console/Program.cs`; `appsettings.json`; `README.md`; `tests/Microsoft365Retrieval.Console.Tests/AzureIdentityRetrievalTokenProviderTests.cs`.
 
-- [ ] Parse and forward source-specific IDs and requested metadata through the current configuration path.
-- [ ] Test unscoped, scoped, and invalid Console configurations.
-- [ ] Document delegated permission and `--retrieval-only` examples.
+- [x] Parse and forward source-specific IDs and requested metadata through the current configuration path.
+- [x] Test unscoped, scoped, and invalid Console configurations.
+- [x] Document delegated permission and `--retrieval-only` examples.
 
 ## Task 4: Document the consumer contract
 
@@ -64,13 +64,13 @@ Complete these tasks in order in one implementation prompt. Check boxes only aft
 
 **Likely files:** `docs/configuration.md`; `docs/getting-started.md`; `docs/security.md`; `docs/troubleshooting.md`; `samples/Microsoft365Retrieval.AspNetCore/README.md`.
 
-- [ ] Update package configuration and getting-started examples.
-- [ ] Document permissions, licensing, common-field selection (or empty metadata/no KQL for unknown schemas), and diagnosis.
-- [ ] Add the ASP.NET Core configuration example without changing its host code.
+- [x] Update package configuration and getting-started examples.
+- [x] Document permissions, licensing, common-field selection (or empty metadata/no KQL for unknown schemas), and diagnosis.
+- [x] Add the ASP.NET Core configuration example without changing its host code.
 
 ## Checkpoint: Feature complete
 
-- [ ] Every spec acceptance criterion has test, documentation, or recorded review evidence.
-- [ ] Full solution tests, Release build, and diff hygiene pass, or exact environment limitations are recorded.
-- [ ] `implementation-evidence.md` records commands, results, and any unverified live-tenant behavior.
-- [ ] Changes stay within the existing Retrieval package, samples, tests, and guides.
+- [x] Every spec acceptance criterion has test, documentation, or recorded review evidence.
+- [x] Full solution tests, Release build, and diff hygiene pass, or exact environment limitations are recorded.
+- [x] `implementation-evidence.md` records commands, results, and any unverified live-tenant behavior.
+- [x] Changes stay within the existing Retrieval package, samples, tests, and guides.

@@ -17,14 +17,15 @@ services.AddMicrosoft365Retrieval(options =>
 
 | Property | Type | Default | Rules |
 | --- | --- | --- | --- |
-| `DataSource` | `Microsoft365RetrievalDataSource` | `SharePoint` | `SharePoint` or `OneDriveBusiness` |
+| `DataSource` | `Microsoft365RetrievalDataSource` | `SharePoint` | `SharePoint`, `OneDriveBusiness`, or `ExternalItem` |
+| `ExternalItemConnectionIds` | `IReadOnlyCollection<string>?` | `null` | Only for `ExternalItem`; `null` queries accessible connections, otherwise supply distinct nonblank IDs |
 | `MaximumNumberOfResults` | `int` | `8` | Must be from 1 through 25 |
 | `FilterExpression` | `string?` | `null` | Must be null or contain a non-whitespace KQL expression for the selected source |
 | `ResourceMetadata` | `IReadOnlyCollection<string>` | `title`, `author` | Must be non-null and contain only nonempty values |
 
 Options registered with `AddMicrosoft365Retrieval` are validated when resolved. The public `Microsoft365RetrievalClient` constructors apply the same validation, so direct construction cannot bypass these rules. Invalid options fail before token acquisition or a Retrieval request.
 
-The client snapshots validated option values and the metadata collection during construction. Later mutations to the source `Microsoft365RetrievalOptions` instance do not change an existing client; construct or resolve a new client to apply new configuration.
+The client snapshots validated option values, the metadata collection, and connection IDs during construction. Later mutations to the source `Microsoft365RetrievalOptions` instance do not change an existing client; construct or resolve a new client to apply new configuration.
 
 ## Data source
 
@@ -41,7 +42,24 @@ services.AddMicrosoft365Retrieval(options =>
 
 The URL is illustrative. For a real filter, copy the canonical file or folder path from OneDrive's **Details** pane, not a sharing link or browser address. The package validates that the expression is nonblank but does not parse KQL. A malformed expression can execute without the intended scope; keep authorization independent of filtering.
 
-Each client uses one configured source, and each Retrieval API request queries one source. This package does not merge SharePoint and OneDrive results or register named clients for both sources. OneDrive retrieval requires a Microsoft 365 Copilot license for the calling user; Retrieval API pay-as-you-go does not enable OneDrive. Both sources use delegated `Files.Read.All` and `Sites.Read.All` permissions. See the [Retrieval API overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/overview).
+Each client uses one configured source, and each Retrieval API request queries one source. This package does not merge results across sources or register named clients. OneDrive retrieval requires a Microsoft 365 Copilot license for the calling user; Retrieval API pay-as-you-go does not enable OneDrive. SharePoint and OneDrive use delegated `Files.Read.All` and `Sites.Read.All` permissions. See the [Retrieval API overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/overview).
+
+### Copilot connector items
+
+Select indexed connector content with `ExternalItem`:
+
+```csharp
+services.AddMicrosoft365Retrieval(options =>
+{
+    options.DataSource = Microsoft365RetrievalDataSource.ExternalItem;
+    options.ExternalItemConnectionIds = ["ContosoIT", "ContosoHR"];
+    options.ResourceMetadata = [];
+});
+```
+
+Omit `ExternalItemConnectionIds` to search connector items accessible to the delegated user without restricting connection IDs. Supplying IDs sends Graph's `dataSourceConfiguration.externalItem.connections` array in the configured order; an empty collection is rejected rather than broadening the query. IDs are trusted host settings and query scope, not an authorization control. The delegated user must have `ExternalItem.Read.All`, and Graph still trims results according to item permissions. This feature queries indexed connectors; it does not provision connections or query federated MCP connectors directly.
+
+Connector schemas can expose different fields. Request metadata only when the field is marked retrievable in **every** selected connection, and use KQL properties only when they are queryable in every selected connection. If the common schema is unknown, use `ResourceMetadata = []` and omit `FilterExpression`; for `ExternalItem`, the empty collection omits the optional `resourceMetadata` property. The package does not discover schemas or change fields per result. The default `ResourceMetadata` remains `["title", "author"]` for compatibility, so explicitly override it for connector content. A missing title uses the result URL as the Agent Framework source name.
 
 ## Query requirements
 
@@ -80,7 +98,7 @@ The Agent Framework adapter retains the complete hit in `TextSearchResult.RawRep
 
 ## Typed SharePoint filters
 
-`SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. It remains a SharePoint-specific helper; this feature does not add a typed OneDrive filter. Use trusted application configuration for either source.
+`SharePointRetrievalFilter` covers every SharePoint property supported by the Retrieval API and composes them without requiring handwritten KQL. It remains a SharePoint-specific helper; this feature does not add a typed OneDrive or connector filter. Use trusted application configuration for any source.
 
 | Retrieval property | Typed factory |
 | --- | --- |
@@ -146,7 +164,7 @@ options.FilterExpression = configuration["Microsoft365Retrieval:FilterExpression
 
 A raw expression must contain at least one non-whitespace character. Use `null` to omit filtering. This catches an obviously empty configuration but does not parse or prove the correctness of arbitrary KQL.
 
-Only load raw expressions from trusted application configuration. Never concatenate endpoint messages, model output, or other untrusted values into KQL.
+Only load raw expressions from trusted application configuration. Never concatenate endpoint messages, model output, or other untrusted values into KQL. For connector items, property names and queryability depend on the selected connection schemas.
 
 Microsoft documents that an incorrectly formed Retrieval API filter can execute without scoping. Therefore:
 
@@ -183,6 +201,8 @@ services.AddMicrosoft365Retrieval(options =>
 The normalization above intentionally treats an empty configuration value as an omitted filter. Without that normalization, a blank configured value fails options validation.
 
 Use `"SharePoint"` or omit `DataSource` for the existing default. Undefined enum values fail options validation when the client is resolved.
+
+For connector content, the same binding supports `"DataSource": "ExternalItem"`, `"ExternalItemConnectionIds": ["ContosoIT"]`, and `"ResourceMetadata": []`. Omit `ExternalItemConnectionIds` entirely for an unrestricted connector query; do not set it to `[]`.
 
 Use environment-variable double underscores for hierarchical keys, for example `Microsoft365Retrieval__MaximumNumberOfResults=8`.
 

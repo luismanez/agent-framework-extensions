@@ -15,10 +15,13 @@ Add these **delegated** Microsoft Graph permissions to the app registration:
 | --- | --- |
 | `Files.Read.All` | Read files the signed-in user can access |
 | `Sites.Read.All` | Read documents and list items on behalf of the signed-in user |
+| `ExternalItem.Read.All` | Retrieve indexed Copilot connector items available to the signed-in user |
+
+Configure `Files.Read.All` and `Sites.Read.All` for SharePoint or OneDrive; configure `ExternalItem.Read.All` for `ExternalItem` connector retrieval. Add all three only when the host uses all three sources.
 
 Do not add the application variants for this package. There is no app-only fallback.
 
-Microsoft's permission catalog marks the delegated variants as not requiring administrator consent by default. However, tenant consent policies, permission classifications, Conditional Access, or disabled user consent can still require administrator approval. Treat both as broad delegated permissions and obtain the review appropriate for your organization.
+Microsoft's permission catalog marks delegated `ExternalItem.Read.All` as requiring administrator consent. The delegated `Files.Read.All` and `Sites.Read.All` permissions do not require it by default, but tenant policy can still require administrator approval. Treat all three as broad delegated permissions and obtain the review appropriate for your organization.
 
 The samples request the `https://graph.microsoft.com/.default` scope. This asks Microsoft Entra ID to issue a token containing the Graph delegated permissions already configured and consented for the application; it does not grant permissions by itself.
 
@@ -32,7 +35,7 @@ Use this pattern for console, desktop, and other installed applications that can
 2. Create a registration for accounts in the intended organizational directory. The reference sample is single-tenant.
 3. Record the **Application (client) ID** and **Directory (tenant) ID**.
 4. Under **Authentication > Advanced settings**, set **Allow public client flows** to **Yes**.
-5. Under **API permissions**, add the delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
+5. Under **API permissions**, add the delegated Microsoft Graph permissions for the selected source: `Files.Read.All` and `Sites.Read.All` for SharePoint/OneDrive or `ExternalItem.Read.All` for connectors.
 6. Complete user or administrator consent according to tenant policy.
 
 Do not create a client secret for a public client. Device code and interactive browser flows use the client ID and user interaction, not a confidential credential.
@@ -52,7 +55,7 @@ The sample uses `DeviceCodeCredential`, requests `https://graph.microsoft.com/.d
 
 ## Protected web API registration
 
-Use this pattern when an authenticated client calls your ASP.NET Core API and the API must retrieve SharePoint or OneDrive content for that same user. The API validates its own bearer token and exchanges it for a delegated Microsoft Graph token through OAuth 2.0 On-Behalf-Of (OBO).
+Use this pattern when an authenticated client calls your ASP.NET Core API and the API must retrieve SharePoint, OneDrive, or indexed connector content for that same user. The API validates its own bearer token and exchanges it for a delegated Microsoft Graph token through OAuth 2.0 On-Behalf-Of (OBO).
 
 ### Create and configure the registration
 
@@ -60,7 +63,7 @@ Use this pattern when an authenticated client calls your ASP.NET Core API and th
 2. Under **Expose an API**, set an Application ID URI such as `api://<application-client-id>`.
 3. Add a delegated scope such as `access_as_user` and decide who can consent to it.
 4. Configure the calling client application to request that exposed API scope.
-5. Under the API registration's **API permissions**, add delegated Microsoft Graph `Files.Read.All` and `Sites.Read.All`.
+5. Under the API registration's **API permissions**, add delegated Microsoft Graph `Files.Read.All` and `Sites.Read.All` for SharePoint/OneDrive or `ExternalItem.Read.All` for connectors.
 6. Complete consent for both the client-to-API scope and the API's downstream Graph permissions.
 7. Configure a confidential-client credential for the API.
 
@@ -129,8 +132,8 @@ When a request returns `401` or `403`, inspect a test token securely and verify:
 - The token audience is Microsoft Graph when it reaches the package.
 - The token represents the expected user and tenant.
 - Delegated scope claims include the required consented permissions.
-- The user can open the target content in the configured SharePoint or OneDrive source directly.
-- The user has a Microsoft 365 Copilot license for OneDrive, or a Copilot license or pay-as-you-go access for SharePoint.
+- The user can open the target content in the configured SharePoint, OneDrive, or connector source directly.
+- The user has a Microsoft 365 Copilot license for OneDrive, or a Copilot license or pay-as-you-go access for SharePoint and indexed connectors.
 - Conditional Access requirements have been satisfied by the host.
 
 Do not paste production tokens into public token-inspection tools or logs.

@@ -21,6 +21,7 @@ public sealed class PublicContractTests
 
         Assert.Equal(8, options.MaximumNumberOfResults);
         Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, options.DataSource);
+        Assert.Null(options.ExternalItemConnectionIds);
         Assert.Null(options.FilterExpression);
         Assert.Equal(["title", "author"], options.ResourceMetadata);
         Assert.Equal("token", token);
@@ -44,14 +45,21 @@ public sealed class PublicContractTests
     {
         Assert.True(typeof(Microsoft365RetrievalOptions).IsSealed);
         Assert.Equal(
-            ["DataSource", "FilterExpression", "MaximumNumberOfResults", "ResourceMetadata"],
+            ["DataSource", "ExternalItemConnectionIds", "FilterExpression", "MaximumNumberOfResults", "ResourceMetadata"],
             typeof(Microsoft365RetrievalOptions)
                 .GetProperties()
                 .Select(property => property.Name)
                 .Order());
         Assert.Equal(
-            ["SharePoint", "OneDriveBusiness"],
+            ["SharePoint", "OneDriveBusiness", "ExternalItem"],
             Enum.GetNames<Microsoft365RetrievalDataSource>());
+
+        Microsoft365RetrievalOptions connectorOptions = new()
+        {
+            DataSource = Microsoft365RetrievalDataSource.ExternalItem,
+            ExternalItemConnectionIds = ["ContosoIT"],
+        };
+        Assert.Equal(["ContosoIT"], connectorOptions.ExternalItemConnectionIds);
 
         AssertSingleMethod(
             typeof(IMicrosoft365RetrievalTokenProvider),

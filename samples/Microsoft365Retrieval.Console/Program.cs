@@ -5,6 +5,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 IConfigurationRoot appConfiguration = new ConfigurationBuilder()
 	.SetBasePath(AppContext.BaseDirectory)
@@ -62,8 +63,10 @@ services.AddSingleton<IMicrosoft365RetrievalTokenProvider>(new AzureIdentityRetr
 services.AddMicrosoft365Retrieval(options =>
 {
 	options.DataSource = configuration.DataSource;
+	options.ExternalItemConnectionIds = configuration.ExternalItemConnectionIds;
 	options.MaximumNumberOfResults = configuration.MaximumNumberOfResults;
 	options.FilterExpression = configuration.FilterExpression;
+	options.ResourceMetadata = configuration.ResourceMetadata;
 });
 
 using ServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -145,10 +148,7 @@ static async Task RunRetrievalOnlyAsync(
 			for (int index = 0; index < hits.Count; index++)
 			{
 				Microsoft365RetrievalHit hit = hits[index];
-				string title = hit.ResourceMetadata.TryGetValue("title", out System.Text.Json.JsonElement titleValue) &&
-					titleValue.ValueKind == System.Text.Json.JsonValueKind.String
-					? titleValue.GetString() ?? "Untitled result"
-					: "Untitled result";
+				string title = SampleResultFormatting.GetTitle(hit.ResourceMetadata, hit.WebUrl);
 
 				Console.WriteLine($"[{index + 1}] {title}");
 				Console.WriteLine($"URL: {hit.WebUrl}");
@@ -178,7 +178,9 @@ public sealed record SampleConfiguration(
 	Microsoft365RetrievalDataSource DataSource,
 	Uri? SharePointSiteUrl,
 	int MaximumNumberOfResults,
-	string? RetrievalFilter)
+	string? RetrievalFilter,
+	IReadOnlyCollection<string>? ExternalItemConnectionIds,
+	IReadOnlyCollection<string> ResourceMetadata)
 {
 	public string? FilterExpression => SharePointSiteUrl is null
 		? RetrievalFilter
@@ -233,11 +235,15 @@ public sealed record SampleConfiguration(
 		{
 			dataSource = Microsoft365RetrievalDataSource.OneDriveBusiness;
 		}
+		else if (string.Equals(selectedSource, nameof(Microsoft365RetrievalDataSource.ExternalItem), StringComparison.OrdinalIgnoreCase))
+		{
+			dataSource = Microsoft365RetrievalDataSource.ExternalItem;
+		}
 		else if (selectedSource is not null &&
 			!string.Equals(selectedSource, nameof(Microsoft365RetrievalDataSource.SharePoint), StringComparison.OrdinalIgnoreCase))
 		{
 			throw new InvalidOperationException(
-				"Microsoft365Retrieval:DataSource must be SharePoint or OneDriveBusiness.");
+				"Microsoft365Retrieval:DataSource must be SharePoint, OneDriveBusiness, or ExternalItem.");
 		}
 
 		string? siteUrl = GetOptionalValue(configuration, "Microsoft365Retrieval:SharePointSiteUrl");
@@ -249,10 +255,29 @@ public sealed record SampleConfiguration(
 			throw new InvalidOperationException(
 				"Microsoft365Retrieval:SharePointSiteUrl must be an absolute HTTPS URI.");
 		}
-		if (dataSource == Microsoft365RetrievalDataSource.OneDriveBusiness && siteUri is not null)
+		if (dataSource != Microsoft365RetrievalDataSource.SharePoint && siteUri is not null)
 		{
 			throw new InvalidOperationException(
-				"Microsoft365Retrieval:SharePointSiteUrl cannot be set when DataSource is OneDriveBusiness.");
+				"Microsoft365Retrieval:SharePointSiteUrl can be set only when DataSource is SharePoint.");
+		}
+
+		string[]? connectionIds = GetOptionalArray(configuration, "Microsoft365Retrieval:ExternalItemConnectionIds");
+		if (connectionIds is not null)
+		{
+			if (dataSource != Microsoft365RetrievalDataSource.ExternalItem || connectionIds.Length == 0 ||
+				connectionIds.Any(string.IsNullOrWhiteSpace) ||
+				connectionIds.Distinct(StringComparer.Ordinal).Count() != connectionIds.Length)
+			{
+				throw new InvalidOperationException(
+					"Microsoft365Retrieval:ExternalItemConnectionIds requires ExternalItem and distinct, nonblank IDs.");
+			}
+		}
+
+		string[] resourceMetadata = GetOptionalArray(configuration, "Microsoft365Retrieval:ResourceMetadata") ??
+			(dataSource == Microsoft365RetrievalDataSource.ExternalItem ? [] : ["title", "author"]);
+		if (resourceMetadata.Any(string.IsNullOrWhiteSpace))
+		{
+			throw new InvalidOperationException("Microsoft365Retrieval:ResourceMetadata cannot contain blank names.");
 		}
 
 		int maximumNumberOfResults = configuration.GetValue("Microsoft365Retrieval:MaximumNumberOfResults", 8);
@@ -273,11 +298,38 @@ public sealed record SampleConfiguration(
 			siteUri,
 			maximumNumberOfResults,
 			GetOptionalValue(configuration, "Microsoft365Retrieval:FilterExpression") ??
-				GetOptionalValue(configuration, "MICROSOFT365_RETRIEVAL_FILTER"));
+				GetOptionalValue(configuration, "MICROSOFT365_RETRIEVAL_FILTER"),
+			connectionIds,
+			resourceMetadata);
+	}
+
+	private static string[]? GetOptionalArray(IConfiguration configuration, string key)
+	{
+		IConfigurationSection section = configuration.GetSection(key);
+		if (!section.Exists())
+		{
+			return null;
+		}
+
+		if (!string.IsNullOrEmpty(section.Value))
+		{
+			throw new InvalidOperationException($"{key} must be an array.");
+		}
+
+		return section.GetChildren().Select(child => child.Value ?? "").ToArray();
 	}
 
 	private static string? GetOptionalValue(IConfiguration configuration, string key) =>
 		string.IsNullOrWhiteSpace(configuration[key]) ? null : configuration[key];
+}
+
+internal static class SampleResultFormatting
+{
+	internal static string GetTitle(IReadOnlyDictionary<string, JsonElement> metadata, string webUrl) =>
+		metadata.TryGetValue("title", out JsonElement value) && value.ValueKind == JsonValueKind.String &&
+		!string.IsNullOrWhiteSpace(value.GetString())
+			? value.GetString()!
+			: webUrl;
 }
 
 internal static class SampleCommandLine

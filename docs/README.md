@@ -15,7 +15,7 @@ Use these guides to move from tenant setup to a production-ready Microsoft 365 R
 | Goal | Recommended path |
 | --- | --- |
 | Prove Retrieval works without a model | Run the [console sample](../samples/Microsoft365Retrieval.Console/README.md) with `--retrieval-only` |
-| Retrieve SharePoint or OneDrive content from application code | Follow [direct retrieval](getting-started.md#direct-retrieval) |
+| Retrieve SharePoint, OneDrive, or indexed connector content from application code | Follow [direct retrieval](getting-started.md#direct-retrieval) |
 | Ground an Agent Framework agent before every model call | Follow [automatic retrieval](getting-started.md#automatic-agent-retrieval) |
 | Let the model decide when to search | Follow [on-demand retrieval](getting-started.md#on-demand-agent-retrieval) |
 | Build a protected employee-facing API | Start with the [ASP.NET Core sample](../samples/Microsoft365Retrieval.AspNetCore/README.md) |
@@ -25,7 +25,7 @@ Use these guides to move from tenant setup to a production-ready Microsoft 365 R
 The package owns:
 
 - Retrieval API request construction and transport.
-- SharePoint or OneDrive source selection for one request at a time.
+- SharePoint, OneDrive, or `ExternalItem` source selection for one request at a time.
 - Response parsing and typed retrieval results, including optional Microsoft Purview sensitivity labels.
 - SharePoint `Path` and `SiteID` filter construction.
 - Agent Framework `TextSearchProvider` adaptation.

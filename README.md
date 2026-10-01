@@ -4,7 +4,7 @@ This repository provides focused .NET packages for Microsoft 365 retrieval and s
 
 | Package | Purpose | Guidance |
 | --- | --- | --- |
-| `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint and OneDrive retrieval with Agent Framework integration | This README |
+| `Acterion.Agents.AI.Microsoft365.Retrieval` | Permission-trimmed SharePoint, OneDrive, and indexed Copilot connector retrieval with Agent Framework integration | This README |
 | `Acterion.Agents.AI.Microsoft365.WorkContext` | Microsoft Graph work-context snapshots and Agent Framework integration | [Work Context package guide](src/Acterion.Agents.AI.Microsoft365.WorkContext/README.md) |
 
 The [WorkContext console sample](samples/Microsoft365WorkContext.Console/README.md) demonstrates delegated sign-in, a direct snapshot, and an Agent Framework agent.
@@ -19,7 +19,7 @@ Maintainers: [release both NuGet packages together](docs/releasing.md).
 
 ## Why use it?
 
-- **No duplicate index**: retrieve from SharePoint or OneDrive content already indexed by Microsoft 365.
+- **No duplicate index**: retrieve from SharePoint, OneDrive, or Copilot connector content already indexed by Microsoft 365.
 - **Permission trimmed**: results are evaluated for the signed-in user by Microsoft 365 and the selected source.
 - **Host-owned identity**: choose device code, interactive browser, On-Behalf-Of, or another delegated flow in your application.
 - **Two integration levels**: call `IMicrosoft365RetrievalClient` directly or compose retrieval into an Agent Framework pipeline.
@@ -30,7 +30,7 @@ Maintainers: [release both NuGet packages together](docs/releasing.md).
 
 | Capability | Support |
 | --- | --- |
-| Data source | SharePoint Online (default) or OneDrive for Business |
+| Data source | SharePoint Online (default), OneDrive for Business, or indexed Copilot connectors (`ExternalItem`) |
 | Identity | Delegated work or school identity |
 | Runtime | .NET 10 |
 | Direct retrieval | `IMicrosoft365RetrievalClient` |
@@ -38,17 +38,17 @@ Maintainers: [release both NuGet packages together](docs/releasing.md).
 | Retrieval timing | Before every model call or on demand |
 | Sensitivity labels | Optional typed metadata on retrieval hits |
 
-Application permissions, app-only retrieval, personal OneDrive accounts, and Microsoft 365 Copilot connector retrieval are not exposed by this package.
+Application permissions, app-only retrieval, personal OneDrive accounts, and direct federated MCP connector access are not exposed by this package.
 
 ## Prerequisites
 
 You need:
 
-1. A Microsoft Entra app registration with delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All`.
+1. A Microsoft Entra app registration with delegated Microsoft Graph permissions `Files.Read.All` and `Sites.Read.All` for SharePoint/OneDrive, or `ExternalItem.Read.All` for connectors.
 2. A host authentication flow that obtains a delegated Graph token for the current user.
-3. Access to the Microsoft 365 Copilot Retrieval API through a Microsoft 365 Copilot license for the calling user. For SharePoint, tenant-enabled Retrieval API pay-as-you-go consumption is another supported path; it does not cover OneDrive.
+3. Access to the Microsoft 365 Copilot Retrieval API through a Microsoft 365 Copilot license for the calling user. For SharePoint and indexed connectors, tenant-enabled Retrieval API pay-as-you-go consumption is another supported path; it does not cover OneDrive.
 
-The delegated Graph permissions do not require admin consent by definition, but tenant consent policies can still require administrator approval. Pay-as-you-go is a preview feature and requires an Azure subscription, an Azure resource group, Microsoft 365 administrator access, and at least one Microsoft 365 Copilot license in the tenant. A model deployment is optional for direct retrieval and required only when your application also invokes a model.
+Delegated `ExternalItem.Read.All` requires administrator consent. Delegated `Files.Read.All` and `Sites.Read.All` may also require it under tenant policy. Pay-as-you-go is a preview feature and requires an Azure subscription, an Azure resource group, Microsoft 365 administrator access, and at least one Microsoft 365 Copilot license in the tenant. A model deployment is optional for direct retrieval and required only when your application also invokes a model.
 
 ## Install
 
@@ -86,6 +86,8 @@ IReadOnlyList<Microsoft365RetrievalHit> hits = await retrieval.RetrieveAsync(
 Retrieval options are validated before token acquisition or HTTP. `MaximumNumberOfResults` must be from 1 through 25, raw filter expressions must be null or non-whitespace, and metadata field names must be nonempty.
 
 To query organizational OneDrive instead, set `options.DataSource = Microsoft365RetrievalDataSource.OneDriveBusiness` and provide a trusted OneDrive `FilterExpression` only if needed. The client queries one source per request; see the [configuration reference](docs/configuration.md#data-source).
+
+To query indexed Copilot connector items, select `Microsoft365RetrievalDataSource.ExternalItem`, optionally configure `ExternalItemConnectionIds`, and choose metadata common to the selected schemas (or `ResourceMetadata = []` when unknown). See [connector configuration](docs/configuration.md#copilot-connector-items).
 
 `MyGraphTokenProvider` implements one method and returns a delegated token for Microsoft Graph:
 

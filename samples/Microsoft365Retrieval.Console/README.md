@@ -2,14 +2,14 @@
 
 This sample demonstrates automatic Microsoft 365 retrieval for an Agent Framework agent. The console host obtains a delegated Microsoft Graph token through Azure Identity device-code authentication and supplies it to the Retrieval package through a sample-local `IMicrosoft365RetrievalTokenProvider` implementation.
 
-Set `Microsoft365Retrieval:DataSource` to `SharePoint` (the default) or `OneDriveBusiness` to select the source for this console client.
+Set `Microsoft365Retrieval:DataSource` to `SharePoint` (the default), `OneDriveBusiness`, or `ExternalItem` to select the source for this console client.
 
 For package installation and integration choices, start with [getting started](../../docs/getting-started.md). See [Microsoft Entra ID setup](../../docs/entra-id-setup.md) for the complete public-client registration flow and [troubleshooting](../../docs/troubleshooting.md) for live-request diagnostics.
 
 ## Prerequisites
 
-- A work or school Microsoft Entra tenant with SharePoint Online or organizational OneDrive content available to the test user.
-- Retrieval API access. OneDrive requires a Microsoft 365 Copilot license for the signed-in user; [pay-as-you-go consumption does not include OneDrive](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/paygo-retrieval). SharePoint can use a Copilot license or tenant-enabled pay-as-you-go consumption.
+- A work or school Microsoft Entra tenant with SharePoint Online, organizational OneDrive, or indexed Copilot connector content available to the test user.
+- Retrieval API access. OneDrive requires a Microsoft 365 Copilot license for the signed-in user; [pay-as-you-go consumption does not include OneDrive](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/paygo-retrieval). SharePoint and indexed Copilot connectors can use a Copilot license or tenant-enabled pay-as-you-go consumption.
 - A public-client app registration configured as described below.
 - .NET 10 SDK.
 
@@ -22,9 +22,10 @@ Create a Microsoft Entra app registration for a work or school tenant, then enab
 ```text
 Files.Read.All
 Sites.Read.All
+ExternalItem.Read.All
 ```
 
-The sample requests `https://graph.microsoft.com/.default`, which uses the permissions already configured and consented for the app. It does not use application permissions or an app-only fallback.
+Grant `Files.Read.All` and `Sites.Read.All` for SharePoint/OneDrive, or `ExternalItem.Read.All` for connector items. Delegated `ExternalItem.Read.All` requires administrator consent. The sample requests `https://graph.microsoft.com/.default`, which uses the permissions already configured and consented for the app. It does not use application permissions or an app-only fallback.
 
 ## Configuration
 
@@ -70,7 +71,7 @@ Microsoft365Retrieval__SharePointSiteUrl=https://<tenant>.sharepoint.com/sites/<
 Microsoft365Retrieval__MaximumNumberOfResults=8
 ```
 
-The previous flat environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`, and `MICROSOFT365_RETRIEVAL_FILTER`) remain supported for compatibility. `AZURE_OPENAI_TENANT_ID` is also accepted for the Azure OpenAI tenant. For SharePoint, `SharePointSiteUrl` is converted to a typed `Path` filter and takes precedence over `FilterExpression`. Leave it empty to search all accessible SharePoint content. `FilterExpression` is an optional KQL filter for either source and takes precedence over the legacy `MICROSOFT365_RETRIEVAL_FILTER` variable.
+The previous flat environment variables (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`, and `MICROSOFT365_RETRIEVAL_FILTER`) remain supported for compatibility. `AZURE_OPENAI_TENANT_ID` is also accepted for the Azure OpenAI tenant. For SharePoint, `SharePointSiteUrl` is converted to a typed `Path` filter and takes precedence over `FilterExpression`. Leave it empty to search all accessible SharePoint content. `FilterExpression` is an optional KQL filter for the selected source and takes precedence over the legacy `MICROSOFT365_RETRIEVAL_FILTER` variable.
 
 To try OneDrive, keep your `MicrosoftEntra` settings and replace the retrieval section of `appsettings.local.json` with:
 
@@ -86,6 +87,38 @@ To try OneDrive, keep your `MicrosoftEntra` settings and replace the retrieval s
 ```
 
 Run `--retrieval-only` as shown below. With an empty filter, the query can return organizational OneDrive content accessible to the signed-in user. To narrow it, set `FilterExpression` to trusted KQL such as `Path:"<canonical OneDrive path>"`. Obtain that path from the item's **Details** pane in OneDrive; a sharing link or browser address is not a reliable filter path. The sample rejects a non-empty `SharePointSiteUrl` with `OneDriveBusiness` so it cannot accidentally apply a SharePoint site filter to OneDrive. [Microsoft's Retrieval API guidance](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/retrieval/overview) explains path selection.
+
+For all indexed connector items accessible to the signed-in user, use this retrieval section in `appsettings.local.json`:
+
+```json
+{
+  "Microsoft365Retrieval": {
+    "DataSource": "ExternalItem",
+    "SharePointSiteUrl": "",
+    "FilterExpression": "",
+    "MaximumNumberOfResults": 8
+  }
+}
+```
+
+The sample requests no metadata by default for `ExternalItem`. Its package option remains `["title", "author"]` by default for compatibility with other hosts. To restrict the sample to known connections and request a shared retrievable field, use this section instead:
+
+```json
+{
+  "Microsoft365Retrieval": {
+    "DataSource": "ExternalItem",
+    "SharePointSiteUrl": "",
+    "FilterExpression": "",
+    "ExternalItemConnectionIds": ["ContosoIT", "ContosoHR"],
+    "ResourceMetadata": ["title"],
+    "MaximumNumberOfResults": 8
+  }
+}
+```
+
+Omit `ExternalItemConnectionIds` to search accessible connector items without a connection-ID restriction; `[]` is rejected. For connections with different or unknown schemas, omit `ResourceMetadata` or set it to `[]`, and leave `FilterExpression` empty. Only request fields retrievable in every selected schema, and use KQL properties queryable in every selected schema. These settings are query scope, not authorization. When a hit has no `title`, retrieval-only mode prints its URL as the display name. The sample rejects a non-empty SharePoint site URL for `ExternalItem`.
+
+Run either configuration with `dotnet run --project samples/Microsoft365Retrieval.Console -- --retrieval-only`. For environment variables, array entries use numeric indexes, such as `Microsoft365Retrieval__ExternalItemConnectionIds__0=ContosoIT` and `Microsoft365Retrieval__ResourceMetadata__0=title`.
 
 The Retrieval package is independent of the model provider. This host uses Azure OpenAI and `DefaultAzureCredential` for the model service only; Graph retrieval always uses `DeviceCodeCredential`. `AzureOpenAI:TenantId` must identify the tenant that owns the Azure OpenAI resource. It can have the same value as `MicrosoftEntra:TenantId`, but it is configured separately because the two resources can belong to different tenants. Developer credentials that cannot authenticate in the configured tenant are skipped, so the chain can continue from Visual Studio to Azure CLI or another developer credential. At least one credential in the chain must represent an identity in that tenant with access to the configured deployment. For production, prefer a deliberately selected credential for the model service instead of `DefaultAzureCredential`.
 

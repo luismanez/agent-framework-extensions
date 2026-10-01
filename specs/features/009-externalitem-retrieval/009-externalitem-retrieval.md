@@ -1,7 +1,7 @@
 # Feature 009: ExternalItem Retrieval
 
 **Parent specification:** [`SPEC.md`](../../SPEC/SPEC.md)  
-**Status:** Approved; implementation planned  
+**Status:** Implemented; offline verification complete (ASP.NET Core test host stalled)
 **Depends on:** Features 001, 002, and 008  
 **Scope:** Follow-on feature for the existing `Acterion.Agents.AI.Microsoft365.Retrieval` package
 
@@ -142,14 +142,14 @@ dotnet test --project tests/Microsoft365Retrieval.Console.Tests/Microsoft365Retr
 
 ## Acceptance criteria
 
-- [ ] Existing SharePoint and OneDrive consumers produce unchanged requests without new configuration.
-- [ ] `ExternalItem` sends the documented Graph value and returns typed connector hits through the existing client.
-- [ ] Omitted IDs omit `dataSourceConfiguration`; configured IDs produce the exact nested Graph request shape.
-- [ ] Invalid ID configuration fails before token acquisition or network I/O, and later mutations cannot alter a constructed client.
-- [ ] The Agent Framework adapter yields usable links, names, and text for connector hits with missing optional fields.
-- [ ] The existing Console sample can demonstrate both unscoped and connection-scoped connector retrieval in `--retrieval-only` mode, with configurable metadata names and a useful URL fallback when no title is returned.
-- [ ] Documentation covers delegated permission, connector schema requirements, licensing, scoping behavior, and the one-source-per-request constraint.
-- [ ] Focused offline tests and the full Release build pass.
+- [x] Existing SharePoint and OneDrive consumers produce unchanged requests without new configuration.
+- [x] `ExternalItem` sends the documented Graph value and returns typed connector hits through the existing client.
+- [x] Omitted IDs omit `dataSourceConfiguration`; configured IDs produce the exact nested Graph request shape.
+- [x] Invalid ID configuration fails before token acquisition or network I/O, and later mutations cannot alter a constructed client.
+- [x] The Agent Framework adapter yields usable links, names, and text for connector hits with missing optional fields.
+- [x] The existing Console sample can demonstrate both unscoped and connection-scoped connector retrieval in `--retrieval-only` mode, with configurable metadata names and a useful URL fallback when no title is returned.
+- [x] Documentation covers delegated permission, connector schema requirements, licensing, scoping behavior, and the one-source-per-request constraint.
+- [x] Focused offline tests and the full Release build pass.
 
 ## Deferred follow-ups
 

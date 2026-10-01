@@ -273,6 +273,97 @@ public sealed class Microsoft365RetrievalClientRequestTests
     }
 
     [Fact]
+    public async Task RetrieveAsync_SendsUnscopedExternalItemRequestWithoutMetadata()
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        Microsoft365RetrievalClient client = new(
+            httpClient,
+            tokenProvider,
+            new Microsoft365RetrievalOptions
+            {
+                DataSource = Microsoft365RetrievalDataSource.ExternalItem,
+                ResourceMetadata = [],
+            });
+
+        Assert.Empty(await client.RetrieveAsync("corporate VPN", TestContext.Current.CancellationToken));
+
+        Assert.Equal(1, tokenProvider.CallCount);
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(HttpMethod.Post, handler.Method);
+        Assert.Equal(new Uri("https://graph.microsoft.com/v1.0/copilot/retrieval"), handler.RequestUri);
+        Assert.Equal("delegated-token", handler.Authorization?.Parameter);
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        JsonElement root = request.RootElement;
+        Assert.Equal(3, root.EnumerateObject().Count());
+        Assert.Equal("corporate VPN", root.GetProperty("queryString").GetString());
+        Assert.Equal("externalItem", root.GetProperty("dataSource").GetString());
+        Assert.False(root.TryGetProperty("dataSourceConfiguration", out _));
+        Assert.False(root.TryGetProperty("resourceMetadata", out _));
+        Assert.False(root.TryGetProperty("filterExpression", out _));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task RetrieveAsync_SendsScopedExternalItemRequestWithSnapshottedIds(int count)
+    {
+        using HttpResponseMessage response = new(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"retrievalHits":[]}""", Encoding.UTF8, "application/json"),
+        };
+        using RecordingHttpMessageHandler handler = new(response);
+        using HttpClient httpClient = new(handler);
+        StubTokenProvider tokenProvider = new();
+        List<string> connectionIds = ["ContosoIT"];
+        if (count == 2)
+        {
+            connectionIds.Add("ContosoHR");
+        }
+        Microsoft365RetrievalOptions options = new()
+        {
+            DataSource = Microsoft365RetrievalDataSource.ExternalItem,
+            ExternalItemConnectionIds = connectionIds,
+            FilterExpression = "Label_Title:\"Corporate VPN\"",
+            ResourceMetadata = ["title"],
+            MaximumNumberOfResults = 5,
+        };
+        Microsoft365RetrievalClient client = new(httpClient, tokenProvider, options);
+        connectionIds[0] = "Changed";
+        options.ExternalItemConnectionIds = ["Other"];
+
+        Assert.Empty(await client.RetrieveAsync("corporate VPN", TestContext.Current.CancellationToken));
+
+        Assert.Equal(1, tokenProvider.CallCount);
+        Assert.Equal(1, handler.RequestCount);
+        using JsonDocument request = JsonDocument.Parse(Assert.IsType<string>(handler.Content));
+        JsonElement root = request.RootElement;
+        Assert.Equal(6, root.EnumerateObject().Count());
+        Assert.Equal("externalItem", root.GetProperty("dataSource").GetString());
+        Assert.Equal("Label_Title:\"Corporate VPN\"", root.GetProperty("filterExpression").GetString());
+        Assert.Equal(["title"], root.GetProperty("resourceMetadata").EnumerateArray()
+            .Select(element => element.GetString()));
+        Assert.Equal(5, root.GetProperty("maximumNumberOfResults").GetInt32());
+        JsonElement configuration = root.GetProperty("dataSourceConfiguration");
+        Assert.Single(configuration.EnumerateObject());
+        JsonElement externalItem = configuration.GetProperty("externalItem");
+        Assert.Single(externalItem.EnumerateObject());
+        JsonElement[] connections = externalItem.GetProperty("connections").EnumerateArray().ToArray();
+        Assert.Equal(count, connections.Length);
+        Assert.All(connections, connection => Assert.Single(connection.EnumerateObject()));
+        Assert.Equal("ContosoIT", connections[0].GetProperty("connectionId").GetString());
+        if (count == 2)
+        {
+            Assert.Equal("ContosoHR", connections[1].GetProperty("connectionId").GetString());
+        }
+    }
+
+    [Fact]
     public async Task RetrieveAsync_AcceptsMaximumQueryLengthAndIncludesConfiguredFilter()
     {
         using HttpResponseMessage response = new(HttpStatusCode.OK)

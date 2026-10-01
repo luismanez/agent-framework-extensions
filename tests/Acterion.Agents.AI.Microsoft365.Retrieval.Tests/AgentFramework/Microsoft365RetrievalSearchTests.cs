@@ -9,6 +9,24 @@ namespace Acterion.Agents.AI.Microsoft365.Retrieval.Tests;
 public sealed class Microsoft365RetrievalSearchTests
 {
     [Fact]
+    public async Task SearchAsync_MapsExternalItemWithUrlNameFallback()
+    {
+        Microsoft365RetrievalHit hit = CreateHit(
+            "https://crm.contoso.com/tickets/VPN%20request?id=42",
+            [CreateExtract("Connector extract")],
+            []);
+        Microsoft365RetrievalSearch search = new(new StubRetrievalClient([hit]));
+
+        TextSearchProvider.TextSearchResult result = Assert.Single(await search.SearchAsync(
+            "corporate VPN", TestContext.Current.CancellationToken));
+
+        Assert.Equal("VPN request", result.SourceName);
+        Assert.Equal(hit.WebUrl, result.SourceLink);
+        Assert.Equal("Connector extract", result.Text);
+        Assert.Same(hit, result.RawRepresentation);
+    }
+
+    [Fact]
     public async Task SearchAsync_MapsOneDriveHitWithoutTitle()
     {
         Microsoft365RetrievalHit hit = CreateHit(

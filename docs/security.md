@@ -9,7 +9,7 @@ Authenticated user
     -> host authentication and authorization
     -> delegated Microsoft Graph token
     -> Microsoft 365 Retrieval API
-    -> permission-trimmed SharePoint or OneDrive extracts
+    -> permission-trimmed SharePoint, OneDrive, or connector extracts
     -> host policy and model guardrails
 ```
 
@@ -23,6 +23,7 @@ Microsoft 365 and the selected source decide which content the delegated user ca
 | Delegated acquisition fails and code escalates to app-only | Fail closed; never retry with application credentials |
 | A user or model changes the KQL scope | Build filters only from trusted application configuration |
 | A filter is missing, malformed, or ignored | Enforce authorization independently; treat filters only as query scope |
+| A connection ID is mistaken for an ACL | Keep IDs in trusted host configuration; rely on delegated item permission trimming |
 | A sensitivity label is treated as an access decision | Use labels only as host policy input; enforce authorization independently |
 | Retrieved text contains indirect prompt injection | Treat extracts as untrusted data, not instructions |
 | Logs disclose content or credentials | Log operational metadata, not tokens, queries, documents, or raw responses |
@@ -46,7 +47,7 @@ For registration and flow details, see [Microsoft Entra ID setup](entra-id-setup
 
 ## Authorization and retrieval scope
 
-Authentication answers who the caller is. Microsoft 365 permission trimming answers which SharePoint or OneDrive documents that identity may retrieve. Your application must separately answer whether the caller may use a feature or perform an operation.
+Authentication answers who the caller is. Microsoft 365 permission trimming answers which SharePoint, OneDrive, or indexed connector items that identity may retrieve. Your application must separately answer whether the caller may use a feature or perform an operation.
 
 Apply authorization before invoking retrieval:
 
@@ -68,9 +69,11 @@ The package rejects a non-null filter containing only whitespace, but it does no
 
 OneDrive uses the same delegated `Files.Read.All` and `Sites.Read.All` permissions. Retrieval API pay-as-you-go does not cover OneDrive; the calling user needs a Microsoft 365 Copilot license. A OneDrive failure must not trigger a fallback request to SharePoint.
 
+Indexed connector retrieval requires delegated `ExternalItem.Read.All`. A Copilot-licensed caller can use Retrieval; tenant-enabled pay-as-you-go can cover connector items for unlicensed callers. Keep `ExternalItemConnectionIds` in trusted host configuration. IDs and connector KQL narrow a query but are not authorization boundaries. Connector KQL properties must be queryable across the selected schemas, and requested metadata properties must be retrievable across them; when unknown, omit the filter and request no metadata. Do not log IDs or silently retry against another source.
+
 ## Treat retrieved content as untrusted
 
-SharePoint and OneDrive documents can contain malicious, obsolete, or irrelevant instructions. A model can mistake those instructions for application intent.
+SharePoint, OneDrive, and connector items can contain malicious, obsolete, or irrelevant instructions. A model can mistake those instructions for application intent.
 
 Recommended controls:
 

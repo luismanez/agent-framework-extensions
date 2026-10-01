@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Acterion.Agents.AI.Microsoft365.Retrieval;
 
 /// <summary>
-/// Represents a SharePoint retrieval result.
+/// Represents a Microsoft 365 Copilot Retrieval API result.
 /// </summary>
 public sealed class Microsoft365RetrievalHit
 {
