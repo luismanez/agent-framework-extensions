@@ -1,3 +1,4 @@
+using Acterion.Agents.AI.Microsoft365.Retrieval;
 using Azure.Core;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration;
@@ -128,6 +129,7 @@ public sealed class SampleConfigurationTests
         Assert.Null(configuration.AzureOpenAIEndpoint);
         Assert.Null(configuration.AzureOpenAIDeploymentName);
         Assert.Null(configuration.AzureOpenAITenantId);
+        Assert.Equal(Microsoft365RetrievalDataSource.SharePoint, configuration.DataSource);
     }
 
     [Fact]
@@ -155,6 +157,7 @@ public sealed class SampleConfigurationTests
                 ["AzureOpenAI:Endpoint"] = "https://example.openai.azure.com/",
                 ["AzureOpenAI:DeploymentName"] = "chat-deployment",
                 ["Microsoft365Retrieval:SharePointSiteUrl"] = "https://contoso.sharepoint.com/sites/test/",
+                ["Microsoft365Retrieval:FilterExpression"] = "FileType:pdf",
                 ["Microsoft365Retrieval:MaximumNumberOfResults"] = "5",
             })
             .Build();
@@ -168,7 +171,8 @@ public sealed class SampleConfigurationTests
         Assert.Equal("chat-deployment", configuration.AzureOpenAIDeploymentName);
         Assert.Equal(new Uri("https://contoso.sharepoint.com/sites/test/"), configuration.SharePointSiteUrl);
         Assert.Equal(5, configuration.MaximumNumberOfResults);
-        Assert.Null(configuration.RetrievalFilter);
+        Assert.Equal("FileType:pdf", configuration.RetrievalFilter);
+        Assert.Equal("Path:\"https://contoso.sharepoint.com/sites/test/\"", configuration.FilterExpression);
     }
 
     [Fact]
@@ -195,6 +199,85 @@ public sealed class SampleConfigurationTests
         Assert.Equal("override-tenant", configuration.TenantId);
         Assert.Equal("base-client", configuration.ClientId);
         Assert.Equal("Path:\"https://contoso.sharepoint.com/\"", configuration.RetrievalFilter);
+    }
+
+    [Fact]
+    public void FromConfiguration_SelectsOneDriveWithOptionalFilter()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "OneDriveBusiness",
+                ["Microsoft365Retrieval:FilterExpression"] = "FileType:docx",
+                ["MICROSOFT365_RETRIEVAL_FILTER"] = "FileType:pdf",
+            })
+            .Build();
+
+        SampleConfiguration configuration = SampleConfiguration.FromConfiguration(
+            source,
+            requireAzureOpenAI: false);
+
+        Assert.Equal(Microsoft365RetrievalDataSource.OneDriveBusiness, configuration.DataSource);
+        Assert.Equal("FileType:docx", configuration.FilterExpression);
+    }
+
+    [Fact]
+    public void FromConfiguration_SelectsOneDriveWithoutFilter()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "OneDriveBusiness",
+            })
+            .Build();
+
+        SampleConfiguration configuration = SampleConfiguration.FromConfiguration(
+            source,
+            requireAzureOpenAI: false);
+
+        Assert.Equal(Microsoft365RetrievalDataSource.OneDriveBusiness, configuration.DataSource);
+        Assert.Null(configuration.FilterExpression);
+    }
+
+    [Fact]
+    public void FromConfiguration_RejectsSharePointSiteUrlForOneDrive()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "OneDriveBusiness",
+                ["Microsoft365Retrieval:SharePointSiteUrl"] = "https://contoso.sharepoint.com/sites/test/",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("SharePointSiteUrl", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FromConfiguration_RejectsUnknownDataSource()
+    {
+        IConfiguration source = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["MicrosoftEntra:TenantId"] = "tenant-id",
+                ["MicrosoftEntra:ClientId"] = "client-id",
+                ["Microsoft365Retrieval:DataSource"] = "OneDrive",
+            })
+            .Build();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            SampleConfiguration.FromConfiguration(source, requireAzureOpenAI: false));
+
+        Assert.Contains("Microsoft365Retrieval:DataSource", exception.Message, StringComparison.Ordinal);
     }
 }
 

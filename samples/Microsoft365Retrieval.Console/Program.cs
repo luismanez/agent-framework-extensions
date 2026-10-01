@@ -61,10 +61,9 @@ ServiceCollection services = new();
 services.AddSingleton<IMicrosoft365RetrievalTokenProvider>(new AzureIdentityRetrievalTokenProvider(graphCredential));
 services.AddMicrosoft365Retrieval(options =>
 {
+	options.DataSource = configuration.DataSource;
 	options.MaximumNumberOfResults = configuration.MaximumNumberOfResults;
-	options.FilterExpression = configuration.SharePointSiteUrl is null
-		? configuration.RetrievalFilter
-		: SharePointRetrievalFilter.Path(configuration.SharePointSiteUrl).Expression;
+	options.FilterExpression = configuration.FilterExpression;
 });
 
 using ServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -176,10 +175,15 @@ public sealed record SampleConfiguration(
 	string? AzureOpenAITenantId,
 	Uri? AzureOpenAIEndpoint,
 	string? AzureOpenAIDeploymentName,
+	Microsoft365RetrievalDataSource DataSource,
 	Uri? SharePointSiteUrl,
 	int MaximumNumberOfResults,
 	string? RetrievalFilter)
 {
+	public string? FilterExpression => SharePointSiteUrl is null
+		? RetrievalFilter
+		: SharePointRetrievalFilter.Path(SharePointSiteUrl).Expression;
+
 	public static SampleConfiguration FromConfiguration(
 		IConfiguration configuration,
 		bool requireAzureOpenAI = true)
@@ -223,6 +227,19 @@ public sealed record SampleConfiguration(
 			throw new InvalidOperationException("AzureOpenAI:Endpoint must be an absolute HTTPS URI.");
 		}
 
+		string? selectedSource = GetOptionalValue(configuration, "Microsoft365Retrieval:DataSource");
+		Microsoft365RetrievalDataSource dataSource = Microsoft365RetrievalDataSource.SharePoint;
+		if (string.Equals(selectedSource, nameof(Microsoft365RetrievalDataSource.OneDriveBusiness), StringComparison.OrdinalIgnoreCase))
+		{
+			dataSource = Microsoft365RetrievalDataSource.OneDriveBusiness;
+		}
+		else if (selectedSource is not null &&
+			!string.Equals(selectedSource, nameof(Microsoft365RetrievalDataSource.SharePoint), StringComparison.OrdinalIgnoreCase))
+		{
+			throw new InvalidOperationException(
+				"Microsoft365Retrieval:DataSource must be SharePoint or OneDriveBusiness.");
+		}
+
 		string? siteUrl = GetOptionalValue(configuration, "Microsoft365Retrieval:SharePointSiteUrl");
 		Uri? siteUri = null;
 		if (siteUrl is not null &&
@@ -231,6 +248,11 @@ public sealed record SampleConfiguration(
 		{
 			throw new InvalidOperationException(
 				"Microsoft365Retrieval:SharePointSiteUrl must be an absolute HTTPS URI.");
+		}
+		if (dataSource == Microsoft365RetrievalDataSource.OneDriveBusiness && siteUri is not null)
+		{
+			throw new InvalidOperationException(
+				"Microsoft365Retrieval:SharePointSiteUrl cannot be set when DataSource is OneDriveBusiness.");
 		}
 
 		int maximumNumberOfResults = configuration.GetValue("Microsoft365Retrieval:MaximumNumberOfResults", 8);
@@ -247,9 +269,11 @@ public sealed record SampleConfiguration(
 			endpointUri,
 			GetOptionalValue(configuration, "AzureOpenAI:DeploymentName") ??
 				GetOptionalValue(configuration, "AZURE_OPENAI_DEPLOYMENT_NAME"),
+			dataSource,
 			siteUri,
 			maximumNumberOfResults,
-			GetOptionalValue(configuration, "MICROSOFT365_RETRIEVAL_FILTER"));
+			GetOptionalValue(configuration, "Microsoft365Retrieval:FilterExpression") ??
+				GetOptionalValue(configuration, "MICROSOFT365_RETRIEVAL_FILTER"));
 	}
 
 	private static string? GetOptionalValue(IConfiguration configuration, string key) =>
