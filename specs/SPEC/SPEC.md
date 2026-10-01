@@ -43,7 +43,7 @@ CI, packaging, repository-wide documentation, security review, and final quality
 
 The initial `Acterion.Agents.AI.Microsoft365.Retrieval` release remains governed by the feature specifications above. Subsequent independent packages use an approved capability map under `specs/features/` as their initiative index and one specification per stable module id.
 
-Follow-on features of the existing Retrieval package can extend its initial SharePoint-only scope without changing the historical v0.1 requirements. [Feature 008: OneDrive Retrieval](../features/008-onedrive-retrieval/008-onedrive-retrieval.md) specifies that extension; the repository-wide constraints in this document continue to apply.
+Follow-on features of the existing Retrieval package can extend its initial SharePoint-only scope without changing the historical v0.1 requirements. [Feature 008: OneDrive Retrieval](../features/008-onedrive-retrieval/008-onedrive-retrieval.md) and [Feature 009: ExternalItem Retrieval](../features/009-externalitem-retrieval/009-externalitem-retrieval.md) specify those extensions; the repository-wide constraints in this document continue to apply.
 
 The next approved specification initiative is:
 
